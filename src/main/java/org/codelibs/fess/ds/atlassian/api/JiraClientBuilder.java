@@ -28,7 +28,8 @@ public class JiraClientBuilder {
         return this;
     }
 
-    public JiraClientBuilder basicAuth(final String userName, final String password) {
+    public JiraClientBuilder basicAuth(final String jiraHome, final String userName, final String password) {
+        this.jiraHome = jiraHome;
         basicAuthentication = new BasicAuthentication(userName, password);
         return this;
     }
