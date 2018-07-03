@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetContentsRequest extends Request {
@@ -22,6 +23,10 @@ public class GetContentsRequest extends Request {
     private String type, spaceKey, title, status, postingDay;
     private String[] expand;
     private int start, limit;
+
+    public GetContentsRequest(JiraClient jiraClient) {
+        super(jiraClient);
+    }
 
     @Override
     public GetContentsResponse execute() {

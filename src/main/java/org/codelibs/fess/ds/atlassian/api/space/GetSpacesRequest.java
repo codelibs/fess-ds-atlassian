@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.space;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetSpacesRequest extends Request {
@@ -22,6 +23,10 @@ public class GetSpacesRequest extends Request {
     private String spaceKey, type, status, label, favourite;
     private String[] expand;
     private int start, limit;
+
+    public GetSpacesRequest(JiraClient jiraClient) {
+        super(jiraClient);
+    }
 
     @Override
     public GetSpacesResponse execute() {

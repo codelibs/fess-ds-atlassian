@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.search;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class SearchRequest extends Request {
@@ -22,6 +23,10 @@ public class SearchRequest extends Request {
     private String jql;
     private int startAt, maxResults;
     private String[] fields;
+
+    public SearchRequest(JiraClient jiraClient) {
+        super(jiraClient);
+    }
 
     @Override
     public SearchResponse execute() {

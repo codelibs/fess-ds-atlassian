@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.space;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetSpaceRequest extends Request {
@@ -22,7 +23,8 @@ public class GetSpaceRequest extends Request {
     private String spaceKey;
     private String[] expand;
 
-    public GetSpaceRequest(String spaceKey) {
+    public GetSpaceRequest(JiraClient jiraClient, String spaceKey) {
+        super(jiraClient);
         this.spaceKey = spaceKey;
     }
 
@@ -35,5 +37,4 @@ public class GetSpaceRequest extends Request {
         this.expand = expand;
         return this;
     }
-
 }

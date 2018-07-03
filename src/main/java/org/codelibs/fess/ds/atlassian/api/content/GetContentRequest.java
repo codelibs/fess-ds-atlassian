@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetContentRequest extends Request {
@@ -23,7 +24,8 @@ public class GetContentRequest extends Request {
     private int version;
     private String[] expand;
 
-    public GetContentRequest(String id) {
+    public GetContentRequest(JiraClient jiraClient, String id) {
+        super(jiraClient);
         this.id = id;
     }
 

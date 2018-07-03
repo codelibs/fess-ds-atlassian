@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import com.google.api.client.http.HttpRequestFactory;
 import org.codelibs.fess.ds.atlassian.api.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.issue.GetIssueRequest;
@@ -25,37 +26,56 @@ import org.codelibs.fess.ds.atlassian.api.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.space.GetSpacesRequest;
 
 public class JiraClient {
+    protected final String jiraHome;
+
+    protected final HttpRequestFactory httpRequestFactory;
+
+    protected JiraClient(final String jiraHome, final HttpRequestFactory httpRequestFactory) {
+        this.jiraHome = jiraHome;
+        this.httpRequestFactory = httpRequestFactory;
+    }
+
+    public static JiraClientBuilder builder() {
+        return new JiraClientBuilder();
+    }
+
+    public String jiraHome() {
+        return jiraHome;
+    }
+
+    public HttpRequestFactory request() {
+        return httpRequestFactory;
+    }
 
     public GetProjectsRequest getProjects() {
-        return new GetProjectsRequest();
+        return new GetProjectsRequest(this);
     }
 
     public GetProjectRequest getProject(String projectIdOrKey) {
-        return new GetProjectRequest(projectIdOrKey);
+        return new GetProjectRequest(this, projectIdOrKey);
     }
 
     public SearchRequest search() {
-        return new SearchRequest();
+        return new SearchRequest(this);
     }
 
     public GetIssueRequest getIssue(String issueIdOrKey) {
-        return new GetIssueRequest(issueIdOrKey);
+        return new GetIssueRequest(this, issueIdOrKey);
     }
 
     public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest();
+        return new GetSpacesRequest(this);
     }
 
     public GetSpaceRequest getSpace(String spaceKey) {
-        return new GetSpaceRequest(spaceKey);
+        return new GetSpaceRequest(this, spaceKey);
     }
 
     public GetContentsRequest getContents() {
-        return new GetContentsRequest();
+        return new GetContentsRequest(this);
     }
 
     public GetContentRequest getContent(String contentId) {
-        return new GetContentRequest(contentId);
+        return new GetContentRequest(this, contentId);
     }
-
 }

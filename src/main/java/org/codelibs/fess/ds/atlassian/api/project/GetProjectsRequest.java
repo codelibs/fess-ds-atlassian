@@ -15,12 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api.project;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetProjectsRequest extends Request {
 
     private String[] expand;
     private int recent;
+
+    public GetProjectsRequest(JiraClient jiraClient) {
+        super(jiraClient);
+    }
 
     @Override
     public GetProjectsResponse execute() {

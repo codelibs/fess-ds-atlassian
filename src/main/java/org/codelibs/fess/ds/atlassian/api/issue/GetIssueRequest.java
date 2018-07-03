@@ -15,20 +15,44 @@
  */
 package org.codelibs.fess.ds.atlassian.api.issue;
 
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 public class GetIssueRequest extends Request {
 
     private String issueIdOrKey;
     private String[] fields, expand, properties;
 
-    public GetIssueRequest(String issueIdOrKey) {
+    public GetIssueRequest(JiraClient jiraClient, String issueIdOrKey) {
+        super(jiraClient);
         this.issueIdOrKey = issueIdOrKey;
     }
 
     @Override
     public GetIssueResponse execute() {
-        return new GetIssueResponse();
+        try {
+            final HttpRequest request = jiraClient.request().buildGetRequest(buildUrl(jiraClient.jiraHome(), issueIdOrKey));
+            final HttpResponse response = request.execute();
+            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            final JSONObject jsonObj = new JSONObject(result);
+            final Map<String, Object> issue = new HashMap<>();
+            for (String key: jsonObj.keySet()) {
+                issue.put(key, jsonObj.get(key));
+            }
+            return new GetIssueResponse(issue);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public GetIssueRequest fields(String... fields) {
@@ -44,6 +68,10 @@ public class GetIssueRequest extends Request {
     public GetIssueRequest properties(String... properties) {
         this.properties = properties;
         return this;
+    }
+
+    protected GenericUrl buildUrl(final String jiraHome, final String issueIdOrKey) {
+        return new GenericUrl(jiraHome + "/rest/api/latest/issue/" + issueIdOrKey);
     }
 
 }

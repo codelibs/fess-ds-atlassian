@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.project;
 
+import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetProjectRequest extends Request {
@@ -22,7 +23,8 @@ public class GetProjectRequest extends Request {
     private String projectIdOrKey;
     private String[] expand;
 
-    public GetProjectRequest(String projectIdOrKey) {
+    public GetProjectRequest(JiraClient jiraClient, String projectIdOrKey) {
+        super(jiraClient);
         this.projectIdOrKey = projectIdOrKey;
     }
 

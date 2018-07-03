@@ -15,15 +15,19 @@
  */
 package org.codelibs.fess.ds.atlassian.api.issue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class GetIssueResponse extends Response {
+    protected final Map<String, Object> issue;
+
+    public GetIssueResponse(Map<String, Object> issue) {
+        this.issue = issue;
+    }
 
     public Map<String, Object> getIssue() {
-        return new HashMap<>();
+        return issue;
     }
 
 }
