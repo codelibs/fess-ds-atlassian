@@ -19,10 +19,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.api.client.http.apache.ApacheHttpTransport;
+
+import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClientBuilder;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.exception.DataStoreCrawlingException;
@@ -34,14 +39,43 @@ import org.slf4j.LoggerFactory;
 public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
+    protected static final String JIRA_HOME_PARAM = "jira_home";
+    protected static final String CONSUMER_KEY_PARAM = "consumer_key";
+    protected static final String PRIVATE_KEY_PARAM = "private_key";
+    protected static final String SECRET_PARAM = "secret";
+    protected static final String ACCESS_TOKEN_PARAM = "access_token";
+
     protected String getName() {
-        return "Sample";
+        return "JiraDataStore";
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback,
+            final Map<String, String> paramMap, final Map<String, String> scriptMap,
+            final Map<String, Object> defaultDataMap) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
+
+        final String jiraHome = getJiraHome(paramMap);
+        final String consumerKey = getConsumerKey(paramMap);
+        final String privateKey = getPrivateKey(paramMap);
+        final String verifier = getSecret(paramMap);
+        final String temporaryToken = getAccessToken(paramMap);
+
+        if (jiraHome.isEmpty() || consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty()
+                || temporaryToken.isEmpty()) {
+            logger.warn("parameter \"" + JIRA_HOME_PARAM + "\" and \"" + CONSUMER_KEY_PARAM + "\" and \""
+                    + PRIVATE_KEY_PARAM + "\" and \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM
+                    + "\" are required");
+            return;
+        }
+
+        final JiraClient client = JiraClient.builder().oAuthToken(jiraHome, accessToken -> {
+            accessToken.consumerKey = consumerKey;
+            accessToken.signer = JiraClientBuilder.getOAuthRsaSigner(privateKey);
+            accessToken.transport = new ApacheHttpTransport();
+            accessToken.verifier = verifier;
+            accessToken.temporaryToken = temporaryToken;
+        }).build();
 
         final long readInterval = getReadInterval(paramMap);
         final int dataSize = paramMap.get("data.size") != null ? Integer.parseInt(paramMap.get("data.size")) : 10;
@@ -103,4 +137,40 @@ public class JiraDataStore extends AbstractDataStore {
             }
         }
     }
+
+    protected String getJiraHome(Map<String, String> paramMap) {
+        if (paramMap.containsKey(JIRA_HOME_PARAM)) {
+            return paramMap.get(JIRA_HOME_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getConsumerKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
+            return paramMap.get(CONSUMER_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPrivateKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
+            return paramMap.get(PRIVATE_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getSecret(Map<String, String> paramMap) {
+        if (paramMap.containsKey(SECRET_PARAM)) {
+            return paramMap.get(SECRET_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getAccessToken(Map<String, String> paramMap) {
+        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(ACCESS_TOKEN_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
 }
