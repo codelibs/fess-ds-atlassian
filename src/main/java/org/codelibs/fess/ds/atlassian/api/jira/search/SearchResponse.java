@@ -13,17 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.space;
+package org.codelibs.fess.ds.atlassian.api.jira.search;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
-public class GetSpaceResponse extends Response {
+public class SearchResponse extends Response {
 
-    public Map<String, Object> getSpace() {
-        return new HashMap<>();
+    protected final List<Map<String, Object>> issues;
+
+    public SearchResponse(List<Map<String, Object>> issues) {
+        this.issues = issues;
+    }
+
+    public List<Map<String, Object>> getIssues() {
+        return issues;
     }
 
 }

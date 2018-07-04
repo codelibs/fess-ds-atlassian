@@ -13,28 +13,29 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.space;
+package org.codelibs.fess.ds.atlassian.api.jira.project;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
-public class GetSpaceRequest extends Request {
+public class GetProjectRequest extends JiraRequest {
 
-    private String spaceKey;
+    private String projectIdOrKey;
     private String[] expand;
 
-    public GetSpaceRequest(JiraClient jiraClient, String spaceKey) {
+    public GetProjectRequest(JiraClient jiraClient, String projectIdOrKey) {
         super(jiraClient);
-        this.spaceKey = spaceKey;
+        this.projectIdOrKey = projectIdOrKey;
     }
 
     @Override
-    public GetSpaceResponse execute() {
-        return new GetSpaceResponse();
+    public GetProjectResponse execute() {
+        return new GetProjectResponse();
     }
 
-    public GetSpaceRequest expand(String... expand) {
+    public GetProjectRequest expand(String... expand) {
         this.expand = expand;
         return this;
     }
+
 }

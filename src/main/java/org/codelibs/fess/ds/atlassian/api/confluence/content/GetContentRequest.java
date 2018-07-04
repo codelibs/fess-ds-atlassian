@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.content;
+package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,25 +25,25 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
-public class GetContentRequest extends Request {
+public class GetContentRequest extends ConfluenceRequest {
 
     private String id, status;
     private Integer version;
     private String[] expand;
 
-    public GetContentRequest(JiraClient jiraClient, String id) {
-        super(jiraClient);
+    public GetContentRequest(ConfluenceClient confluenceClient, String id) {
+        super(confluenceClient);
         this.id = id;
     }
 
     @Override
     public GetContentResponse execute() {
         try {
-            final HttpRequest request = jiraClient.request()
-                    .buildGetRequest(buildUrl(jiraClient.jiraHome(), id, status, version, expand));
+            final HttpRequest request = confluenceClient.request()
+                    .buildGetRequest(buildUrl(confluenceClient.confluenceHome(), id, status, version, expand));
             final HttpResponse response = request.execute();
             final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
             final String result = s.hasNext() ? s.next() : "";
@@ -73,7 +73,7 @@ public class GetContentRequest extends Request {
 
     protected GenericUrl buildUrl(final String jiraHome, final String id, final String status, final Integer version,
             final String[] expand) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/wiki/rest/api/latest/content/" + id);
+        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/content/" + id);
         if (status != null) {
             url.put("status", status);
         }

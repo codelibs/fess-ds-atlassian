@@ -13,18 +13,22 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.space;
+package org.codelibs.fess.ds.atlassian.api;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
+public class AtlassianClient {
 
-public class GetSpacesResponse extends Response {
+    private JiraClient jiraClient;
+    private ConfluenceClient confluenceClient;
 
-    public List<Map<String, Object>> getSpaces() {
-        return new ArrayList<>();
+    public JiraClient jira() {
+        return jiraClient;
+    }
+
+    public ConfluenceClient confluence() {
+        return confluenceClient;
     }
 
 }

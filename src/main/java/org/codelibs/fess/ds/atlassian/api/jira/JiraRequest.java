@@ -13,10 +13,16 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api;
+package org.codelibs.fess.ds.atlassian.api.jira;
 
-public abstract class Request {
+import org.codelibs.fess.ds.atlassian.api.Request;
 
-    public abstract Response execute();
+public abstract class JiraRequest extends Request {
+
+    protected final JiraClient jiraClient;
+
+    protected JiraRequest(final JiraClient jiraClient) {
+        this.jiraClient = jiraClient;
+    }
 
 }

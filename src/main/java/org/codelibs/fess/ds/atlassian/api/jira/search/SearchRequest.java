@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.search;
+package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,10 +30,10 @@ import com.google.api.client.http.json.JsonHttpContent;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.GenericData;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
-public class SearchRequest extends Request {
+public class SearchRequest extends JiraRequest {
 
     private String jql;
     private Integer startAt, maxResults;

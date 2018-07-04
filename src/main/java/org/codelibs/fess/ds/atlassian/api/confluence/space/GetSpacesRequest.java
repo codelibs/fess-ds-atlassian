@@ -13,19 +13,19 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.space;
+package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
-public class GetSpacesRequest extends Request {
+public class GetSpacesRequest extends ConfluenceRequest {
 
     private String spaceKey, type, status, label, favourite;
     private String[] expand;
     private int start, limit;
 
-    public GetSpacesRequest(JiraClient jiraClient) {
-        super(jiraClient);
+    public GetSpacesRequest(ConfluenceClient confluenceClient) {
+        super(confluenceClient);
     }
 
     @Override

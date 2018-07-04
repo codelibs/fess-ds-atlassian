@@ -13,29 +13,22 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.project;
+package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import java.util.Map;
 
-public class GetProjectRequest extends Request {
+import org.codelibs.fess.ds.atlassian.api.Response;
 
-    private String projectIdOrKey;
-    private String[] expand;
+public class GetContentResponse extends Response {
 
-    public GetProjectRequest(JiraClient jiraClient, String projectIdOrKey) {
-        super(jiraClient);
-        this.projectIdOrKey = projectIdOrKey;
+    protected final Map<String, Object> content;
+
+    public GetContentResponse(Map<String, Object> content) {
+        this.content = content;
     }
 
-    @Override
-    public GetProjectResponse execute() {
-        return new GetProjectResponse();
-    }
-
-    public GetProjectRequest expand(String... expand) {
-        this.expand = expand;
-        return this;
+    public Map<String, Object> getContent() {
+        return content;
     }
 
 }

@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.content;
+package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,24 +26,25 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
-public class GetContentsRequest extends Request {
+public class GetContentsRequest extends ConfluenceRequest {
 
     private String type, spaceKey, title, status, postingDay;
     private String[] expand;
     private Integer start, limit;
 
-    public GetContentsRequest(JiraClient jiraClient) {
-        super(jiraClient);
+    public GetContentsRequest(ConfluenceClient confluenceClient) {
+        super(confluenceClient);
     }
 
     @Override
     public GetContentsResponse execute() {
         try {
-            final HttpRequest request = jiraClient.request().buildGetRequest(
-                    buildUrl(jiraClient.jiraHome(), type, spaceKey, title, status, postingDay, expand, start, limit));
+            final HttpRequest request = confluenceClient.request()
+                    .buildGetRequest(buildUrl(confluenceClient.confluenceHome(), type, spaceKey, title, status,
+                            postingDay, expand, start, limit));
             final HttpResponse response = request.execute();
             final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
             final String result = s.hasNext() ? s.next() : "";
@@ -101,7 +102,7 @@ public class GetContentsRequest extends Request {
     protected GenericUrl buildUrl(final String jiraHome, final String type, final String spaceKey, final String title,
             final String status, final String postingDay, final String[] expand, final Integer start,
             final Integer limit) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/wiki/rest/api/latest/content");
+        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/content");
         if (type != null) {
             url.put("type", type);
         }

@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.issue;
+package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,10 +25,10 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
-public class GetIssueRequest extends Request {
+public class GetIssueRequest extends JiraRequest {
 
     private final String issueIdOrKey;
     private String[] fields, expand, properties;

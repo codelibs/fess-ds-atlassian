@@ -13,17 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.project;
+package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
-public class GetProjectResponse extends Response {
+public class GetContentsResponse extends Response {
 
-    public Map<String, Object> getProject() {
-        return new HashMap<>();
+    protected final List<Map<String, Object>> contents;
+
+    public GetContentsResponse(List<Map<String, Object>> contents) {
+        this.contents = contents;
+    }
+
+    public List<Map<String, Object>> getContents() {
+        return contents;
     }
 
 }
