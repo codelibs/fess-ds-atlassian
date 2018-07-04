@@ -15,15 +15,20 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class GetContentResponse extends Response {
 
+    protected final Map<String, Object> content;
+
+    public GetContentResponse(Map<String,Object> content) {
+        this.content = content;
+    }
+
     public Map<String, Object> getContent() {
-        return new HashMap<>();
+        return content;
     }
 
 }

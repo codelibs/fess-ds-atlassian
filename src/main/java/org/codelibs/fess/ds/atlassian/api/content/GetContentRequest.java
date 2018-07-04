@@ -15,13 +15,23 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Scanner;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+
 import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public class GetContentRequest extends Request {
 
     private String id, status;
-    private int version;
+    private Integer version;
     private String[] expand;
 
     public GetContentRequest(JiraClient jiraClient, String id) {
@@ -31,7 +41,19 @@ public class GetContentRequest extends Request {
 
     @Override
     public GetContentResponse execute() {
-        return new GetContentResponse();
+        try {
+            final HttpRequest request = jiraClient.request()
+                    .buildGetRequest(buildUrl(jiraClient.jiraHome(), id, status, version, expand));
+            final HttpResponse response = request.execute();
+            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            final ObjectMapper mapper = new ObjectMapper();
+            final Map<String, Object> content = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
+            });
+            return new GetContentResponse(content);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public GetContentRequest status(String status) {
@@ -47,6 +69,21 @@ public class GetContentRequest extends Request {
     public GetContentRequest expand(String... expand) {
         this.expand = expand;
         return this;
+    }
+
+    protected GenericUrl buildUrl(final String jiraHome, final String id, final String status, final Integer version,
+            final String[] expand) {
+        final GenericUrl url = new GenericUrl(jiraHome + "/wiki/rest/api/latest/content/" + id);
+        if (status != null) {
+            url.put("status", status);
+        }
+        if (version != null) {
+            url.put("version", version);
+        }
+        if (expand != null) {
+            url.put("expand", String.join(",", expand));
+        }
+        return url;
     }
 
 }

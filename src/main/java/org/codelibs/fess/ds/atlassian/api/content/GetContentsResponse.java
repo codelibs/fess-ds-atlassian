@@ -15,7 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +22,14 @@ import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class GetContentsResponse extends Response {
 
+    protected final List<Map<String, Object>> contents;
+
+    public GetContentsResponse(List<Map<String, Object>> contents) {
+        this.contents = contents;
+    }
+
     public List<Map<String, Object>> getContents() {
-        return new ArrayList<>();
+        return contents;
     }
 
 }

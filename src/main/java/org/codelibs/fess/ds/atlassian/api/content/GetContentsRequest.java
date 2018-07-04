@@ -15,6 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api.content;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+
 import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
@@ -22,7 +33,7 @@ public class GetContentsRequest extends Request {
 
     private String type, spaceKey, title, status, postingDay;
     private String[] expand;
-    private int start, limit;
+    private Integer start, limit;
 
     public GetContentsRequest(JiraClient jiraClient) {
         super(jiraClient);
@@ -30,7 +41,21 @@ public class GetContentsRequest extends Request {
 
     @Override
     public GetContentsResponse execute() {
-        return new GetContentsResponse();
+        try {
+            final HttpRequest request = jiraClient.request().buildGetRequest(
+                    buildUrl(jiraClient.jiraHome(), type, spaceKey, title, status, postingDay, expand, start, limit));
+            final HttpResponse response = request.execute();
+            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            final ObjectMapper mapper = new ObjectMapper();
+            final Map<String, Object> map = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
+            });
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> contents = (List<Map<String, Object>>) map.get("results");
+            return new GetContentsResponse(contents);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public GetContentsRequest type(String type) {
@@ -73,4 +98,34 @@ public class GetContentsRequest extends Request {
         return this;
     }
 
+    protected GenericUrl buildUrl(final String jiraHome, final String type, final String spaceKey, final String title,
+            final String status, final String postingDay, final String[] expand, final Integer start,
+            final Integer limit) {
+        final GenericUrl url = new GenericUrl(jiraHome + "/wiki/rest/api/latest/content");
+        if (type != null) {
+            url.put("type", type);
+        }
+        if (spaceKey != null) {
+            url.put("spaceKey", spaceKey);
+        }
+        if (title != null) {
+            url.put("title", title);
+        }
+        if (status != null) {
+            url.put("status", status);
+        }
+        if (postingDay != null) {
+            url.put("postingDay", postingDay);
+        }
+        if (expand != null) {
+            url.put("expand", String.join(",", expand));
+        }
+        if (start != null) {
+            url.put("start", start);
+        }
+        if (limit != null) {
+            url.put("limit", limit);
+        }
+        return url;
+    }
 }
