@@ -15,7 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.search;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +22,14 @@ import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class SearchResponse extends Response {
 
+    protected final List<Map<String, Object>> issues;
+
+    public SearchResponse(List<Map<String, Object>> issues) {
+        this.issues = issues;
+    }
+
     public List<Map<String, Object>> getIssues() {
-        return new ArrayList<>();
+        return issues;
     }
 
 }
