@@ -13,21 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.issue;
+package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
+import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
-public class GetIssueResponse extends Response {
-    protected final Map<String, Object> issue;
+public class GetSpacesResponse extends Response {
 
-    public GetIssueResponse(Map<String, Object> issue) {
-        this.issue = issue;
+    protected final List<Map<String, Object>> spaces;
+
+    public GetSpacesResponse(List<Map<String, Object>> spaces) {
+        this.spaces = spaces;
     }
 
-    public Map<String, Object> getIssue() {
-        return issue;
+    public List<Map<String, Object>> getSpaces() {
+        return spaces;
     }
 
 }

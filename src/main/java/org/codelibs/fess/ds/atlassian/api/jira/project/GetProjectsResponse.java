@@ -13,18 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.search;
+package org.codelibs.fess.ds.atlassian.api.jira.project;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
-public class SearchResponse extends Response {
+public class GetProjectsResponse extends Response {
 
-    public List<Map<String, Object>> getIssues() {
-        return new ArrayList<>();
+    protected final List<Map<String, Object>> projects;
+
+    public GetProjectsResponse(List<Map<String, Object>> projects) {
+        this.projects = projects;
+    }
+
+    public List<Map<String, Object>> getProjects() {
+        return projects;
     }
 
 }

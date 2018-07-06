@@ -16,11 +16,6 @@
 package org.codelibs.fess.ds.atlassian.api;
 
 public abstract class Request {
-    protected final JiraClient jiraClient;
-
-    protected Request(final JiraClient jiraClient) {
-        this.jiraClient = jiraClient;
-    }
 
     public abstract Response execute();
 

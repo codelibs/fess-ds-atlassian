@@ -13,17 +13,14 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api;
+package org.codelibs.fess.ds.atlassian.api.jira;
 
 import com.google.api.client.http.HttpRequestFactory;
-import org.codelibs.fess.ds.atlassian.api.content.GetContentRequest;
-import org.codelibs.fess.ds.atlassian.api.content.GetContentsRequest;
-import org.codelibs.fess.ds.atlassian.api.issue.GetIssueRequest;
-import org.codelibs.fess.ds.atlassian.api.project.GetProjectRequest;
-import org.codelibs.fess.ds.atlassian.api.project.GetProjectsRequest;
-import org.codelibs.fess.ds.atlassian.api.search.SearchRequest;
-import org.codelibs.fess.ds.atlassian.api.space.GetSpaceRequest;
-import org.codelibs.fess.ds.atlassian.api.space.GetSpacesRequest;
+
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 
 public class JiraClient {
     protected final String jiraHome;
@@ -61,21 +58,5 @@ public class JiraClient {
 
     public GetIssueRequest getIssue(String issueIdOrKey) {
         return new GetIssueRequest(this, issueIdOrKey);
-    }
-
-    public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest(this);
-    }
-
-    public GetSpaceRequest getSpace(String spaceKey) {
-        return new GetSpaceRequest(this, spaceKey);
-    }
-
-    public GetContentsRequest getContents() {
-        return new GetContentsRequest(this);
-    }
-
-    public GetContentRequest getContent(String contentId) {
-        return new GetContentRequest(this, contentId);
     }
 }

@@ -13,33 +13,16 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.project;
+package org.codelibs.fess.ds.atlassian.api.jira;
 
-import org.codelibs.fess.ds.atlassian.api.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
-public class GetProjectsRequest extends Request {
+public abstract class JiraRequest extends Request {
 
-    private String[] expand;
-    private int recent;
+    protected final JiraClient jiraClient;
 
-    public GetProjectsRequest(JiraClient jiraClient) {
-        super(jiraClient);
-    }
-
-    @Override
-    public GetProjectsResponse execute() {
-        return new GetProjectsResponse();
-    }
-
-    public GetProjectsRequest expand(String... expand) {
-        this.expand = expand;
-        return this;
-    }
-
-    public GetProjectsRequest recent(int recent) {
-        this.recent = recent;
-        return this;
+    protected JiraRequest(final JiraClient jiraClient) {
+        this.jiraClient = jiraClient;
     }
 
 }
