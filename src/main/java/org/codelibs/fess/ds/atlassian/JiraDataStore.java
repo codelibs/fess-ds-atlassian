@@ -15,17 +15,22 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.codelibs.fess.app.service.FailureUrlService;
+import com.google.api.client.http.apache.ApacheHttpTransport;
+
+import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
-import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClientBuilder;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
-import org.codelibs.fess.exception.DataStoreCrawlingException;
 import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
@@ -34,73 +39,150 @@ import org.slf4j.LoggerFactory;
 public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
+    protected static final String JIRA_HOME_PARAM = "jira_home";
+
+    protected static final String CONSUMER_KEY_PARAM = "consumer_key";
+    protected static final String PRIVATE_KEY_PARAM = "private_key";
+    protected static final String SECRET_PARAM = "secret";
+    protected static final String ACCESS_TOKEN_PARAM = "access_token";
+
+    protected static final String USERNAME_PARAM = "username";
+    protected static final String PASSWORD_PARAM = "password";
+
     protected String getName() {
-        return "Sample";
+        return "JiraDataStore";
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback,
+            final Map<String, String> paramMap, final Map<String, String> scriptMap,
+            final Map<String, Object> defaultDataMap) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
 
+        final String userName = getUserName(paramMap);
+        final String password = getPassword(paramMap);
+
+        final String jiraHome = getJiraHome(paramMap);
+        final String consumerKey = getConsumerKey(paramMap);
+        final String privateKey = getPrivateKey(paramMap);
+        final String verifier = getSecret(paramMap);
+        final String temporaryToken = getAccessToken(paramMap);
         final long readInterval = getReadInterval(paramMap);
-        final int dataSize = paramMap.get("data.size") != null ? Integer.parseInt(paramMap.get("data.size")) : 10;
-        boolean running = true;
-        for (int i = 0; i < dataSize && running; i++) {
-            final Map<String, Object> dataMap = new HashMap<>();
-            try {
-                dataMap.put(fessConfig.getIndexFieldUrl(), "http://fess.codelibs.org/?sample=" + i);
-                dataMap.put(fessConfig.getIndexFieldHost(), "fess.codelibs.org");
-                dataMap.put(fessConfig.getIndexFieldSite(), "fess.codelibs.org/" + i);
-                dataMap.put(fessConfig.getIndexFieldTitle(), "Sample " + i);
-                dataMap.put(fessConfig.getIndexFieldContent(), "Sample Test" + i);
-                dataMap.put(fessConfig.getIndexFieldDigest(), "Sample Data" + i);
-                dataMap.put(fessConfig.getIndexFieldAnchor(), "http://fess.codelibs.org/?from=" + i);
-                dataMap.put(fessConfig.getIndexFieldContentLength(), i * 100L);
-                dataMap.put(fessConfig.getIndexFieldLastModified(), new Date());
-                callback.store(paramMap, dataMap);
-            } catch (final CrawlingAccessException e) {
-                logger.warn("Crawling Access Exception at : " + dataMap, e);
 
-                Throwable target = e;
-                if (target instanceof MultipleCrawlingAccessException) {
-                    final Throwable[] causes = ((MultipleCrawlingAccessException) target).getCauses();
-                    if (causes.length > 0) {
-                        target = causes[causes.length - 1];
-                    }
-                }
+        boolean basic = false;
+        if (jiraHome.isEmpty()) {
+            logger.warn("parameter \"" + JIRA_HOME_PARAM + "\" is required");
+            return;
+        } else if (!userName.isEmpty() && !password.isEmpty()) {
+            basic = true;
+        } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
+            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM
+                    + "\", \"" + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM
+                    + "\" are required");
+            return;
+        }
 
-                String errorName;
-                final Throwable cause = target.getCause();
-                if (cause != null) {
-                    errorName = cause.getClass().getCanonicalName();
-                } else {
-                    errorName = target.getClass().getCanonicalName();
-                }
+        final JiraClient client = basic ? JiraClient.builder().basicAuth(jiraHome, userName, password).build()
+                : JiraClient.builder().oAuthToken(jiraHome, accessToken -> {
+                    accessToken.consumerKey = consumerKey;
+                    accessToken.signer = JiraClientBuilder.getOAuthRsaSigner(privateKey);
+                    accessToken.transport = new ApacheHttpTransport();
+                    accessToken.verifier = verifier;
+                    accessToken.temporaryToken = temporaryToken;
+                }).build();
 
-                String url;
-                if (target instanceof DataStoreCrawlingException) {
-                    final DataStoreCrawlingException dce = (DataStoreCrawlingException) target;
-                    url = dce.getUrl();
-                    if (dce.aborted()) {
-                        running = false;
-                    }
-                } else {
-                    url = "line:" + i;
-                }
-                final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-                failureUrlService.store(dataConfig, errorName, url, target);
-            } catch (final Throwable t) {
-                logger.warn("Crawling Access Exception at : " + dataMap, t);
-                final String url = "line:" + i;
-                final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-                failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
+        // get issues
+        List<Map<String, Object>> issues = client.search().fields("summary", "description", "comment", "updated")
+                .execute().getIssues();
 
-                if (readInterval > 0) {
-                    sleep(readInterval);
-                }
+        // store issues
+        for (Map<String, Object> issue : issues) {
+            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+        }
 
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback,
+            final Map<String, String> paramMap, final Map<String, String> scriptMap,
+            final Map<String, Object> defaultDataMap, final long readInterval, final String jiraHome,
+            final Map<String, Object> issue) {
+        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+        final Map<String, Object> dataMap = new HashMap<>();
+        dataMap.putAll(defaultDataMap);
+
+        try {
+            final String key = (String) issue.get("key");
+            dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
+            final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+            dataMap.put(fessConfig.getIndexFieldTitle(), fields.getOrDefault("summary", ""));
+            String content = (String) fields.get("description");
+            final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
+            final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
+            for (Map<String, Object> comment : comments) {
+                content += "\n\n" + comment.get("body");
             }
+            dataMap.put(fessConfig.getIndexFieldContent(), content);
+            try {
+                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")
+                        .parse((String) fields.get("updated"));
+                dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
+            } catch (final ParseException e) {
+                logger.warn("Parse Exception", e);
+            }
+            callback.store(paramMap, dataMap);
+        } catch (final CrawlingAccessException e) {
+            logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
     }
+
+    protected String getUserName(Map<String, String> paramMap) {
+        if (paramMap.containsKey(USERNAME_PARAM)) {
+            return paramMap.get(USERNAME_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPassword(Map<String, String> paramMap) {
+        if (paramMap.containsKey(PASSWORD_PARAM)) {
+            return paramMap.get(PASSWORD_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getJiraHome(Map<String, String> paramMap) {
+        if (paramMap.containsKey(JIRA_HOME_PARAM)) {
+            return paramMap.get(JIRA_HOME_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getConsumerKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
+            return paramMap.get(CONSUMER_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPrivateKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
+            return paramMap.get(PRIVATE_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getSecret(Map<String, String> paramMap) {
+        if (paramMap.containsKey(SECRET_PARAM)) {
+            return paramMap.get(SECRET_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getAccessToken(Map<String, String> paramMap) {
+        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(ACCESS_TOKEN_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
 }
