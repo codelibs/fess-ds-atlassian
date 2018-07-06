@@ -5,4 +5,7 @@
 	<component name="jiraDataStore" class="org.codelibs.fess.ds.atlassian.JiraDataStore">
 		<postConstruct name="register"></postConstruct>
 	</component>
+	<component name="confluenceDataStore" class="org.codelibs.fess.ds.atlassian.ConfluenceDataStore">
+		<postConstruct name="register"></postConstruct>
+	</component>
 </components>
