@@ -40,10 +40,14 @@ public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
     protected static final String JIRA_HOME_PARAM = "jira_home";
+
     protected static final String CONSUMER_KEY_PARAM = "consumer_key";
     protected static final String PRIVATE_KEY_PARAM = "private_key";
     protected static final String SECRET_PARAM = "secret";
     protected static final String ACCESS_TOKEN_PARAM = "access_token";
+
+    protected static final String USERNAME_PARAM = "username";
+    protected static final String PASSWORD_PARAM = "password";
 
     protected String getName() {
         return "JiraDataStore";
@@ -55,6 +59,9 @@ public class JiraDataStore extends AbstractDataStore {
             final Map<String, Object> defaultDataMap) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
 
+        final String userName = getUserName(paramMap);
+        final String password = getPassword(paramMap);
+
         final String jiraHome = getJiraHome(paramMap);
         final String consumerKey = getConsumerKey(paramMap);
         final String privateKey = getPrivateKey(paramMap);
@@ -62,21 +69,27 @@ public class JiraDataStore extends AbstractDataStore {
         final String temporaryToken = getAccessToken(paramMap);
         final long readInterval = getReadInterval(paramMap);
 
-        if (jiraHome.isEmpty() || consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty()
-                || temporaryToken.isEmpty()) {
-            logger.warn("parameter \"" + JIRA_HOME_PARAM + "\" and \"" + CONSUMER_KEY_PARAM + "\" and \""
-                    + PRIVATE_KEY_PARAM + "\" and \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM
+        boolean basic = false;
+        if (jiraHome.isEmpty()) {
+            logger.warn("parameter \"" + JIRA_HOME_PARAM + "\" is required");
+            return;
+        } else if (!userName.isEmpty() && !password.isEmpty()) {
+            basic = true;
+        } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
+            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM
+                    + "\", \"" + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM
                     + "\" are required");
             return;
         }
 
-        final JiraClient client = JiraClient.builder().oAuthToken(jiraHome, accessToken -> {
-            accessToken.consumerKey = consumerKey;
-            accessToken.signer = JiraClientBuilder.getOAuthRsaSigner(privateKey);
-            accessToken.transport = new ApacheHttpTransport();
-            accessToken.verifier = verifier;
-            accessToken.temporaryToken = temporaryToken;
-        }).build();
+        final JiraClient client = basic ? JiraClient.builder().basicAuth(jiraHome, userName, password).build()
+                : JiraClient.builder().oAuthToken(jiraHome, accessToken -> {
+                    accessToken.consumerKey = consumerKey;
+                    accessToken.signer = JiraClientBuilder.getOAuthRsaSigner(privateKey);
+                    accessToken.transport = new ApacheHttpTransport();
+                    accessToken.verifier = verifier;
+                    accessToken.temporaryToken = temporaryToken;
+                }).build();
 
         // get issues
         List<Map<String, Object>> issues = client.search().execute().getIssues();
@@ -121,6 +134,20 @@ public class JiraDataStore extends AbstractDataStore {
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
+    }
+
+    protected String getUserName(Map<String, String> paramMap) {
+        if (paramMap.containsKey(USERNAME_PARAM)) {
+            return paramMap.get(USERNAME_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPassword(Map<String, String> paramMap) {
+        if (paramMap.containsKey(PASSWORD_PARAM)) {
+            return paramMap.get(PASSWORD_PARAM);
+        }
+        return StringUtil.EMPTY;
     }
 
     protected String getJiraHome(Map<String, String> paramMap) {
