@@ -92,7 +92,8 @@ public class JiraDataStore extends AbstractDataStore {
                 }).build();
 
         // get issues
-        List<Map<String, Object>> issues = client.search().execute().getIssues();
+        List<Map<String, Object>> issues = client.search().fields("summary", "description", "comment", "updated")
+                .execute().getIssues();
 
         // store issues
         for (Map<String, Object> issue : issues) {
@@ -113,9 +114,8 @@ public class JiraDataStore extends AbstractDataStore {
         try {
             final String key = (String) issue.get("key");
             dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
-            dataMap.put(fessConfig.getIndexFieldTitle(), issue.getOrDefault("summary", ""));
-
             final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+            dataMap.put(fessConfig.getIndexFieldTitle(), fields.getOrDefault("summary", ""));
             String content = (String) fields.get("description");
             final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
             final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
