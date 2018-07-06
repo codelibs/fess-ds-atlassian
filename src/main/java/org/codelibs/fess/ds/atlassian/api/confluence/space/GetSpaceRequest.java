@@ -15,12 +15,22 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Scanner;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
 public class GetSpaceRequest extends ConfluenceRequest {
 
-    private String spaceKey;
+    private final String spaceKey;
     private String[] expand;
 
     public GetSpaceRequest(ConfluenceClient confluenceClient, String spaceKey) {
@@ -30,11 +40,31 @@ public class GetSpaceRequest extends ConfluenceRequest {
 
     @Override
     public GetSpaceResponse execute() {
-        return new GetSpaceResponse();
+        try {
+            final HttpRequest request = confluenceClient.request()
+                    .buildGetRequest(buildUrl(confluenceClient.confluenceHome(), spaceKey, expand));
+            final HttpResponse response = request.execute();
+            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            final ObjectMapper mapper = new ObjectMapper();
+            final Map<String, Object> space = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
+            });
+            return new GetSpaceResponse(space);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public GetSpaceRequest expand(String... expand) {
         this.expand = expand;
         return this;
+    }
+
+    protected GenericUrl buildUrl(final String jiraHome, final String spaceKey, final String[] expand) {
+        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/space/" + spaceKey);
+        if (expand != null) {
+            url.put("expand", String.join(",", expand));
+        }
+        return url;
     }
 }

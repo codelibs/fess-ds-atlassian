@@ -15,7 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +22,14 @@ import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class GetSpacesResponse extends Response {
 
+    protected final List<Map<String, Object>> spaces;
+
+    public GetSpacesResponse(List<Map<String, Object>> spaces) {
+        this.spaces = spaces;
+    }
+
     public List<Map<String, Object>> getSpaces() {
-        return new ArrayList<>();
+        return spaces;
     }
 
 }

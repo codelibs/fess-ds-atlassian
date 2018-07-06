@@ -15,6 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
@@ -22,7 +33,7 @@ public class GetSpacesRequest extends ConfluenceRequest {
 
     private String spaceKey, type, status, label, favourite;
     private String[] expand;
-    private int start, limit;
+    private Integer start, limit;
 
     public GetSpacesRequest(ConfluenceClient confluenceClient) {
         super(confluenceClient);
@@ -30,7 +41,21 @@ public class GetSpacesRequest extends ConfluenceRequest {
 
     @Override
     public GetSpacesResponse execute() {
-        return new GetSpacesResponse();
+        try {
+            final HttpRequest request = confluenceClient.request().buildGetRequest(buildUrl(
+                    confluenceClient.confluenceHome(), spaceKey, type, status, label, favourite, expand, start, limit));
+            final HttpResponse response = request.execute();
+            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            final ObjectMapper mapper = new ObjectMapper();
+            final Map<String, Object> map = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
+            });
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> spaces = (List<Map<String, Object>>) map.get("results");
+            return new GetSpacesResponse(spaces);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public GetSpacesRequest spaceKey(String spaceKey) {
@@ -71,6 +96,37 @@ public class GetSpacesRequest extends ConfluenceRequest {
     public GetSpacesRequest limit(int limit) {
         this.limit = limit;
         return this;
+    }
+
+    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String type,
+            final String status, final String label, final String favourite, final String[] expand, final Integer start,
+            final Integer limit) {
+        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space");
+        if (spaceKey != null) {
+            url.put("spaceKey", spaceKey);
+        }
+        if (type != null) {
+            url.put("type", type);
+        }
+        if (status != null) {
+            url.put("status", status);
+        }
+        if (label != null) {
+            url.put("label", label);
+        }
+        if (favourite != null) {
+            url.put("favourite", favourite);
+        }
+        if (expand != null) {
+            url.put("expand", String.join(",", expand));
+        }
+        if (start != null) {
+            url.put("start", start);
+        }
+        if (limit != null) {
+            url.put("limit", limit);
+        }
+        return url;
     }
 
 }

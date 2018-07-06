@@ -15,15 +15,20 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
 public class GetSpaceResponse extends Response {
 
+    protected final Map<String, Object> space;
+
+    public GetSpaceResponse(Map<String, Object> space) {
+        this.space = space;
+    }
+
     public Map<String, Object> getSpace() {
-        return new HashMap<>();
+        return space;
     }
 
 }
