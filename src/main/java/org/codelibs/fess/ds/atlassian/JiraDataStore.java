@@ -15,22 +15,22 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.api.client.http.apache.ApacheHttpTransport;
 
 import org.codelibs.core.lang.StringUtil;
-import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
-import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClientBuilder;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
-import org.codelibs.fess.exception.DataStoreCrawlingException;
 import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
@@ -60,6 +60,7 @@ public class JiraDataStore extends AbstractDataStore {
         final String privateKey = getPrivateKey(paramMap);
         final String verifier = getSecret(paramMap);
         final String temporaryToken = getAccessToken(paramMap);
+        final long readInterval = getReadInterval(paramMap);
 
         if (jiraHome.isEmpty() || consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty()
                 || temporaryToken.isEmpty()) {
@@ -77,64 +78,48 @@ public class JiraDataStore extends AbstractDataStore {
             accessToken.temporaryToken = temporaryToken;
         }).build();
 
-        final long readInterval = getReadInterval(paramMap);
-        final int dataSize = paramMap.get("data.size") != null ? Integer.parseInt(paramMap.get("data.size")) : 10;
-        boolean running = true;
-        for (int i = 0; i < dataSize && running; i++) {
-            final Map<String, Object> dataMap = new HashMap<>();
-            try {
-                dataMap.put(fessConfig.getIndexFieldUrl(), "http://fess.codelibs.org/?sample=" + i);
-                dataMap.put(fessConfig.getIndexFieldHost(), "fess.codelibs.org");
-                dataMap.put(fessConfig.getIndexFieldSite(), "fess.codelibs.org/" + i);
-                dataMap.put(fessConfig.getIndexFieldTitle(), "Sample " + i);
-                dataMap.put(fessConfig.getIndexFieldContent(), "Sample Test" + i);
-                dataMap.put(fessConfig.getIndexFieldDigest(), "Sample Data" + i);
-                dataMap.put(fessConfig.getIndexFieldAnchor(), "http://fess.codelibs.org/?from=" + i);
-                dataMap.put(fessConfig.getIndexFieldContentLength(), i * 100L);
-                dataMap.put(fessConfig.getIndexFieldLastModified(), new Date());
-                callback.store(paramMap, dataMap);
-            } catch (final CrawlingAccessException e) {
-                logger.warn("Crawling Access Exception at : " + dataMap, e);
+        // get issues
+        List<Map<String, Object>> issues = client.search().execute().getIssues();
 
-                Throwable target = e;
-                if (target instanceof MultipleCrawlingAccessException) {
-                    final Throwable[] causes = ((MultipleCrawlingAccessException) target).getCauses();
-                    if (causes.length > 0) {
-                        target = causes[causes.length - 1];
-                    }
-                }
+        // store issues
+        for (Map<String, Object> issue : issues) {
+            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+        }
 
-                String errorName;
-                final Throwable cause = target.getCause();
-                if (cause != null) {
-                    errorName = cause.getClass().getCanonicalName();
-                } else {
-                    errorName = target.getClass().getCanonicalName();
-                }
+    }
 
-                String url;
-                if (target instanceof DataStoreCrawlingException) {
-                    final DataStoreCrawlingException dce = (DataStoreCrawlingException) target;
-                    url = dce.getUrl();
-                    if (dce.aborted()) {
-                        running = false;
-                    }
-                } else {
-                    url = "line:" + i;
-                }
-                final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-                failureUrlService.store(dataConfig, errorName, url, target);
-            } catch (final Throwable t) {
-                logger.warn("Crawling Access Exception at : " + dataMap, t);
-                final String url = "line:" + i;
-                final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
-                failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
+    @SuppressWarnings("unchecked")
+    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback,
+            final Map<String, String> paramMap, final Map<String, String> scriptMap,
+            final Map<String, Object> defaultDataMap, final long readInterval, final String jiraHome,
+            final Map<String, Object> issue) {
+        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+        final Map<String, Object> dataMap = new HashMap<>();
+        dataMap.putAll(defaultDataMap);
 
-                if (readInterval > 0) {
-                    sleep(readInterval);
-                }
+        try {
+            final String key = (String) issue.get("key");
+            dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
+            dataMap.put(fessConfig.getIndexFieldTitle(), issue.getOrDefault("summary", ""));
 
+            final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+            String content = (String) fields.get("description");
+            final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
+            final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
+            for (Map<String, Object> comment : comments) {
+                content += "\n\n" + comment.get("body");
             }
+            dataMap.put(fessConfig.getIndexFieldContent(), content);
+            try {
+                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")
+                        .parse((String) fields.get("updated"));
+                dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
+            } catch (final ParseException e) {
+                logger.warn("Parse Exception", e);
+            }
+            callback.store(paramMap, dataMap);
+        } catch (final CrawlingAccessException e) {
+            logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
     }
 
