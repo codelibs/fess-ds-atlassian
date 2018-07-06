@@ -15,7 +15,11 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
-import org.codelibs.fess.ds.atlassian.JiraDataStore;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastadi.ContainerTestCase;
 
@@ -44,8 +48,44 @@ public class JiraDataStoreTest extends ContainerTestCase {
         super.tearDown();
     }
 
-    public void test_xxx() {
-        // TODO
-        assertTrue(true);
+    public void test_datastore() {
+
+        final DataConfig dataConfig = new DataConfig();
+        final IndexUpdateCallback callback = new IndexUpdateCallback() {
+
+            @Override
+            public void store(Map<String, String> paramMap, Map<String, Object> dataMap) {
+                System.out.println(dataMap);
+            }
+
+            @Override
+            public long getExecuteTime() {
+                return 0;
+            }
+
+            @Override
+            public long getDocumentSize() {
+                return 0;
+            }
+
+            @Override
+            public void commit() {
+            }
+
+        };
+        final Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("jira_home", "");
+        // paramMap.put("username", "");
+        // paramMap.put("password", "");
+        paramMap.put("consumer_key", "");
+        paramMap.put("private_key", "");
+        paramMap.put("secret", "");
+        paramMap.put("access_token", "");
+        final Map<String, String> scriptMap = new HashMap<>();
+        final Map<String, Object> defaultDataMap = new HashMap<>();
+
+        dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
+
     }
+
 }
