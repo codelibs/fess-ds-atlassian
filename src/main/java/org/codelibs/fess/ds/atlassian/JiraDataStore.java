@@ -49,6 +49,8 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String USERNAME_PARAM = "username";
     protected static final String PASSWORD_PARAM = "password";
 
+    protected static final int MAX_RESULTS = 50;
+
     protected String getName() {
         return "JiraDataStore";
     }
@@ -91,13 +93,20 @@ public class JiraDataStore extends AbstractDataStore {
                     accessToken.temporaryToken = temporaryToken;
                 }).build();
 
-        // get issues
-        List<Map<String, Object>> issues = client.search().fields("summary", "description", "comment", "updated")
-                .execute().getIssues();
+        for (int startAt = 0;; startAt += MAX_RESULTS) {
 
-        // store issues
-        for (Map<String, Object> issue : issues) {
-            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+            // get issues
+            List<Map<String, Object>> issues = client.search().startAt(startAt).maxResults(MAX_RESULTS)
+                    .fields("summary", "description", "comment", "updated").execute().getIssues();
+
+            if (issues.size() == 0)
+                break;
+
+            // store issues
+            for (Map<String, Object> issue : issues) {
+                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+            }
+
         }
 
     }
