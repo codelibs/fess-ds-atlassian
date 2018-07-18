@@ -101,7 +101,7 @@ public class SearchRequest extends JiraRequest {
     protected GenericData buildData(final String jql, final Integer startAt, final Integer maxResults,
             final Boolean validateQuery, final String[] fields, final String[] expand) {
         GenericData data = new GenericData();
-        if (jql != null) {
+        if (jql != null && !jql.isEmpty()) {
             data.put("jql", jql);
         }
         if (startAt != null) {
