@@ -23,10 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import com.google.api.client.http.apache.ApacheHttpTransport;
+
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.mylasta.direction.FessConfig;
@@ -37,10 +42,15 @@ import org.slf4j.LoggerFactory;
 public class ConfluenceDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
-    protected static final String CONFLUENCE_HOME_PARAM = "confluence_home";
+    protected static final String CONFLUENCE_HOME_PARAM = "confluence.home";
 
-    protected static final String USERNAME_PARAM = "username";
-    protected static final String PASSWORD_PARAM = "password";
+    protected static final String CONFLUENCE_CONSUMER_KEY_PARAM = "confluence.oauth.consumer_key";
+    protected static final String CONFLUENCE_PRIVATE_KEY_PARAM = "confluence.oauth.private_key";
+    protected static final String CONFLUENCE_SECRET_PARAM = "confluence.oauth.secret";
+    protected static final String CONFLUENCE_ACCESS_TOKEN_PARAM = "confluence.oauth.access_token";
+
+    protected static final String CONFLUENCE_USERNAME_PARAM = "confluence.basicauth.username";
+    protected static final String CONFLUENCE_PASSWORD_PARAM = "confluence.basicauth.password";
 
     protected static final int LIMIT = 25;
 
@@ -49,9 +59,8 @@ public class ConfluenceDataStore extends AbstractDataStore {
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback,
-            final Map<String, String> paramMap, final Map<String, String> scriptMap,
-            final Map<String, Object> defaultDataMap) {
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
 
         final String confluenceHome = getConfluenceHome(paramMap);
@@ -59,31 +68,47 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final String userName = getUserName(paramMap);
         final String password = getPassword(paramMap);
 
+        final String consumerKey = getConsumerKey(paramMap);
+        final String privateKey = getPrivateKey(paramMap);
+        final String verifier = getSecret(paramMap);
+        final String temporaryToken = getAccessToken(paramMap);
+
         final long readInterval = getReadInterval(paramMap);
 
+        boolean basic = false;
         if (confluenceHome.isEmpty()) {
             logger.warn("parameter \"" + CONFLUENCE_HOME_PARAM + "\" is required");
             return;
-        } else if (userName.isEmpty() || password.isEmpty()) {
-            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" are required");
+        } else if (!userName.isEmpty() && !password.isEmpty()) {
+            basic = true;
+        } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
+            logger.warn("parameter \"" + CONFLUENCE_USERNAME_PARAM + "\" and \"" + CONFLUENCE_PASSWORD_PARAM + "\" or \""
+                    + CONFLUENCE_CONSUMER_KEY_PARAM + "\", \"" + CONFLUENCE_PRIVATE_KEY_PARAM + "\", \"" + CONFLUENCE_SECRET_PARAM
+                    + "\" and \"" + CONFLUENCE_ACCESS_TOKEN_PARAM + "\" are required");
             return;
         }
 
-        final ConfluenceClient client = ConfluenceClient.builder().basicAuth(confluenceHome, userName, password)
-                .build();
+        final ConfluenceClient client =
+                basic ? new ConfluenceClient(AtlassianClient.builder().basicAuth(confluenceHome, userName, password).build())
+                        : new ConfluenceClient(AtlassianClient.builder().oAuthToken(confluenceHome, accessToken -> {
+                            accessToken.consumerKey = consumerKey;
+                            accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
+                            accessToken.transport = new ApacheHttpTransport();
+                            accessToken.verifier = verifier;
+                            accessToken.temporaryToken = temporaryToken;
+                        }).build());
 
         for (int start = 0;; start += LIMIT) {
             // get contents
-            List<Map<String, Object>> contents = client.getContents().start(start).limit(LIMIT)
-                    .expand("space", "version", "body.view").execute().getContents();
+            List<Map<String, Object>> contents =
+                    client.getContents().start(start).limit(LIMIT).expand("space", "version", "body.view").execute().getContents();
 
             if (contents.size() == 0)
                 break;
 
             // store contents
             for (Map<String, Object> content : contents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
-                        content);
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome, content);
             }
         }
 
@@ -97,18 +122,16 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
             // store blog contents
             for (Map<String, Object> content : blogContents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
-                        content);
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome, content);
             }
         }
 
     }
 
     @SuppressWarnings("unchecked")
-    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback,
-            final Map<String, String> paramMap, final Map<String, String> scriptMap,
-            final Map<String, Object> defaultDataMap, final long readInterval, final String confluenceHome,
-            final Map<String, Object> content) {
+    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final long readInterval,
+            final String confluenceHome, final Map<String, Object> content) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
@@ -151,15 +174,43 @@ public class ConfluenceDataStore extends AbstractDataStore {
     }
 
     protected String getUserName(Map<String, String> paramMap) {
-        if (paramMap.containsKey(USERNAME_PARAM)) {
-            return paramMap.get(USERNAME_PARAM);
+        if (paramMap.containsKey(CONFLUENCE_USERNAME_PARAM)) {
+            return paramMap.get(CONFLUENCE_USERNAME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPassword(Map<String, String> paramMap) {
-        if (paramMap.containsKey(PASSWORD_PARAM)) {
-            return paramMap.get(PASSWORD_PARAM);
+        if (paramMap.containsKey(CONFLUENCE_PASSWORD_PARAM)) {
+            return paramMap.get(CONFLUENCE_PASSWORD_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getConsumerKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONFLUENCE_CONSUMER_KEY_PARAM)) {
+            return paramMap.get(CONFLUENCE_CONSUMER_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPrivateKey(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONFLUENCE_PRIVATE_KEY_PARAM)) {
+            return paramMap.get(CONFLUENCE_PRIVATE_KEY_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getSecret(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONFLUENCE_SECRET_PARAM)) {
+            return paramMap.get(CONFLUENCE_SECRET_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getAccessToken(Map<String, String> paramMap) {
+        if (paramMap.containsKey(CONFLUENCE_ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(CONFLUENCE_ACCESS_TOKEN_PARAM);
         }
         return StringUtil.EMPTY;
     }

@@ -17,31 +17,26 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 
 import com.google.api.client.http.HttpRequestFactory;
 
+import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 
 public class JiraClient {
-    protected final String jiraHome;
 
-    protected final HttpRequestFactory httpRequestFactory;
+    private final AtlassianClient client;
 
-    protected JiraClient(final String jiraHome, final HttpRequestFactory httpRequestFactory) {
-        this.jiraHome = jiraHome;
-        this.httpRequestFactory = httpRequestFactory;
-    }
-
-    public static JiraClientBuilder builder() {
-        return new JiraClientBuilder();
+    public JiraClient(final AtlassianClient client) {
+        this.client = client;
     }
 
     public String jiraHome() {
-        return jiraHome;
+        return client.appHome();
     }
 
     public HttpRequestFactory request() {
-        return httpRequestFactory;
+        return client.request();
     }
 
     public GetProjectsRequest getProjects() {
@@ -59,4 +54,5 @@ public class JiraClient {
     public GetIssueRequest getIssue(String issueIdOrKey) {
         return new GetIssueRequest(this, issueIdOrKey);
     }
+
 }

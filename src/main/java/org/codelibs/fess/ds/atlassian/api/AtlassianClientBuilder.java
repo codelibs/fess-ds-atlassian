@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira;
+package org.codelibs.fess.ds.atlassian.api;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -28,28 +28,29 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 
-public class JiraClientBuilder {
-    private String jiraHome;
+public class AtlassianClientBuilder {
+
+    private String appHome;
     private OAuthGetAccessToken oAuthGetAccessToken;
     private BasicAuthentication basicAuthentication;
 
-    JiraClientBuilder() {
+    AtlassianClientBuilder() {
     }
 
-    public JiraClientBuilder oAuthToken(final String jiraHome, final OAuthTokenSupplier supplier) {
-        this.jiraHome = jiraHome;
-        oAuthGetAccessToken = new OAuthGetAccessToken(jiraHome);
+    public AtlassianClientBuilder oAuthToken(final String appHome, final OAuthTokenSupplier supplier) {
+        this.appHome = appHome;
+        oAuthGetAccessToken = new OAuthGetAccessToken(appHome);
         supplier.apply(oAuthGetAccessToken);
         return this;
     }
 
-    public JiraClientBuilder basicAuth(final String jiraHome, final String userName, final String password) {
-        this.jiraHome = jiraHome;
+    public AtlassianClientBuilder basicAuth(final String appHome, final String userName, final String password) {
+        this.appHome = appHome;
         basicAuthentication = new BasicAuthentication(userName, password);
         return this;
     }
 
-    public JiraClient build() {
+    public AtlassianClient build() {
         final HttpRequestFactory httpRequestFactory;
         if (basicAuthentication != null) {
             httpRequestFactory = new NetHttpTransport().createRequestFactory(basicAuthentication);
@@ -58,7 +59,7 @@ public class JiraClientBuilder {
         } else {
             httpRequestFactory = new NetHttpTransport().createRequestFactory();
         }
-        return new JiraClient(jiraHome, httpRequestFactory);
+        return new AtlassianClient(appHome, httpRequestFactory);
     }
 
     public interface OAuthTokenSupplier {
@@ -75,11 +76,11 @@ public class JiraClientBuilder {
         }
     }
 
-    private static PrivateKey getPrivateKey(String privateKey)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static PrivateKey getPrivateKey(String privateKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] privateBytes = Base64.decodeBase64(privateKey);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateBytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return kf.generatePrivate(keySpec);
     }
+
 }

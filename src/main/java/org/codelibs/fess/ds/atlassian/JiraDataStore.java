@@ -27,8 +27,9 @@ import com.google.api.client.http.apache.ApacheHttpTransport;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClientBuilder;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.mylasta.direction.FessConfig;
@@ -39,15 +40,15 @@ import org.slf4j.LoggerFactory;
 public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
-    protected static final String JIRA_HOME_PARAM = "jira_home";
+    protected static final String JIRA_HOME_PARAM = "jira.home";
 
-    protected static final String CONSUMER_KEY_PARAM = "consumer_key";
-    protected static final String PRIVATE_KEY_PARAM = "private_key";
-    protected static final String SECRET_PARAM = "secret";
-    protected static final String ACCESS_TOKEN_PARAM = "access_token";
+    protected static final String JIRA_CONSUMER_KEY_PARAM = "jira.oauth.consumer_key";
+    protected static final String JIRA_PRIVATE_KEY_PARAM = "jira.oauth.private_key";
+    protected static final String JIRA_SECRET_PARAM = "jira.oauth.secret";
+    protected static final String JIRA_ACCESS_TOKEN_PARAM = "jira.oauth.access_token";
 
-    protected static final String USERNAME_PARAM = "username";
-    protected static final String PASSWORD_PARAM = "password";
+    protected static final String JIRA_USERNAME_PARAM = "jira.basicauth.username";
+    protected static final String JIRA_PASSWORD_PARAM = "jira.basicauth.password";
 
     protected static final String JIRA_JQL_PARAM = "jira.jql";
 
@@ -58,19 +59,20 @@ public class JiraDataStore extends AbstractDataStore {
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback,
-            final Map<String, String> paramMap, final Map<String, String> scriptMap,
-            final Map<String, Object> defaultDataMap) {
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
+
+        final String jiraHome = getJiraHome(paramMap);
 
         final String userName = getUserName(paramMap);
         final String password = getPassword(paramMap);
 
-        final String jiraHome = getJiraHome(paramMap);
         final String consumerKey = getConsumerKey(paramMap);
         final String privateKey = getPrivateKey(paramMap);
         final String verifier = getSecret(paramMap);
         final String temporaryToken = getAccessToken(paramMap);
+
         final long readInterval = getReadInterval(paramMap);
 
         final String jql = getJql(paramMap);
@@ -82,20 +84,20 @@ public class JiraDataStore extends AbstractDataStore {
         } else if (!userName.isEmpty() && !password.isEmpty()) {
             basic = true;
         } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
-            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM
-                    + "\", \"" + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM
+            logger.warn("parameter \"" + JIRA_USERNAME_PARAM + "\" and \"" + JIRA_PASSWORD_PARAM + "\" or \"" + JIRA_CONSUMER_KEY_PARAM
+                    + "\", \"" + JIRA_PRIVATE_KEY_PARAM + "\", \"" + JIRA_SECRET_PARAM + "\" and \"" + JIRA_ACCESS_TOKEN_PARAM
                     + "\" are required");
             return;
         }
 
-        final JiraClient client = basic ? JiraClient.builder().basicAuth(jiraHome, userName, password).build()
-                : JiraClient.builder().oAuthToken(jiraHome, accessToken -> {
+        final JiraClient client = basic ? new JiraClient(AtlassianClient.builder().basicAuth(jiraHome, userName, password).build())
+                : new JiraClient(AtlassianClient.builder().oAuthToken(jiraHome, accessToken -> {
                     accessToken.consumerKey = consumerKey;
-                    accessToken.signer = JiraClientBuilder.getOAuthRsaSigner(privateKey);
+                    accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
                     accessToken.transport = new ApacheHttpTransport();
                     accessToken.verifier = verifier;
                     accessToken.temporaryToken = temporaryToken;
-                }).build();
+                }).build());
 
         for (int startAt = 0;; startAt += MAX_RESULTS) {
 
@@ -116,9 +118,8 @@ public class JiraDataStore extends AbstractDataStore {
     }
 
     @SuppressWarnings("unchecked")
-    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback,
-            final Map<String, String> paramMap, final Map<String, String> scriptMap,
-            final Map<String, Object> defaultDataMap, final long readInterval, final String jiraHome,
+    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final long readInterval, final String jiraHome,
             final Map<String, Object> issue) {
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
         final Map<String, Object> dataMap = new HashMap<>();
@@ -137,8 +138,7 @@ public class JiraDataStore extends AbstractDataStore {
             }
             dataMap.put(fessConfig.getIndexFieldContent(), content);
             try {
-                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
-                        .parse((String) fields.get("updated"));
+                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse((String) fields.get("updated"));
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
             } catch (final ParseException e) {
                 logger.warn("Parse Exception", e);
@@ -149,20 +149,6 @@ public class JiraDataStore extends AbstractDataStore {
         }
     }
 
-    protected String getUserName(Map<String, String> paramMap) {
-        if (paramMap.containsKey(USERNAME_PARAM)) {
-            return paramMap.get(USERNAME_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getPassword(Map<String, String> paramMap) {
-        if (paramMap.containsKey(PASSWORD_PARAM)) {
-            return paramMap.get(PASSWORD_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
     protected String getJiraHome(Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_HOME_PARAM)) {
             return paramMap.get(JIRA_HOME_PARAM);
@@ -170,30 +156,44 @@ public class JiraDataStore extends AbstractDataStore {
         return StringUtil.EMPTY;
     }
 
+    protected String getUserName(Map<String, String> paramMap) {
+        if (paramMap.containsKey(JIRA_USERNAME_PARAM)) {
+            return paramMap.get(JIRA_USERNAME_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getPassword(Map<String, String> paramMap) {
+        if (paramMap.containsKey(JIRA_PASSWORD_PARAM)) {
+            return paramMap.get(JIRA_PASSWORD_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
     protected String getConsumerKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
-            return paramMap.get(CONSUMER_KEY_PARAM);
+        if (paramMap.containsKey(JIRA_CONSUMER_KEY_PARAM)) {
+            return paramMap.get(JIRA_CONSUMER_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPrivateKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
-            return paramMap.get(PRIVATE_KEY_PARAM);
+        if (paramMap.containsKey(JIRA_PRIVATE_KEY_PARAM)) {
+            return paramMap.get(JIRA_PRIVATE_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getSecret(Map<String, String> paramMap) {
-        if (paramMap.containsKey(SECRET_PARAM)) {
-            return paramMap.get(SECRET_PARAM);
+        if (paramMap.containsKey(JIRA_SECRET_PARAM)) {
+            return paramMap.get(JIRA_SECRET_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getAccessToken(Map<String, String> paramMap) {
-        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
-            return paramMap.get(ACCESS_TOKEN_PARAM);
+        if (paramMap.containsKey(JIRA_ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(JIRA_ACCESS_TOKEN_PARAM);
         }
         return StringUtil.EMPTY;
     }

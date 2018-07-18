@@ -17,31 +17,26 @@ package org.codelibs.fess.ds.atlassian.api.confluence;
 
 import com.google.api.client.http.HttpRequestFactory;
 
+import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 
 public class ConfluenceClient {
-    protected final String confluenceHome;
 
-    protected final HttpRequestFactory httpRequestFactory;
+    private final AtlassianClient client;
 
-    protected ConfluenceClient(final String confluenceHome, final HttpRequestFactory httpRequestFactory) {
-        this.confluenceHome = confluenceHome;
-        this.httpRequestFactory = httpRequestFactory;
-    }
-
-    public static ConfluenceClientBuilder builder() {
-        return new ConfluenceClientBuilder();
+    public ConfluenceClient(final AtlassianClient client) {
+        this.client = client;
     }
 
     public String confluenceHome() {
-        return confluenceHome;
+        return client.appHome();
     }
 
     public HttpRequestFactory request() {
-        return httpRequestFactory;
+        return client.request();
     }
 
     public GetSpacesRequest getSpaces() {
@@ -59,4 +54,5 @@ public class ConfluenceClient {
     public GetContentRequest getContent(String contentId) {
         return new GetContentRequest(this, contentId);
     }
+
 }
