@@ -130,7 +130,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
             Map<String, Object> version = (Map<String, Object>) content.get("version");
             try {
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
                 format.setTimeZone(TimeZone.getTimeZone("UTC"));
                 Date lastModified = format.parse((String) version.get("when"));
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);

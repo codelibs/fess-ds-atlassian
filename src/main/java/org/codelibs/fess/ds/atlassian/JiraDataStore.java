@@ -137,7 +137,7 @@ public class JiraDataStore extends AbstractDataStore {
             }
             dataMap.put(fessConfig.getIndexFieldContent(), content);
             try {
-                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")
+                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
                         .parse((String) fields.get("updated"));
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
             } catch (final ParseException e) {
