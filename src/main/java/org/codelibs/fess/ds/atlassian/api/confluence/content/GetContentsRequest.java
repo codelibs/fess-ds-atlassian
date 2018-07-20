@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -25,7 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
@@ -41,22 +44,28 @@ public class GetContentsRequest extends ConfluenceRequest {
 
     @Override
     public GetContentsResponse execute() {
+        String result = "";
+        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), type, spaceKey, title, status, postingDay, expand, start, limit);
         try {
-            final HttpRequest request = confluenceClient.request()
-                    .buildGetRequest(buildUrl(confluenceClient.confluenceHome(), type, spaceKey, title, status,
-                            postingDay, expand, start, limit));
+            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
             final HttpResponse response = request.execute();
-            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            final ObjectMapper mapper = new ObjectMapper();
-            final Map<String, Object> map = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> contents = (List<Map<String, Object>>) map.get("results");
-            return new GetContentsResponse(contents);
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new AtlassianDataStoreException("You don't have permission to view the content.", e);
+            } else {
+                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
+        return fromJson(result);
     }
 
     public GetContentsRequest type(String type) {
@@ -99,9 +108,23 @@ public class GetContentsRequest extends ConfluenceRequest {
         return this;
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String type, final String spaceKey, final String title,
-            final String status, final String postingDay, final String[] expand, final Integer start,
-            final Integer limit) {
+    public static GetContentsResponse fromJson(String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final List<Map<String, Object>> contents = new ArrayList<>();
+        try {
+            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
+            contents.addAll(results);
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
+        }
+        return new GetContentsResponse(contents);
+    }
+
+    protected GenericUrl buildUrl(final String jiraHome, final String type, final String spaceKey, final String title, final String status,
+            final String postingDay, final String[] expand, final Integer start, final Integer limit) {
         final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/content");
         if (type != null) {
             url.put("type", type);

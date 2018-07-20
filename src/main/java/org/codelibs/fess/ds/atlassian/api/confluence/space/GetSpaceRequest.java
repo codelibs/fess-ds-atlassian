@@ -24,7 +24,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
@@ -40,24 +42,47 @@ public class GetSpaceRequest extends ConfluenceRequest {
 
     @Override
     public GetSpaceResponse execute() {
+        String result = "";
+        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), spaceKey, expand);
         try {
-            final HttpRequest request = confluenceClient.request()
-                    .buildGetRequest(buildUrl(confluenceClient.confluenceHome(), spaceKey, expand));
+            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
             final HttpResponse response = request.execute();
-            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            final ObjectMapper mapper = new ObjectMapper();
-            final Map<String, Object> space = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
-            });
-            return new GetSpaceResponse(space);
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new AtlassianDataStoreException(
+                        "There is no space with the given key, or if the calling user does not have permission to view the space: "
+                                + spaceKey,
+                        e);
+            } else {
+                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
+        return fromJson(result);
     }
 
     public GetSpaceRequest expand(String... expand) {
         this.expand = expand;
         return this;
+    }
+
+    public static GetSpaceResponse fromJson(String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            final Map<String, Object> space = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
+            return new GetSpaceResponse(space);
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse space from: " + json, e);
+        }
     }
 
     protected GenericUrl buildUrl(final String jiraHome, final String spaceKey, final String[] expand) {

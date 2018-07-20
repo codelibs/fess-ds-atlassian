@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -25,7 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
@@ -41,21 +44,24 @@ public class GetSpacesRequest extends ConfluenceRequest {
 
     @Override
     public GetSpacesResponse execute() {
+        String result = "";
+        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), spaceKey, type, status, label, favourite, expand, start, limit);
         try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(buildUrl(
-                    confluenceClient.confluenceHome(), spaceKey, type, status, label, favourite, expand, start, limit));
+            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
             final HttpResponse response = request.execute();
-            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            final ObjectMapper mapper = new ObjectMapper();
-            final Map<String, Object> map = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> spaces = (List<Map<String, Object>>) map.get("results");
-            return new GetSpacesResponse(spaces);
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
+        return fromJson(result);
     }
 
     public GetSpacesRequest spaceKey(String spaceKey) {
@@ -98,9 +104,23 @@ public class GetSpacesRequest extends ConfluenceRequest {
         return this;
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String type,
-            final String status, final String label, final String favourite, final String[] expand, final Integer start,
-            final Integer limit) {
+    public static GetSpacesResponse fromJson(String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final List<Map<String, Object>> spaces = new ArrayList<>();
+        try {
+            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
+            spaces.addAll(results);
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse spaces from: " + json, e);
+        }
+        return new GetSpacesResponse(spaces);
+    }
+
+    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String type, final String status,
+            final String label, final String favourite, final String[] expand, final Integer start, final Integer limit) {
         final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space");
         if (spaceKey != null) {
             url.put("spaceKey", spaceKey);

@@ -29,9 +29,13 @@ import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
+import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastadi.ContainerTestCase;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 
 public class AtlassianClientTest extends ContainerTestCase {
 
@@ -106,6 +110,44 @@ public class AtlassianClientTest extends ContainerTestCase {
     }
 
     @SuppressWarnings("unchecked")
+    public void test_search_from_json() throws Exception {
+        final String SUMMARY = "test_summary";
+        final String DESCRIPTION = "test_description";
+        final String COMMENT = "test_comment";
+        final String UPDATED = "2018-07-01T10:20:30.400+0000";
+
+        final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
+                .startObject().startArray("issues").startObject() //
+                .startObject("fields") //
+                .field("summary", SUMMARY) //
+                .field("description", DESCRIPTION) //
+                .startObject("comment") //
+                .startArray("comments").startObject() //
+                .field("body", COMMENT) //
+                .endObject().endArray() //
+                .endObject() //
+                .field("updated", UPDATED) //
+                .endObject() //
+                .endObject().endArray().endObject();
+        final String json = BytesReference.bytes(mappingBuilder).utf8ToString();
+        final SearchResponse response = SearchRequest.fromJson(json);
+        Map<String, Object> issue = response.getIssues().get(0);
+        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+
+        assertEquals(SUMMARY, fields.get("summary"));
+
+        assertEquals(DESCRIPTION, fields.get("description"));
+
+        List<Map<String, Object>> comments = (List<Map<String, Object>>) ((Map<String, Object>) fields.get("comment"))
+                .get("comments");
+        Map<String, Object> comment = comments.get(0);
+        String body = ((String) comment.get("body")).split("\n")[0];
+        assertEquals(COMMENT, body);
+
+        assertEquals(UPDATED, fields.get("updated"));
+    }
+
+    @SuppressWarnings("unchecked")
     public void test_get_contents() throws Exception {
         System.out.println("-------- Test GetContents --------");
         final GetContentsResponse response = confluenceClient.getContents().expand("space", "version", "body.view")
@@ -136,4 +178,5 @@ public class AtlassianClientTest extends ContainerTestCase {
         }
         System.out.println("-------- Test GetSpaces --------");
     }
+
 }
