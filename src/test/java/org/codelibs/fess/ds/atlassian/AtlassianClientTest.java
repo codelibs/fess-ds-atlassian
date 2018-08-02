@@ -99,7 +99,7 @@ public class AtlassianClientTest extends ContainerTestCase {
                 }
             }
             System.out.println("updated: "
-                    + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ").parse((String) fields.get("updated")));
+                    + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse((String) fields.get("updated")));
             System.out.println("----");
         }
         System.out.println("-------- Test Search --------");
@@ -115,7 +115,7 @@ public class AtlassianClientTest extends ContainerTestCase {
             System.out.println("type: " + content.get("type"));
             System.out.println("title: " + content.get("title"));
             Map<String, Object> version = (Map<String, Object>) content.get("version");
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             Date date = format.parse((String) version.get("when"));
             System.out.println("lastUpdated: " + date);

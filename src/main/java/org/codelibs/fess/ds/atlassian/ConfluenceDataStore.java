@@ -42,6 +42,8 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected static final String USERNAME_PARAM = "username";
     protected static final String PASSWORD_PARAM = "password";
 
+    protected static final int LIMIT = 25;
+
     protected String getName() {
         return "ConfluenceDataStore";
     }
@@ -70,24 +72,34 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final ConfluenceClient client = ConfluenceClient.builder().basicAuth(confluenceHome, userName, password)
                 .build();
 
-        // get contents
-        List<Map<String, Object>> contents = client.getContents().expand("space", "version", "body.view").execute()
-                .getContents();
+        for (int start = 0;; start += LIMIT) {
+            // get contents
+            List<Map<String, Object>> contents = client.getContents().start(start).limit(LIMIT)
+                    .expand("space", "version", "body.view").execute().getContents();
 
-        // store contents
-        for (Map<String, Object> content : contents) {
-            processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
-                    content);
+            if (contents.size() == 0)
+                break;
+
+            // store contents
+            for (Map<String, Object> content : contents) {
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
+                        content);
+            }
         }
 
-        // get blog contents
-        List<Map<String, Object>> blogContents = client.getContents().type("blogpost")
-                .expand("space", "version", "body.view").execute().getContents();
+        for (int start = 0;; start += LIMIT) {
+            // get blog contents
+            List<Map<String, Object>> blogContents = client.getContents().start(start).limit(LIMIT).type("blogpost")
+                    .expand("space", "version", "body.view").execute().getContents();
 
-        // store blog contents
-        for (Map<String, Object> content : blogContents) {
-            processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
-                    content);
+            if (blogContents.size() == 0)
+                break;
+
+            // store blog contents
+            for (Map<String, Object> content : blogContents) {
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome,
+                        content);
+            }
         }
 
     }
@@ -118,7 +130,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
             Map<String, Object> version = (Map<String, Object>) content.get("version");
             try {
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
                 format.setTimeZone(TimeZone.getTimeZone("UTC"));
                 Date lastModified = format.parse((String) version.get("when"));
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);

@@ -49,6 +49,10 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String USERNAME_PARAM = "username";
     protected static final String PASSWORD_PARAM = "password";
 
+    protected static final String JIRA_JQL_PARAM = "jira.jql";
+
+    protected static final int MAX_RESULTS = 50;
+
     protected String getName() {
         return "JiraDataStore";
     }
@@ -68,6 +72,8 @@ public class JiraDataStore extends AbstractDataStore {
         final String verifier = getSecret(paramMap);
         final String temporaryToken = getAccessToken(paramMap);
         final long readInterval = getReadInterval(paramMap);
+
+        final String jql = getJql(paramMap);
 
         boolean basic = false;
         if (jiraHome.isEmpty()) {
@@ -91,13 +97,20 @@ public class JiraDataStore extends AbstractDataStore {
                     accessToken.temporaryToken = temporaryToken;
                 }).build();
 
-        // get issues
-        List<Map<String, Object>> issues = client.search().fields("summary", "description", "comment", "updated")
-                .execute().getIssues();
+        for (int startAt = 0;; startAt += MAX_RESULTS) {
 
-        // store issues
-        for (Map<String, Object> issue : issues) {
-            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+            // get issues
+            List<Map<String, Object>> issues = client.search().jql(jql).startAt(startAt).maxResults(MAX_RESULTS)
+                    .fields("summary", "description", "comment", "updated").execute().getIssues();
+
+            if (issues.size() == 0)
+                break;
+
+            // store issues
+            for (Map<String, Object> issue : issues) {
+                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+            }
+
         }
 
     }
@@ -124,7 +137,7 @@ public class JiraDataStore extends AbstractDataStore {
             }
             dataMap.put(fessConfig.getIndexFieldContent(), content);
             try {
-                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")
+                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
                         .parse((String) fields.get("updated"));
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
             } catch (final ParseException e) {
@@ -181,6 +194,13 @@ public class JiraDataStore extends AbstractDataStore {
     protected String getAccessToken(Map<String, String> paramMap) {
         if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
             return paramMap.get(ACCESS_TOKEN_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getJql(Map<String, String> paramMap) {
+        if (paramMap.containsKey(JIRA_JQL_PARAM)) {
+            return paramMap.get(JIRA_JQL_PARAM);
         }
         return StringUtil.EMPTY;
     }
