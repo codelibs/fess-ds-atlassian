@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import com.google.api.client.http.apache.ApacheHttpTransport;
 
@@ -50,9 +51,9 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String JIRA_USERNAME_PARAM = "jira.basicauth.username";
     protected static final String JIRA_PASSWORD_PARAM = "jira.basicauth.password";
 
-    protected static final String JIRA_JQL_PARAM = "jira.jql";
+    protected static final String JIRA_JQL_PARAM = "jira.issue.jql";
 
-    protected static final int MAX_RESULTS = 50;
+    protected static final int ISSUE_MAX_RESULTS = 50;
 
     protected String getName() {
         return "JiraDataStore";
@@ -99,106 +100,135 @@ public class JiraDataStore extends AbstractDataStore {
                     accessToken.temporaryToken = temporaryToken;
                 }).build());
 
-        for (int startAt = 0;; startAt += MAX_RESULTS) {
+        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
 
             // get issues
-            List<Map<String, Object>> issues = client.search().jql(jql).startAt(startAt).maxResults(MAX_RESULTS)
+            final List<Map<String, Object>> issues = client.search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
                     .fields("summary", "description", "comment", "updated").execute().getIssues();
 
-            if (issues.size() == 0)
-                break;
-
             // store issues
-            for (Map<String, Object> issue : issues) {
-                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, jiraHome, issue);
+            for (final Map<String, Object> issue : issues) {
+                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, jiraHome, issue);
             }
+
+            if (issues.size() < ISSUE_MAX_RESULTS)
+                break;
 
         }
 
     }
 
-    @SuppressWarnings("unchecked")
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final long readInterval, final String jiraHome,
-            final Map<String, Object> issue) {
-        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
+            final long readInterval, final String jiraHome, final Map<String, Object> issue) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
 
         try {
             final String key = (String) issue.get("key");
             dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
-            final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-            dataMap.put(fessConfig.getIndexFieldTitle(), fields.getOrDefault("summary", ""));
-            String content = (String) fields.get("description");
-            final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
-            final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
-            for (Map<String, Object> comment : comments) {
-                content += "\n\n" + comment.get("body");
-            }
+            dataMap.put(fessConfig.getIndexFieldTitle(), getIssueTitle(issue));
+            final String content = getIssueDescription(issue) + getIssueComments(issue);
             dataMap.put(fessConfig.getIndexFieldContent(), content);
-            try {
-                Date lastModified = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse((String) fields.get("updated"));
+            final Date lastModified = getIssueLastModified(issue);
+            if (lastModified != null)
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
-            } catch (final ParseException e) {
-                logger.warn("Parse Exception", e);
-            }
+
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
     }
 
-    protected String getJiraHome(Map<String, String> paramMap) {
+    protected String getIssueTitle(final Map<String, Object> issue) {
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+        return (String) fields.getOrDefault("summary", "");
+    }
+
+    protected String getIssueDescription(final Map<String, Object> issue) {
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+        return (String) fields.getOrDefault("description", "");
+    }
+
+    @SuppressWarnings("unchecked")
+    protected String getIssueComments(final Map<String, Object> issue) {
+        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+        final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
+        final StringBuilder sb = new StringBuilder();
+        final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
+        for (Map<String, Object> comment : comments) {
+            sb.append("\n\n");
+            sb.append(comment.get("body"));
+        }
+        return sb.toString();
+    }
+
+    protected Date getIssueLastModified(final Map<String, Object> issue) {
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+        final String updated = (String) fields.get("updated");
+        try {
+            final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+            format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return format.parse(updated);
+        } catch (final ParseException e) {
+            logger.warn("Fail to parse: " + updated, e);
+        }
+        return null;
+    }
+
+    protected String getJiraHome(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_HOME_PARAM)) {
             return paramMap.get(JIRA_HOME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getUserName(Map<String, String> paramMap) {
+    protected String getUserName(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_USERNAME_PARAM)) {
             return paramMap.get(JIRA_USERNAME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getPassword(Map<String, String> paramMap) {
+    protected String getPassword(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_PASSWORD_PARAM)) {
             return paramMap.get(JIRA_PASSWORD_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getConsumerKey(Map<String, String> paramMap) {
+    protected String getConsumerKey(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_CONSUMER_KEY_PARAM)) {
             return paramMap.get(JIRA_CONSUMER_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getPrivateKey(Map<String, String> paramMap) {
+    protected String getPrivateKey(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_PRIVATE_KEY_PARAM)) {
             return paramMap.get(JIRA_PRIVATE_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getSecret(Map<String, String> paramMap) {
+    protected String getSecret(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_SECRET_PARAM)) {
             return paramMap.get(JIRA_SECRET_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getAccessToken(Map<String, String> paramMap) {
+    protected String getAccessToken(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_ACCESS_TOKEN_PARAM)) {
             return paramMap.get(JIRA_ACCESS_TOKEN_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getJql(Map<String, String> paramMap) {
+    protected String getJql(final Map<String, String> paramMap) {
         if (paramMap.containsKey(JIRA_JQL_PARAM)) {
             return paramMap.get(JIRA_JQL_PARAM);
         }

@@ -48,11 +48,14 @@ public class JiraDataStoreTest extends ContainerTestCase {
         super.tearDown();
     }
 
-    public void test_datastore() {
+    public void test_storeData() {
+        // doStoreDataTest();
+    }
+
+    protected void doStoreDataTest() {
 
         final DataConfig dataConfig = new DataConfig();
         final IndexUpdateCallback callback = new IndexUpdateCallback() {
-
             @Override
             public void store(Map<String, String> paramMap, Map<String, Object> dataMap) {
                 System.out.println(dataMap);
@@ -71,16 +74,14 @@ public class JiraDataStoreTest extends ContainerTestCase {
             @Override
             public void commit() {
             }
-
         };
         final Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("jira_home", "");
-        // paramMap.put("username", "");
-        // paramMap.put("password", "");
-        paramMap.put("consumer_key", "");
-        paramMap.put("private_key", "");
-        paramMap.put("secret", "");
-        paramMap.put("access_token", "");
+        paramMap.put("jira.home", "");
+        paramMap.put("jira.oauth.consumer_key", "");
+        paramMap.put("jira.oauth.private_key", "");
+        paramMap.put("jira.oauth.secret", "");
+        paramMap.put("jira.oauth.access_token", "");
+        // paramMap.put("jira.issue.jql", "");
         final Map<String, String> scriptMap = new HashMap<>();
         final Map<String, Object> defaultDataMap = new HashMap<>();
 
