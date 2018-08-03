@@ -112,7 +112,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
             // store contents
             for (final Map<String, Object> content : contents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, confluenceHome,
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
             }
 
@@ -127,7 +127,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
             // store blog contents
             for (final Map<String, Object> content : blogContents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, confluenceHome,
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
             }
 
@@ -139,13 +139,13 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final long readInterval, final String confluenceHome, final Map<String, Object> content) {
+            final ConfluenceClient client, final long readInterval, final String confluenceHome, final Map<String, Object> content) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
 
         try {
             dataMap.put(fessConfig.getIndexFieldTitle(), getContentTitle(content));
-            dataMap.put(fessConfig.getIndexFieldContent(), getContentBody(content));
+            dataMap.put(fessConfig.getIndexFieldContent(), getContentBody(content) + getContentComments(content, client));
             dataMap.put(fessConfig.getIndexFieldUrl(), getContentViewUrl(content, confluenceHome));
             final Date lastModified = getContentLastModified(content);
             if (lastModified != null)
@@ -167,6 +167,29 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final Map<String, Object> view = (Map<String, Object>) body.get("view");
         final String value = (String) view.get("value");
         return getExtractedText(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected String getContentComments(final Map<String, Object> content, final ConfluenceClient client) {
+        final StringBuilder sb = new StringBuilder();
+        final String id = (String) content.get("id");
+
+        for (int start = 0;; start += CONTENT_LIMIT) {
+            final List<Map<String, Object>> comments =
+                    client.getCommentsOfContent(id).start(start).limit(CONTENT_LIMIT).expand("body.view").execute().getComments();
+
+            for (final Map<String, Object> comment : comments) {
+                final Map<String, Object> body = (Map<String, Object>) comment.get("body");
+                final Map<String, Object> view = (Map<String, Object>) body.get("view");
+                final String value = (String) view.get("value");
+                sb.append("\n\n");
+                sb.append(getExtractedText(value));
+            }
+
+            if (comments.size() < CONTENT_LIMIT)
+                break;
+        }
+        return sb.toString();
     }
 
     protected String getExtractedText(final String text) {
