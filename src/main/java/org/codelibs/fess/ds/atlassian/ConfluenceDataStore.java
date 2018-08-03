@@ -15,6 +15,8 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,11 +29,12 @@ import com.google.api.client.http.apache.ApacheHttpTransport;
 
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
+import org.codelibs.fess.crawler.extractor.Extractor;
+import org.codelibs.fess.crawler.extractor.impl.HtmlExtractor;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.mylasta.direction.FessConfig;
@@ -52,7 +55,9 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected static final String CONFLUENCE_USERNAME_PARAM = "confluence.basicauth.username";
     protected static final String CONFLUENCE_PASSWORD_PARAM = "confluence.basicauth.password";
 
-    protected static final int LIMIT = 25;
+    protected static final int CONTENT_LIMIT = 25;
+
+    protected Extractor extractor;
 
     protected String getName() {
         return "ConfluenceDataStore";
@@ -98,72 +103,98 @@ public class ConfluenceDataStore extends AbstractDataStore {
                             accessToken.temporaryToken = temporaryToken;
                         }).build());
 
-        for (int start = 0;; start += LIMIT) {
-            // get contents
-            List<Map<String, Object>> contents =
-                    client.getContents().start(start).limit(LIMIT).expand("space", "version", "body.view").execute().getContents();
+        extractor = new HtmlExtractor();
 
-            if (contents.size() == 0)
-                break;
+        for (int start = 0;; start += CONTENT_LIMIT) {
+            // get contents
+            final List<Map<String, Object>> contents =
+                    client.getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute().getContents();
 
             // store contents
-            for (Map<String, Object> content : contents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome, content);
+            for (final Map<String, Object> content : contents) {
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, confluenceHome,
+                        content);
             }
+
+            if (contents.size() < CONTENT_LIMIT)
+                break;
         }
 
-        for (int start = 0;; start += LIMIT) {
+        for (int start = 0;; start += CONTENT_LIMIT) {
             // get blog contents
-            List<Map<String, Object>> blogContents = client.getContents().start(start).limit(LIMIT).type("blogpost")
+            final List<Map<String, Object>> blogContents = client.getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
                     .expand("space", "version", "body.view").execute().getContents();
 
-            if (blogContents.size() == 0)
-                break;
-
             // store blog contents
-            for (Map<String, Object> content : blogContents) {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, readInterval, confluenceHome, content);
+            for (final Map<String, Object> content : blogContents) {
+                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, confluenceHome,
+                        content);
             }
+
+            if (blogContents.size() < CONTENT_LIMIT)
+                break;
         }
 
     }
 
-    @SuppressWarnings("unchecked")
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final long readInterval,
-            final String confluenceHome, final Map<String, Object> content) {
-        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
+            final long readInterval, final String confluenceHome, final Map<String, Object> content) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
 
         try {
-            final String id = (String) content.get("id");
-            final String type = (String) content.get("type");
-
-            final Map<String, Object> spaceObj = (Map<String, Object>) content.get("space");
-            final String spaceKey = (String) spaceObj.get("key");
-
-            dataMap.put(fessConfig.getIndexFieldUrl(),
-                    confluenceHome + "/spaces/" + spaceKey + "/" + (type == "blogspot" ? "blog" : "page") + "/" + id);
-            dataMap.put(fessConfig.getIndexFieldTitle(), content.getOrDefault("title", ""));
-
-            final Map<String, Object> bodyObj = (Map<String, Object>) content.get("body");
-            String body = (String) ((Map<String, Object>) bodyObj.get("view")).get("value");
-            dataMap.put(fessConfig.getIndexFieldContent(), body);
-
-            Map<String, Object> version = (Map<String, Object>) content.get("version");
-            try {
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
-                format.setTimeZone(TimeZone.getTimeZone("UTC"));
-                Date lastModified = format.parse((String) version.get("when"));
+            dataMap.put(fessConfig.getIndexFieldTitle(), getContentTitle(content));
+            dataMap.put(fessConfig.getIndexFieldContent(), getContentBody(content));
+            dataMap.put(fessConfig.getIndexFieldUrl(), getContentViewUrl(content, confluenceHome));
+            final Date lastModified = getContentLastModified(content);
+            if (lastModified != null)
                 dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
-            } catch (final ParseException e) {
-                logger.warn("Parse Exception", e);
-            }
+
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
+    }
+
+    protected String getContentTitle(final Map<String, Object> content) {
+        return (String) content.getOrDefault("title", "");
+    }
+
+    @SuppressWarnings("unchecked")
+    protected String getContentBody(final Map<String, Object> content) {
+        final Map<String, Object> body = (Map<String, Object>) content.get("body");
+        final Map<String, Object> view = (Map<String, Object>) body.get("view");
+        final String value = (String) view.get("value");
+        return getExtractedText(value);
+    }
+
+    protected String getExtractedText(final String text) {
+        final InputStream in = new ByteArrayInputStream(text.getBytes());
+        return extractor.getText(in, null).getContent();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Date getContentLastModified(final Map<String, Object> content) {
+        final Map<String, Object> version = (Map<String, Object>) content.get("version");
+        final String when = (String) version.get("when");
+        try {
+            final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+            format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return format.parse(when);
+        } catch (final ParseException e) {
+            logger.warn("Fail to parse: " + when, e);
+        }
+        return null;
+    }
+
+    protected String getContentViewUrl(final Map<String, Object> content, final String confluenceHome) {
+        final String id = (String) content.get("id");
+        final String type = (String) content.get("type");
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> space = (Map<String, Object>) content.get("space");
+        final String spaceKey = (String) space.get("key");
+        return confluenceHome + "/spaces/" + spaceKey + "/" + (type.equals("blogpost") ? "blog" : "page") + "/" + id;
     }
 
     protected String getConfluenceHome(Map<String, String> paramMap) {
