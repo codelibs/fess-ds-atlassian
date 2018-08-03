@@ -123,9 +123,9 @@ public class GetContentsRequest extends ConfluenceRequest {
         return new GetContentsResponse(contents);
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String type, final String spaceKey, final String title, final String status,
+    protected GenericUrl buildUrl(final String confluenceHome, final String type, final String spaceKey, final String title, final String status,
             final String postingDay, final String[] expand, final Integer start, final Integer limit) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/content");
+        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content");
         if (type != null) {
             url.put("type", type);
         }
