@@ -104,11 +104,11 @@ public class JiraDataStore extends AbstractDataStore {
 
             // get issues
             final List<Map<String, Object>> issues = client.search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
-                    .fields("summary", "description", "comment", "updated").execute().getIssues();
+                    .fields("summary", "description", "updated").execute().getIssues();
 
             // store issues
             for (final Map<String, Object> issue : issues) {
-                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, readInterval, jiraHome, issue);
+                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, jiraHome, issue);
             }
 
             if (issues.size() < ISSUE_MAX_RESULTS)
@@ -120,7 +120,7 @@ public class JiraDataStore extends AbstractDataStore {
 
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final long readInterval, final String jiraHome, final Map<String, Object> issue) {
+            final JiraClient client, final long readInterval, final String jiraHome, final Map<String, Object> issue) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
 
@@ -128,7 +128,7 @@ public class JiraDataStore extends AbstractDataStore {
             final String key = (String) issue.get("key");
             dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
             dataMap.put(fessConfig.getIndexFieldTitle(), getIssueTitle(issue));
-            final String content = getIssueDescription(issue) + getIssueComments(issue);
+            final String content = getIssueDescription(issue) + getIssueComments(issue, client);
             dataMap.put(fessConfig.getIndexFieldContent(), content);
             final Date lastModified = getIssueLastModified(issue);
             if (lastModified != null)
@@ -152,15 +152,21 @@ public class JiraDataStore extends AbstractDataStore {
         return (String) fields.getOrDefault("description", "");
     }
 
-    @SuppressWarnings("unchecked")
-    protected String getIssueComments(final Map<String, Object> issue) {
-        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-        final Map<String, Object> commentObj = (Map<String, Object>) fields.get("comment");
+    protected String getIssueComments(final Map<String, Object> issue, final JiraClient client) {
         final StringBuilder sb = new StringBuilder();
-        final List<Map<String, Object>> comments = (List<Map<String, Object>>) commentObj.get("comments");
-        for (Map<String, Object> comment : comments) {
-            sb.append("\n\n");
-            sb.append(comment.get("body"));
+        final String id = (String) issue.get("id");
+
+        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
+            final List<Map<String, Object>> comments =
+                    client.getComments(id).startAt(startAt).maxResults(ISSUE_MAX_RESULTS).execute().getComments();
+
+            for (final Map<String, Object> comment : comments) {
+                sb.append("\n\n");
+                sb.append(comment.get("body"));
+            }
+
+            if (comments.size() < ISSUE_MAX_RESULTS)
+                break;
         }
         return sb.toString();
     }
