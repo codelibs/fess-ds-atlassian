@@ -21,6 +21,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 public class ConfluenceDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
+    // parameters
     protected static final String CONFLUENCE_HOME_PARAM = "confluence.home";
 
     protected static final String CONFLUENCE_CONSUMER_KEY_PARAM = "confluence.oauth.consumer_key";
@@ -54,6 +56,14 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
     protected static final String CONFLUENCE_USERNAME_PARAM = "confluence.basicauth.username";
     protected static final String CONFLUENCE_PASSWORD_PARAM = "confluence.basicauth.password";
+
+    // scripts
+    protected static final String CONTENT = "content";
+    protected static final String CONTENT_TITLE = "title";
+    protected static final String CONTENT_BODY = "body";
+    protected static final String CONTENT_COMMENTS = "comments";
+    protected static final String CONTENT_LAST_MODIFIED = "last_modified";
+    protected static final String CONTENT_VIEW_URL = "view_url";
 
     protected static final int CONTENT_LIMIT = 25;
 
@@ -142,15 +152,24 @@ public class ConfluenceDataStore extends AbstractDataStore {
             final ConfluenceClient client, final long readInterval, final String confluenceHome, final Map<String, Object> content) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
+        final Map<String, Object> resultMap = new LinkedHashMap<>();
+        resultMap.putAll(paramMap);
+        final Map<String, Object> contentMap = new HashMap<>();
 
         try {
-            dataMap.put(fessConfig.getIndexFieldTitle(), getContentTitle(content));
-            dataMap.put(fessConfig.getIndexFieldContent(), getContentBody(content) + getContentComments(content, client));
-            dataMap.put(fessConfig.getIndexFieldUrl(), getContentViewUrl(content, confluenceHome));
-            final Date lastModified = getContentLastModified(content);
-            if (lastModified != null)
-                dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
+            contentMap.put(CONTENT_TITLE, getContentTitle(content));
+            contentMap.put(CONTENT_BODY, getContentBody(content));
+            contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
+            contentMap.put(CONTENT_LAST_MODIFIED, getContentLastModified(content));
+            contentMap.put(CONTENT_VIEW_URL, getContentViewUrl(content, confluenceHome));
+            resultMap.put(CONTENT, contentMap);
 
+            for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
+                final Object convertValue = convertValue(entry.getValue(), resultMap);
+                if (convertValue != null) {
+                    dataMap.put(entry.getKey(), convertValue);
+                }
+            }
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);

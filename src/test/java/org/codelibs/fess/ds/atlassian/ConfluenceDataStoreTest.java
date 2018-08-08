@@ -84,6 +84,11 @@ public class ConfluenceDataStoreTest extends ContainerTestCase {
         final Map<String, String> scriptMap = new HashMap<>();
         final Map<String, Object> defaultDataMap = new HashMap<>();
 
+        scriptMap.put("url", "content.view_url");
+        scriptMap.put("title", "content.title");
+        scriptMap.put("content", "content.body + content.comments");
+        scriptMap.put("last_modified", "content.last_modified");
+
         dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
 
     }
