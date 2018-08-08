@@ -85,6 +85,11 @@ public class JiraDataStoreTest extends ContainerTestCase {
         final Map<String, String> scriptMap = new HashMap<>();
         final Map<String, Object> defaultDataMap = new HashMap<>();
 
+        scriptMap.put("url", "issue.view_url");
+        scriptMap.put("title", "issue.summary");
+        scriptMap.put("content", "issue.description + issue.comments");   
+        scriptMap.put("last_modified", "issue.last_modified");        
+
         dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
 
     }

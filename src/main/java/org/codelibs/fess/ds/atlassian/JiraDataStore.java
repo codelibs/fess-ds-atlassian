@@ -19,6 +19,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
+    // parameters
     protected static final String JIRA_HOME_PARAM = "jira.home";
 
     protected static final String JIRA_CONSUMER_KEY_PARAM = "jira.oauth.consumer_key";
@@ -52,6 +54,14 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String JIRA_PASSWORD_PARAM = "jira.basicauth.password";
 
     protected static final String JIRA_JQL_PARAM = "jira.issue.jql";
+
+    // scripts
+    protected static final String ISSUE = "issue";
+    protected static final String ISSUE_SUMMARY = "summary";
+    protected static final String ISSUE_DESCRIPTION = "description";
+    protected static final String ISSUE_COMMENTS = "comments";
+    protected static final String ISSUE_LAST_MODIFIED = "last_modified";
+    protected static final String ISSUE_VIEW_URL = "view_url";
 
     protected static final int ISSUE_MAX_RESULTS = 50;
 
@@ -123,24 +133,35 @@ public class JiraDataStore extends AbstractDataStore {
             final JiraClient client, final long readInterval, final String jiraHome, final Map<String, Object> issue) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
+        final Map<String, Object> resultMap = new LinkedHashMap<>();
+        resultMap.putAll(paramMap);
+        final Map<String, Object> issueMap = new HashMap<>();
 
         try {
-            final String key = (String) issue.get("key");
-            dataMap.put(fessConfig.getIndexFieldUrl(), jiraHome + "/browse/" + key);
-            dataMap.put(fessConfig.getIndexFieldTitle(), getIssueTitle(issue));
-            final String content = getIssueDescription(issue) + getIssueComments(issue, client);
-            dataMap.put(fessConfig.getIndexFieldContent(), content);
-            final Date lastModified = getIssueLastModified(issue);
-            if (lastModified != null)
-                dataMap.put(fessConfig.getIndexFieldLastModified(), lastModified);
+            issueMap.put(ISSUE_SUMMARY, getIssueSummary(issue));
+            issueMap.put(ISSUE_DESCRIPTION, getIssueDescription(issue));
+            issueMap.put(ISSUE_COMMENTS, getIssueComments(issue, client));
+            issueMap.put(ISSUE_LAST_MODIFIED, getIssueLastModified(issue));
+            issueMap.put(ISSUE_VIEW_URL, getIssueViewUrl(issue, jiraHome));
+            resultMap.put(ISSUE, issueMap);
 
+            for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
+                final Object convertValue = convertValue(entry.getValue(), resultMap);
+                if (convertValue != null) {
+                    dataMap.put(entry.getKey(), convertValue);
+                }
+            }
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
         }
     }
 
-    protected String getIssueTitle(final Map<String, Object> issue) {
+    protected String getIssueViewUrl(final Map<String, Object> issue, final String jiraHome) {
+        return jiraHome + "/browse/" + (String) issue.get("key");
+    }
+
+    protected String getIssueSummary(final Map<String, Object> issue) {
         @SuppressWarnings("unchecked")
         final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
         return (String) fields.getOrDefault("summary", "");
