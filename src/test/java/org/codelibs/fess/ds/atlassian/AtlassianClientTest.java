@@ -34,6 +34,8 @@ import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOf
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
@@ -87,6 +89,7 @@ public class AtlassianClientTest extends ContainerTestCase {
 
         doGetProjectsTest(jiraClient);
         doSearchTest(jiraClient);
+        doGetCommentsTest(jiraClient);
         doGetContentsTest(confluenceClient);
         doGetCommentsOfContentTest(confluenceClient);
         doGetAttachmentsOfContentTest(confluenceClient);
@@ -191,10 +194,37 @@ public class AtlassianClientTest extends ContainerTestCase {
         }
     }
 
+    protected void doGetCommentsTest(final JiraClient jiraClient) {
+        final List<Map<String, Object>> issues = jiraClient.search().execute().getIssues();
+        if (!issues.isEmpty()) {
+            final String id = (String) issues.get(0).get("id");
+            final GetCommentsResponse response = jiraClient.getComments(id).execute();
+            for (final Map<String, Object> comment : response.getComments()) {
+                assertTrue("not contains \"body\"", comment.containsKey("body"));
+            }
+        }
+    }
+
+    public void test_getComments_fromJson() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"comments\": [" + //
+                "    { \"body\": \"Comment-0\" }," + //
+                "    { \"body\": \"Comment-1\" }" + //
+                "  ]" + //
+                "}";
+        final GetCommentsResponse response = GetCommentsRequest.fromJson(json);
+        final List<Map<String, Object>> comments = response.getComments();
+        for (int i = 0; i < comments.size(); i++) {
+            final Map<String, Object> comment = comments.get(i);
+            assertEquals(comment.get("body"), "Comment-" + i);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     protected void doGetContentsTest(final ConfluenceClient confluenceClient) {
         final List<Map<String, Object>> contents = confluenceClient.getContents().expand("body.view", "version").execute().getContents();
-        if (contents.size() > 0) {
+        if (!contents.isEmpty()) {
             final Map<String, Object> content = contents.get(0);
             assertTrue("not contains \"title\"", content.containsKey("title"));
 
@@ -247,7 +277,7 @@ public class AtlassianClientTest extends ContainerTestCase {
     @SuppressWarnings("unchecked")
     protected void doGetCommentsOfContentTest(final ConfluenceClient confluenceClient) {
         final List<Map<String, Object>> contents = confluenceClient.getContents().execute().getContents();
-        if (contents.size() > 0) {
+        if (!contents.isEmpty()) {
             final String id = (String) contents.get(0).get("id");
             final GetCommentsOfContentResponse response =
                     confluenceClient.getCommentsOfContent(id).depth("all").expand("body.view").execute();
@@ -290,7 +320,7 @@ public class AtlassianClientTest extends ContainerTestCase {
     @SuppressWarnings("unchecked")
     protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
         final List<Map<String, Object>> contents = confluenceClient.getContents().execute().getContents();
-        if (contents.size() > 0) {
+        if (!contents.isEmpty()) {
             final String id = (String) contents.get(0).get("id");
             final GetAttachmentsOfContentResponse response = confluenceClient.getAttachmentsOfContent(id).execute();
             for (final Map<String, Object> attachment : response.getAttachments()) {
