@@ -47,15 +47,15 @@ public class ConfluenceDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
     // parameters
-    protected static final String CONFLUENCE_HOME_PARAM = "confluence.home";
+    protected static final String HOME_PARAM = "home";
 
-    protected static final String CONFLUENCE_CONSUMER_KEY_PARAM = "confluence.oauth.consumer_key";
-    protected static final String CONFLUENCE_PRIVATE_KEY_PARAM = "confluence.oauth.private_key";
-    protected static final String CONFLUENCE_SECRET_PARAM = "confluence.oauth.secret";
-    protected static final String CONFLUENCE_ACCESS_TOKEN_PARAM = "confluence.oauth.access_token";
+    protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
+    protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
+    protected static final String SECRET_PARAM = "oauth.secret";
+    protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
 
-    protected static final String CONFLUENCE_USERNAME_PARAM = "confluence.basicauth.username";
-    protected static final String CONFLUENCE_PASSWORD_PARAM = "confluence.basicauth.password";
+    protected static final String USERNAME_PARAM = "basicauth.username";
+    protected static final String PASSWORD_PARAM = "basicauth.password";
 
     // scripts
     protected static final String CONTENT = "content";
@@ -92,14 +92,13 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
         boolean basic = false;
         if (confluenceHome.isEmpty()) {
-            logger.warn("parameter \"" + CONFLUENCE_HOME_PARAM + "\" is required");
+            logger.warn("parameter \"" + HOME_PARAM + "\" is required");
             return;
         } else if (!userName.isEmpty() && !password.isEmpty()) {
             basic = true;
         } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
-            logger.warn("parameter \"" + CONFLUENCE_USERNAME_PARAM + "\" and \"" + CONFLUENCE_PASSWORD_PARAM + "\" or \""
-                    + CONFLUENCE_CONSUMER_KEY_PARAM + "\", \"" + CONFLUENCE_PRIVATE_KEY_PARAM + "\", \"" + CONFLUENCE_SECRET_PARAM
-                    + "\" and \"" + CONFLUENCE_ACCESS_TOKEN_PARAM + "\" are required");
+            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM + "\", \""
+                    + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" are required");
             return;
         }
 
@@ -240,50 +239,50 @@ public class ConfluenceDataStore extends AbstractDataStore {
     }
 
     protected String getConfluenceHome(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_HOME_PARAM)) {
-            return paramMap.get(CONFLUENCE_HOME_PARAM);
+        if (paramMap.containsKey(HOME_PARAM)) {
+            return paramMap.get(HOME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getUserName(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_USERNAME_PARAM)) {
-            return paramMap.get(CONFLUENCE_USERNAME_PARAM);
+        if (paramMap.containsKey(USERNAME_PARAM)) {
+            return paramMap.get(USERNAME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPassword(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_PASSWORD_PARAM)) {
-            return paramMap.get(CONFLUENCE_PASSWORD_PARAM);
+        if (paramMap.containsKey(PASSWORD_PARAM)) {
+            return paramMap.get(PASSWORD_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getConsumerKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_CONSUMER_KEY_PARAM)) {
-            return paramMap.get(CONFLUENCE_CONSUMER_KEY_PARAM);
+        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
+            return paramMap.get(CONSUMER_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPrivateKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_PRIVATE_KEY_PARAM)) {
-            return paramMap.get(CONFLUENCE_PRIVATE_KEY_PARAM);
+        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
+            return paramMap.get(PRIVATE_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getSecret(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_SECRET_PARAM)) {
-            return paramMap.get(CONFLUENCE_SECRET_PARAM);
+        if (paramMap.containsKey(SECRET_PARAM)) {
+            return paramMap.get(SECRET_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getAccessToken(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONFLUENCE_ACCESS_TOKEN_PARAM)) {
-            return paramMap.get(CONFLUENCE_ACCESS_TOKEN_PARAM);
+        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(ACCESS_TOKEN_PARAM);
         }
         return StringUtil.EMPTY;
     }

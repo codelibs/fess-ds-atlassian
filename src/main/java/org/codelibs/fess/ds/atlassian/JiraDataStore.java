@@ -43,17 +43,17 @@ public class JiraDataStore extends AbstractDataStore {
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
     // parameters
-    protected static final String JIRA_HOME_PARAM = "jira.home";
+    protected static final String HOME_PARAM = "home";
 
-    protected static final String JIRA_CONSUMER_KEY_PARAM = "jira.oauth.consumer_key";
-    protected static final String JIRA_PRIVATE_KEY_PARAM = "jira.oauth.private_key";
-    protected static final String JIRA_SECRET_PARAM = "jira.oauth.secret";
-    protected static final String JIRA_ACCESS_TOKEN_PARAM = "jira.oauth.access_token";
+    protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
+    protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
+    protected static final String SECRET_PARAM = "oauth.secret";
+    protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
 
-    protected static final String JIRA_USERNAME_PARAM = "jira.basicauth.username";
-    protected static final String JIRA_PASSWORD_PARAM = "jira.basicauth.password";
+    protected static final String USERNAME_PARAM = "basicauth.username";
+    protected static final String PASSWORD_PARAM = "basicauth.password";
 
-    protected static final String JIRA_JQL_PARAM = "jira.issue.jql";
+    protected static final String JQL_PARAM = "issue.jql";
 
     // scripts
     protected static final String ISSUE = "issue";
@@ -90,14 +90,13 @@ public class JiraDataStore extends AbstractDataStore {
 
         boolean basic = false;
         if (jiraHome.isEmpty()) {
-            logger.warn("parameter \"" + JIRA_HOME_PARAM + "\" is required");
+            logger.warn("parameter \"" + HOME_PARAM + "\" is required");
             return;
         } else if (!userName.isEmpty() && !password.isEmpty()) {
             basic = true;
         } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
-            logger.warn("parameter \"" + JIRA_USERNAME_PARAM + "\" and \"" + JIRA_PASSWORD_PARAM + "\" or \"" + JIRA_CONSUMER_KEY_PARAM
-                    + "\", \"" + JIRA_PRIVATE_KEY_PARAM + "\", \"" + JIRA_SECRET_PARAM + "\" and \"" + JIRA_ACCESS_TOKEN_PARAM
-                    + "\" are required");
+            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM + "\", \""
+                    + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" are required");
             return;
         }
 
@@ -207,57 +206,57 @@ public class JiraDataStore extends AbstractDataStore {
     }
 
     protected String getJiraHome(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_HOME_PARAM)) {
-            return paramMap.get(JIRA_HOME_PARAM);
+        if (paramMap.containsKey(HOME_PARAM)) {
+            return paramMap.get(HOME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getUserName(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_USERNAME_PARAM)) {
-            return paramMap.get(JIRA_USERNAME_PARAM);
+        if (paramMap.containsKey(USERNAME_PARAM)) {
+            return paramMap.get(USERNAME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPassword(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_PASSWORD_PARAM)) {
-            return paramMap.get(JIRA_PASSWORD_PARAM);
+        if (paramMap.containsKey(PASSWORD_PARAM)) {
+            return paramMap.get(PASSWORD_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getConsumerKey(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_CONSUMER_KEY_PARAM)) {
-            return paramMap.get(JIRA_CONSUMER_KEY_PARAM);
+        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
+            return paramMap.get(CONSUMER_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getPrivateKey(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_PRIVATE_KEY_PARAM)) {
-            return paramMap.get(JIRA_PRIVATE_KEY_PARAM);
+        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
+            return paramMap.get(PRIVATE_KEY_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getSecret(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_SECRET_PARAM)) {
-            return paramMap.get(JIRA_SECRET_PARAM);
+        if (paramMap.containsKey(SECRET_PARAM)) {
+            return paramMap.get(SECRET_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getAccessToken(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_ACCESS_TOKEN_PARAM)) {
-            return paramMap.get(JIRA_ACCESS_TOKEN_PARAM);
+        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
+            return paramMap.get(ACCESS_TOKEN_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
     protected String getJql(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JIRA_JQL_PARAM)) {
-            return paramMap.get(JIRA_JQL_PARAM);
+        if (paramMap.containsKey(JQL_PARAM)) {
+            return paramMap.get(JQL_PARAM);
         }
         return StringUtil.EMPTY;
     }
