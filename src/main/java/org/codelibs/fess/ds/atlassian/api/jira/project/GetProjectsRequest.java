@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -25,7 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
@@ -40,20 +43,24 @@ public class GetProjectsRequest extends JiraRequest {
 
     @Override
     public GetProjectsResponse execute() {
+        String result = "";
+        final GenericUrl url = buildUrl(jiraClient.jiraHome(), expand, recent);
         try {
-            final HttpRequest request = jiraClient.request()
-                    .buildGetRequest(buildUrl(jiraClient.jiraHome(), expand, recent));
+            final HttpRequest request = jiraClient.request().buildGetRequest(url);
             final HttpResponse response = request.execute();
-            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            final ObjectMapper mapper = new ObjectMapper();
-            final List<Map<String, Object>> projects = mapper.readValue(result,
-                    new TypeReference<List<Map<String, Object>>>() {
-                    });
-            return new GetProjectsResponse(projects);
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
+        return fromJson(result);
     }
 
     public GetProjectsRequest expand(String... expand) {
@@ -64,6 +71,18 @@ public class GetProjectsRequest extends JiraRequest {
     public GetProjectsRequest recent(int recent) {
         this.recent = recent;
         return this;
+    }
+
+    public static GetProjectsResponse fromJson(String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final List<Map<String, Object>> projects = new ArrayList<>();
+        try {
+            projects.addAll(mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {
+            }));
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse projects from: \"" + json + "\"", e);
+        }
+        return new GetProjectsResponse(projects);
     }
 
     protected GenericUrl buildUrl(final String jiraHome, final String[] expand, final Integer recent) {

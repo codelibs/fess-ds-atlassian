@@ -15,20 +15,28 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import com.google.api.client.http.HttpRequestFactory;
 
 public class AtlassianClient {
 
-    private JiraClient jiraClient;
-    private ConfluenceClient confluenceClient;
+    protected final String appHome;
+    protected final HttpRequestFactory httpRequestFactory;
 
-    public JiraClient jira() {
-        return jiraClient;
+    public AtlassianClient(final String appHome, final HttpRequestFactory httpRequestFactory) {
+        this.appHome = appHome;
+        this.httpRequestFactory = httpRequestFactory;
     }
 
-    public ConfluenceClient confluence() {
-        return confluenceClient;
+    public static AtlassianClientBuilder builder() {
+        return new AtlassianClientBuilder();
+    }
+
+    public String appHome() {
+        return appHome;
+    }
+
+    public HttpRequestFactory request() {
+        return httpRequestFactory;
     }
 
 }

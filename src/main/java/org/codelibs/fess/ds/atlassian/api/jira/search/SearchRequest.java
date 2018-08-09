@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -26,10 +27,12 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.json.JsonHttpContent;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.GenericData;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
@@ -46,22 +49,30 @@ public class SearchRequest extends JiraRequest {
 
     @Override
     public SearchResponse execute() {
+        String result = "";
+        final GenericUrl url = buildUrl(jiraClient.jiraHome());
+        final HttpContent content =
+                new JsonHttpContent(new JacksonFactory(), buildData(jql, startAt, maxResults, validateQuery, fields, expand));
         try {
-            final HttpContent content = new JsonHttpContent(new JacksonFactory(),
-                    buildData(jql, startAt, maxResults, validateQuery, fields, expand));
-            final HttpRequest request = jiraClient.request().buildPostRequest(buildUrl(jiraClient.jiraHome()), content);
+            final HttpRequest request = jiraClient.request().buildPostRequest(url, content);
             final HttpResponse response = request.execute();
-            final Scanner s = new Scanner(response.getContent()).useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            final ObjectMapper mapper = new ObjectMapper();
-            final Map<String, Object> map = mapper.readValue(result, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> issues = (List<Map<String, Object>>) map.get("issues");
-            return new SearchResponse(issues);
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            if (e.getStatusCode() == 400) {
+                throw new AtlassianDataStoreException("There is a problem with the JQL query: " + jql, e);
+            } else {
+                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
+        return fromJson(result);
     }
 
     public SearchRequest jql(String jql) {
@@ -94,12 +105,27 @@ public class SearchRequest extends JiraRequest {
         return this;
     }
 
+    public static SearchResponse fromJson(String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final List<Map<String, Object>> issues = new ArrayList<>();
+        try {
+            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("issues");
+            issues.addAll(list);
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("failed to parse issues from: \"" + json + "\"", e);
+        }
+        return new SearchResponse(issues);
+    }
+
     protected GenericUrl buildUrl(final String jiraHome) {
         return new GenericUrl(jiraHome + "/rest/api/latest/search");
     }
 
-    protected GenericData buildData(final String jql, final Integer startAt, final Integer maxResults,
-            final Boolean validateQuery, final String[] fields, final String[] expand) {
+    protected GenericData buildData(final String jql, final Integer startAt, final Integer maxResults, final Boolean validateQuery,
+            final String[] fields, final String[] expand) {
         GenericData data = new GenericData();
         if (jql != null && !jql.isEmpty()) {
             data.put("jql", jql);
