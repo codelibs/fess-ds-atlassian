@@ -18,6 +18,7 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
@@ -53,6 +54,10 @@ public class JiraClient {
 
     public GetIssueRequest getIssue(String issueIdOrKey) {
         return new GetIssueRequest(this, issueIdOrKey);
+    }
+
+    public GetCommentsRequest getComments(String issueIdOrKey) {
+        return new GetCommentsRequest(this, issueIdOrKey);
     }
 
 }

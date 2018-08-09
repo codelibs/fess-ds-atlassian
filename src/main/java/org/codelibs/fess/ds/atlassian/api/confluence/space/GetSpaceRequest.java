@@ -85,8 +85,8 @@ public class GetSpaceRequest extends ConfluenceRequest {
         }
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String spaceKey, final String[] expand) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/space/" + spaceKey);
+    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String[] expand) {
+        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space/" + spaceKey);
         if (expand != null) {
             url.put("expand", String.join(",", expand));
         }

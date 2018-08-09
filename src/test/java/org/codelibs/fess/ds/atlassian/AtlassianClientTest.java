@@ -27,9 +27,15 @@ import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
@@ -83,7 +89,10 @@ public class AtlassianClientTest extends ContainerTestCase {
 
         doGetProjectsTest(jiraClient);
         doSearchTest(jiraClient);
+        doGetCommentsTest(jiraClient);
         doGetContentsTest(confluenceClient);
+        doGetCommentsOfContentTest(confluenceClient);
+        doGetAttachmentsOfContentTest(confluenceClient);
         doGetSpacesTest(confluenceClient);
     }
 
@@ -185,11 +194,38 @@ public class AtlassianClientTest extends ContainerTestCase {
         }
     }
 
+    protected void doGetCommentsTest(final JiraClient jiraClient) {
+        final List<Map<String, Object>> issues = jiraClient.search().execute().getIssues();
+        if (!issues.isEmpty()) {
+            final String id = (String) issues.get(0).get("id");
+            final GetCommentsResponse response = jiraClient.getComments(id).execute();
+            for (final Map<String, Object> comment : response.getComments()) {
+                assertTrue("not contains \"body\"", comment.containsKey("body"));
+            }
+        }
+    }
+
+    public void test_getComments_fromJson() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"comments\": [" + //
+                "    { \"body\": \"Comment-0\" }," + //
+                "    { \"body\": \"Comment-1\" }" + //
+                "  ]" + //
+                "}";
+        final GetCommentsResponse response = GetCommentsRequest.fromJson(json);
+        final List<Map<String, Object>> comments = response.getComments();
+        for (int i = 0; i < comments.size(); i++) {
+            final Map<String, Object> comment = comments.get(i);
+            assertEquals(comment.get("body"), "Comment-" + i);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     protected void doGetContentsTest(final ConfluenceClient confluenceClient) {
-        final GetContentsResponse response =
-                confluenceClient.getContents().expand("body.view", "children.comment.body.view", "version").execute();
-        for (final Map<String, Object> content : response.getContents()) {
+        final List<Map<String, Object>> contents = confluenceClient.getContents().expand("body.view", "version").execute().getContents();
+        if (!contents.isEmpty()) {
+            final Map<String, Object> content = contents.get(0);
             assertTrue("not contains \"title\"", content.containsKey("title"));
 
             assertTrue("not contains \"body\"", content.containsKey("body"));
@@ -197,19 +233,6 @@ public class AtlassianClientTest extends ContainerTestCase {
             assertTrue("not contains \"view\" in \"body\"", body.containsKey("view"));
             final Map<String, Object> view = (Map<String, Object>) body.get("view");
             assertTrue("not contains \"value\" in \"body.view\"", view.containsKey("value"));
-
-            assertTrue("not contains \"children\"", content.containsKey("children"));
-            final Map<String, Object> children = (Map<String, Object>) content.get("children");
-            assertTrue("not contains \"comment\" in \"children\"", children.containsKey("comment"));
-            final List<Map<String, Object>> comments =
-                    (List<Map<String, Object>>) ((Map<String, Object>) children.get("comment")).get("results");
-            for (final Map<String, Object> comment : comments) {
-                assertTrue("not contains \"body\" in \"children.comment\"", comment.containsKey("body"));
-                final Map<String, Object> commentBody = (Map<String, Object>) content.get("body");
-                assertTrue("not contains \"view\" in \"children.comment.body\"", commentBody.containsKey("view"));
-                final Map<String, Object> commentView = (Map<String, Object>) commentBody.get("view");
-                assertTrue("not contains \"value\" in \"children.comment.body.view\"", commentView.containsKey("value"));
-            }
 
             assertTrue("not contains \"version\"", content.containsKey("version"));
             final Map<String, Object> version = (Map<String, Object>) content.get("version");
@@ -229,26 +252,11 @@ public class AtlassianClientTest extends ContainerTestCase {
                 "  \"results\": [{" + //
                 "      \"title\": \"Title-0\"," + //
                 "      \"body\": { \"view\": { \"value\": \"Body-0\" } }," + //
-                "      \"children\": {" + //
-                "        \"comment\": {" + //
-                "          \"size\": 1," + //
-                "          \"results\": [{" + //
-                "            \"title\": \"CommentTitle-0-0\"," + //
-                "            \"body\": { \"view\": { \"value\": \"CommentBody-0-0\" } }" + //
-                "          }]" + //
-                "        }" + //
-                "      }," + //
                 "      \"version\": { \"when\": \"2018-08-01T12:34:56.789Z\" }" + //
                 "    }," + //
                 "    {" + //
                 "      \"title\": \"Title-1\"," + //
                 "      \"body\": { \"view\": { \"value\": \"Body-1\" } }," + //
-                "      \"children\": {" + //
-                "        \"comment\": {" + //
-                "          \"size\": 0," + //
-                "          \"results\": []" + //
-                "        }" + //
-                "      }," + //
                 "      \"version\": { \"when\": \"2018-08-01T12:34:56.789Z\" }" + //
                 "    }" + //
                 "  ]" + //
@@ -264,6 +272,90 @@ public class AtlassianClientTest extends ContainerTestCase {
             final Map<String, Object> version = (Map<String, Object>) content.get("version");
             assertEquals(version.get("when"), "2018-08-01T12:34:56.789Z");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void doGetCommentsOfContentTest(final ConfluenceClient confluenceClient) {
+        final List<Map<String, Object>> contents = confluenceClient.getContents().execute().getContents();
+        if (!contents.isEmpty()) {
+            final String id = (String) contents.get(0).get("id");
+            final GetCommentsOfContentResponse response =
+                    confluenceClient.getCommentsOfContent(id).depth("all").expand("body.view").execute();
+            for (final Map<String, Object> comment : response.getComments()) {
+                assertTrue("not contains \"title\"", comment.containsKey("title"));
+                assertTrue("not contains \"body\"", comment.containsKey("body"));
+                final Map<String, Object> body = (Map<String, Object>) comment.get("body");
+                assertTrue("not contains \"view\" in \"body\"", body.containsKey("view"));
+                final Map<String, Object> view = (Map<String, Object>) body.get("view");
+                assertTrue("not contains \"value\" in \"body.view\"", view.containsKey("value"));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void test_getCommentsOfContent_fromJson() {
+        String json = "{" + //
+                "  \"results\": [" + //
+                "    {" + //
+                "      \"title\": \"Title-0\"," + //
+                "      \"body\": { \"view\": { \"value\": \"<p>Comment-0</p>\" } }" + //
+                "    }," + //
+                "    {" + //
+                "      \"title\": \"Title-1\"," + //
+                "      \"body\": { \"view\": { \"value\": \"<p>Comment-1</p>\" } }" + //
+                "    }" + //
+                "  ]" + //
+                "}";
+        final GetCommentsOfContentResponse response = GetCommentsOfContentRequest.fromJson(json);
+        final List<Map<String, Object>> comments = response.getComments();
+        for (int i = 0; i < comments.size(); i++) {
+            final Map<String, Object> comment = comments.get(i);
+            assertEquals(comment.get("title"), "Title-" + i);
+            final Map<String, Object> body = (Map<String, Object>) comment.get("body");
+            final Map<String, Object> view = (Map<String, Object>) body.get("view");
+            assertEquals(view.get("value"), "<p>Comment-" + i + "</p>");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
+        final List<Map<String, Object>> contents = confluenceClient.getContents().execute().getContents();
+        if (!contents.isEmpty()) {
+            final String id = (String) contents.get(0).get("id");
+            final GetAttachmentsOfContentResponse response = confluenceClient.getAttachmentsOfContent(id).execute();
+            for (final Map<String, Object> attachment : response.getAttachments()) {
+                assertTrue("not contains \"title\"", attachment.containsKey("title"));
+                assertTrue("not contains \"metadata\"", attachment.containsKey("metadata"));
+                final Map<String, Object> metadata = (Map<String, Object>) attachment.get("metadata");
+                assertTrue("not contains \"mediaType\" in \"metadata\"", metadata.containsKey("mediaType"));
+                assertTrue("not contains \"_links\"", attachment.containsKey("_links"));
+                final Map<String, Object> links = (Map<String, Object>) attachment.get("_links");
+                assertTrue("not contains \"download\" in \"_links\"", links.containsKey("download"));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void test_getAttachmentsOfContent_fromJson() {
+        String json = "{" + //
+                "  \"results\": [" + //
+                "    {" + //
+                "      \"title\": \"title.txt\"," + //
+                "      \"metadata\": { \"mediaType\": \"text/plain\" }," + //
+                "      \"_links\": {" + //
+                "        \"download\": \"/download\"" + //
+                "      }" + //
+                "    }" + //
+                "  ]" + //
+                "}";
+        final GetAttachmentsOfContentResponse response = GetAttachmentsOfContentRequest.fromJson(json);
+        final List<Map<String, Object>> attachments = response.getAttachments();
+        final Map<String, Object> attachment = attachments.get(0);
+        assertEquals(attachment.get("title"), "title.txt");
+        final Map<String, Object> metadata = (Map<String, Object>) attachment.get("metadata");
+        assertEquals(metadata.get("mediaType"), "text/plain");
+        final Map<String, Object> links = (Map<String, Object>) attachment.get("_links");
+        assertEquals(links.get("download"), "/download");
     }
 
     protected void doGetSpacesTest(final ConfluenceClient confluenceClient) {

@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.confluence.content;
+package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,20 +32,22 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 
-public class GetContentsRequest extends ConfluenceRequest {
+public class GetCommentsOfContentRequest extends ConfluenceRequest {
 
-    private String type, spaceKey, title, status, postingDay;
+    private final String id;
+    private Integer parentVersion, start, limit;
+    private String location, depth;
     private String[] expand;
-    private Integer start, limit;
 
-    public GetContentsRequest(ConfluenceClient confluenceClient) {
+    public GetCommentsOfContentRequest(ConfluenceClient confluenceClient, String id) {
         super(confluenceClient);
+        this.id = id;
     }
 
     @Override
-    public GetContentsResponse execute() {
+    public GetCommentsOfContentResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), type, spaceKey, title, status, postingDay, expand, start, limit);
+        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), id, parentVersion, start, limit, location, depth, expand);
         try {
             final HttpRequest request = confluenceClient.request().buildGetRequest(url);
             final HttpResponse response = request.execute();
@@ -58,7 +60,9 @@ public class GetContentsRequest extends ConfluenceRequest {
             s.close();
         } catch (HttpResponseException e) {
             if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException("You don't have permission to view the content.", e);
+                throw new AtlassianDataStoreException(
+                        "There is no content with the given id, or the calling user does not have permission to view the content: " + id,
+                        e);
             } else {
                 throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
             }
@@ -68,81 +72,56 @@ public class GetContentsRequest extends ConfluenceRequest {
         return fromJson(result);
     }
 
-    public GetContentsRequest type(String type) {
-        this.type = type;
+    public GetCommentsOfContentRequest parentVersion(int parentVersion) {
+        this.parentVersion = parentVersion;
         return this;
     }
 
-    public GetContentsRequest spaceKey(String spaceKey) {
-        this.spaceKey = spaceKey;
-        return this;
-    }
-
-    public GetContentsRequest title(String title) {
-        this.title = title;
-        return this;
-    }
-
-    public GetContentsRequest status(String status) {
-        this.status = status;
-        return this;
-    }
-
-    public GetContentsRequest postingDay(String postingDay) {
-        this.postingDay = postingDay;
-        return this;
-    }
-
-    public GetContentsRequest expand(String... expand) {
-        this.expand = expand;
-        return this;
-    }
-
-    public GetContentsRequest start(int start) {
+    public GetCommentsOfContentRequest start(int start) {
         this.start = start;
         return this;
     }
 
-    public GetContentsRequest limit(int limit) {
+    public GetCommentsOfContentRequest limit(int limit) {
         this.limit = limit;
         return this;
     }
 
-    public static GetContentsResponse fromJson(String json) {
+    public GetCommentsOfContentRequest location(String location) {
+        this.location = location;
+        return this;
+    }
+
+    public GetCommentsOfContentRequest depth(String depth) {
+        this.depth = depth;
+        return this;
+    }
+
+    public GetCommentsOfContentRequest expand(String... expand) {
+        this.expand = expand;
+        return this;
+    }
+
+    public static GetCommentsOfContentResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> contents = new ArrayList<>();
+        final List<Map<String, Object>> comments = new ArrayList<>();
         try {
             final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
             });
             @SuppressWarnings("unchecked")
             final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
-            contents.addAll(results);
+            comments.addAll(results);
         } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
+            throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
         }
-        return new GetContentsResponse(contents);
+        return new GetCommentsOfContentResponse(comments);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String type, final String spaceKey, final String title, final String status,
-            final String postingDay, final String[] expand, final Integer start, final Integer limit) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content");
-        if (type != null) {
-            url.put("type", type);
-        }
-        if (spaceKey != null) {
-            url.put("spaceKey", spaceKey);
-        }
-        if (title != null) {
-            url.put("title", title);
-        }
-        if (status != null) {
-            url.put("status", status);
-        }
-        if (postingDay != null) {
-            url.put("postingDay", postingDay);
-        }
-        if (expand != null) {
-            url.put("expand", String.join(",", expand));
+    protected GenericUrl buildUrl(final String confluenceHome, final String id, final Integer parentVersion, final Integer start,
+            final Integer limit, final String location, final String depth, final String[] expand) {
+        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content/" + id + "/child/comment");
+        if (parentVersion != null) {
+            url.put("parentVersion", parentVersion);
         }
         if (start != null) {
             url.put("start", start);
@@ -150,6 +129,16 @@ public class GetContentsRequest extends ConfluenceRequest {
         if (limit != null) {
             url.put("limit", limit);
         }
+        if (location != null) {
+            url.put("location", location);
+        }
+        if (depth != null) {
+            url.put("depth", depth);
+        }
+        if (expand != null) {
+            url.put("expand", String.join(",", expand));
+        }
         return url;
     }
+
 }

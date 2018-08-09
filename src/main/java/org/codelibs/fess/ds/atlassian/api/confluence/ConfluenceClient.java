@@ -20,6 +20,8 @@ import com.google.api.client.http.HttpRequestFactory;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 
@@ -53,6 +55,14 @@ public class ConfluenceClient {
 
     public GetContentRequest getContent(String contentId) {
         return new GetContentRequest(this, contentId);
+    }
+
+    public GetCommentsOfContentRequest getCommentsOfContent(String contentId) {
+        return new GetCommentsOfContentRequest(this, contentId);
+    }
+
+    public GetAttachmentsOfContentRequest getAttachmentsOfContent(String contentId) {
+        return new GetAttachmentsOfContentRequest(this, contentId);
     }
 
 }
