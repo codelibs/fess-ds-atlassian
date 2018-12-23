@@ -66,7 +66,7 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final int ISSUE_MAX_RESULTS = 50;
 
     protected String getName() {
-        return "JiraDataStore";
+        return "Jira";
     }
 
     @Override
