@@ -6,7 +6,7 @@
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
 	<version>12.2.1-SNAPSHOT</version>
-	<url>http://fess.codelibs.org/</url>
+	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
 		<license>
@@ -17,7 +17,7 @@
 	</licenses>
 	<organization>
 		<name>CodeLibs</name>
-		<url>http://fess.codelibs.org/</url>
+		<url>https://fess.codelibs.org/</url>
 	</organization>
 	<issueManagement>
 		<url>https://github.com/codelibs/fess/issues</url>
@@ -120,7 +120,7 @@
 					</includes>
 					<encoding>UTF-8</encoding>
 					<headerDefinitions>
-						<headerDefinition>http://www.codelibs.org/assets/license/header-definition-2.xml</headerDefinition>
+						<headerDefinition>https://www.codelibs.org/assets/license/header-definition-2.xml</headerDefinition>
 					</headerDefinitions>
 				</configuration>
 				<executions>
@@ -137,7 +137,7 @@
 		<pluginRepository>
 			<id>codelibs.org</id>
 			<name>CodeLibs Repository</name>
-			<url>http://maven.codelibs.org/</url>
+			<url>https://maven.codelibs.org/</url>
 		</pluginRepository>
 		<pluginRepository>
 			<id>oss.sonatype.org</id>
@@ -149,7 +149,7 @@
 		<repository>
 			<id>codelibs.org</id>
 			<name>CodeLibs Repository</name>
-			<url>http://maven.codelibs.org/</url>
+			<url>https://maven.codelibs.org/</url>
 		</repository>
 		<repository>
 			<id>elasticsearch-releases</id>
