@@ -5,7 +5,7 @@
 	<artifactId>fess-ds-atlassian</artifactId>
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
-	<version>12.2.1-SNAPSHOT</version>
+	<version>12.5.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -37,19 +37,19 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 
-		<fess.version>12.3.2</fess.version>
+		<fess.version>12.5.1</fess.version>
 
 		<!-- Main Framework -->
-		<dbflute.version>1.1.6</dbflute.version>
-		<lastaflute.version>1.0.4</lastaflute.version>
-		<lasta.taglib.version>0.7.2</lasta.taglib.version>
-		<lasta.job.version>0.5.2</lasta.job.version>
-		<mailflute.version>0.5.8</mailflute.version>
+		<dbflute.version>1.1.8</dbflute.version>
+		<lastaflute.version>1.0.9</lastaflute.version>
+		<lasta.taglib.version>0.7.3</lasta.taglib.version>
+		<lasta.job.version>0.5.3</lasta.job.version>
+		<mailflute.version>0.6.0</mailflute.version>
 
 		<!-- Partner Library -->
 		<slf4j.version>1.7.25</slf4j.version>
-		<log4j.version>2.9.1</log4j.version>
-		<jackson.version>2.8.10</jackson.version>
+		<log4j.version>2.11.1</log4j.version>
+		<jackson.version>2.8.11</jackson.version>
 		<commons.fileupload.version>1.3.3</commons.fileupload.version>
 		<asm.version>5.1</asm.version>
 
@@ -58,19 +58,19 @@
 		<junit.jupiter.version>5.0.2</junit.jupiter.version>
 		<junit.vintage.version>${junit.version}.0</junit.vintage.version>
 		<junit.platform.version>1.0.0</junit.platform.version>
-		<utflute.version>0.8.5</utflute.version>
+		<utflute.version>0.9.0</utflute.version>
 
 		<!-- Crawler -->
-		<crawler.version>2.2.0</crawler.version>
+		<crawler.version>2.5.2</crawler.version>
 
 		<!-- Elasticsearch -->
 		<elasticsearch.version>6.3.0</elasticsearch.version>
-		<elasticsearch.min.version>6.0.0</elasticsearch.min.version>
+		<elasticsearch.min.version>6.6.2</elasticsearch.min.version>
 		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
 
 		<!-- Tomcat -->
-		<tomcat.version>8.5.23</tomcat.version>
-		<tomcat.boot.version>0.6.0</tomcat.boot.version>
+		<tomcat.version>9.0.14</tomcat.version>
+		<tomcat.boot.version>0.7.1</tomcat.boot.version>
 
 	</properties>
 	<build>
