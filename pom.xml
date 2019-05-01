@@ -5,7 +5,7 @@
 	<artifactId>fess-ds-atlassian</artifactId>
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
-	<version>12.6.1-SNAPSHOT</version>
+	<version>13.0.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -34,14 +34,13 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
 
-		<fess.version>12.6.0</fess.version>
+		<fess.version>13.0.0</fess.version>
 
 		<!-- Main Framework -->
 		<dbflute.version>1.1.9</dbflute.version>
 		<lastaflute.version>1.1.1</lastaflute.version>
+		<lasta.di.version>0.8.0-RC1</lasta.di.version>
 		<lasta.taglib.version>0.7.3</lasta.taglib.version>
 		<lasta.job.version>0.5.3</lasta.job.version>
 		<mailflute.version>0.6.0</mailflute.version>
@@ -51,7 +50,8 @@
 		<log4j.version>2.11.1</log4j.version>
 		<jackson.version>2.8.11</jackson.version>
 		<commons.fileupload.version>1.4</commons.fileupload.version>
-		<asm.version>5.1</asm.version>
+		<asm.version>6.1</asm.version>
+		<tika.version>1.20</tika.version>
 
 		<!-- Testing -->
 		<junit.version>4.12</junit.version>
@@ -61,17 +61,16 @@
 		<utflute.version>0.9.0</utflute.version>
 
 		<!-- Crawler -->
-		<crawler.version>2.6.0</crawler.version>
+		<crawler.version>3.0.0-SNAPSHOT</crawler.version>
 
 		<!-- Elasticsearch -->
-		<elasticsearch.version>6.7.1</elasticsearch.version>
-		<elasticsearch.min.version>6.7.0</elasticsearch.min.version>
+		<elasticsearch.version>7.0.0</elasticsearch.version>
+		<elasticsearch.min.version>7.0.0</elasticsearch.min.version>
 		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
 
 		<!-- Tomcat -->
 		<tomcat.version>9.0.17</tomcat.version>
 		<tomcat.boot.version>0.7.1</tomcat.boot.version>
-
 	</properties>
 	<build>
 		<plugins>
@@ -79,8 +78,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.0</version>
 				<configuration>
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
+					<release>11</release>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
