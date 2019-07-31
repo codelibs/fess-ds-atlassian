@@ -23,6 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.google.api.client.http.apache.ApacheHttpTransport;
 
@@ -54,6 +58,8 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String PASSWORD_PARAM = "basicauth.password";
 
     protected static final String JQL_PARAM = "issue.jql";
+
+    protected static final String NUMBER_OF_THREADS = "number_of_threads";
 
     // scripts
     protected static final String ISSUE = "issue";
@@ -124,6 +130,8 @@ public class JiraDataStore extends AbstractDataStore {
                 break;
 
         }
+
+        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
 
     }
 
@@ -259,6 +267,14 @@ public class JiraDataStore extends AbstractDataStore {
             return paramMap.get(JQL_PARAM);
         }
         return StringUtil.EMPTY;
+    }
+
+    protected ExecutorService newFixedThreadPool(final int nThreads) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Executor Thread Pool: " + nThreads);
+        }
+        return new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(nThreads),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
 }
