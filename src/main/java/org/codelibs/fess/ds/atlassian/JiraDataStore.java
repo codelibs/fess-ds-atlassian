@@ -59,6 +59,9 @@ public class JiraDataStore extends AbstractDataStore {
 
     protected static final String JQL_PARAM = "issue.jql";
 
+    protected static final String IGNORE_FOLDER = "ignore_folder";
+    protected static final String IGNORE_ERROR = "ignore_error";
+    protected static final String DEFAULT_PERMISSIONS = "default_permissions";
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
 
     // scripts
@@ -132,6 +135,20 @@ public class JiraDataStore extends AbstractDataStore {
         }
 
         final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
+        try {
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("Shutting down thread executor.");
+            }
+            executorService.shutdown();
+            executorService.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (final InterruptedException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Interrupted.", e);
+            }
+        } finally {
+            executorService.shutdownNow();
+        }
 
     }
 
