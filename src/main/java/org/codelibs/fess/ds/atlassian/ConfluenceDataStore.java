@@ -70,7 +70,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected Extractor extractor;
 
     protected String getName() {
-        return "Confluence";
+        return this.getClass().getSimpleName();
     }
 
     @Override
