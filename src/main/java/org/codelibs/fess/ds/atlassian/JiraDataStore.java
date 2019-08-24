@@ -24,6 +24,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.apache.ApacheHttpTransport;
@@ -48,16 +52,16 @@ public class JiraDataStore extends AbstractDataStore {
 
     // parameters
     protected static final String HOME_PARAM = "home";
-
     protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
     protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
     protected static final String SECRET_PARAM = "oauth.secret";
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
-
     protected static final String USERNAME_PARAM = "basicauth.username";
     protected static final String PASSWORD_PARAM = "basicauth.password";
-
     protected static final String JQL_PARAM = "issue.jql";
+    protected static final String IGNORE_ERROR = "ignore_error";
+    protected static final String NUMBER_OF_THREADS = "number_of_threads";
+    protected static final String MAX_FILESIZE = "max_filesize";
 
     // scripts
     protected static final String ISSUE = "issue";
@@ -67,10 +71,16 @@ public class JiraDataStore extends AbstractDataStore {
     protected static final String ISSUE_LAST_MODIFIED = "last_modified";
     protected static final String ISSUE_VIEW_URL = "view_url";
 
-    protected static final int ISSUE_MAX_RESULTS = 50;
-
     protected String getName() {
         return this.getClass().getSimpleName();
+    }
+
+    protected ExecutorService newFixedThreadPool(final int nThreads) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Executor Thread Pool: " + nThreads);
+        }
+        return new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(nThreads),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     @Override
@@ -113,9 +123,26 @@ public class JiraDataStore extends AbstractDataStore {
             accessToken.temporaryToken = temporaryToken;
         }).build());
 
-        client.getIssues(jql, issue -> {
-            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, jiraHome, issue);
-        });
+        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
+        try {
+            client.getIssues(jql, issue -> {
+                executorService.execute(() -> {
+                    processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, jiraHome, issue);
+                });
+            });
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Shutting down thread executor.");
+            }
+            executorService.shutdown();
+            executorService.awaitTermination(60, TimeUnit.SECONDS);
+        } catch(final InterruptedException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Interrupted.", e);
+            }
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
