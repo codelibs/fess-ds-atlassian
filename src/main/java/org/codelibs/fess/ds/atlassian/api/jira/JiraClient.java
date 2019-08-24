@@ -18,12 +18,15 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -68,12 +71,22 @@ public class JiraClient {
 
     public void getIssues(final String jql, final Consumer<Issue> consumer) {
         for (int startAt = 0; ; startAt += ISSUE_MAX_RESULTS) {
-            final List<Issue> issues = search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
-                    .fields("summary", "description", "updated").execute().getIssues();
-            issues.forEach(consumer);
-            if (issues.size() < ISSUE_MAX_RESULTS) {
+            final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
+                    .fields("summary", "description", "updated").execute();
+            searchResponse.getIssues().forEach(consumer);
+            if (searchResponse.getTotal() < ISSUE_MAX_RESULTS) {
                 break;
             }
+        }
+    }
+
+    public void getComments(String issueId, final Consumer<Comment> consumer) {
+        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
+            final GetCommentsResponse getCommentsResponse = getComments(issueId).startAt(startAt).maxResults(ISSUE_MAX_RESULTS).execute();
+            final List<Comment> comments = getCommentsResponse.getComments();
+            comments.forEach(consumer);
+            if (comments.size() < ISSUE_MAX_RESULTS)
+                break;
         }
     }
 }

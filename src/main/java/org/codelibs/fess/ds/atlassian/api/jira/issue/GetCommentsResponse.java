@@ -22,7 +22,6 @@ import org.codelibs.fess.ds.atlassian.api.Response;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 
 public class GetCommentsResponse extends Response {
-
     protected final List<Comment> comments;
 
     public GetCommentsResponse(final List<Comment> comments) {

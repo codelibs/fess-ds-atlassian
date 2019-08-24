@@ -156,18 +156,11 @@ public class JiraDataStore extends AbstractDataStore {
         final StringBuilder sb = new StringBuilder();
         final String id = issue.getId();
 
-        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
-            final List<Comment> comments =
-                    client.getComments(id).startAt(startAt).maxResults(ISSUE_MAX_RESULTS).execute().getComments();
-
-            for (final Comment comment : comments) {
+        client.getComments(id, comment -> {
                 sb.append("\n\n");
                 sb.append(comment.getBody());
-            }
+            });
 
-            if (comments.size() < ISSUE_MAX_RESULTS)
-                break;
-        }
         return sb.toString();
     }
 
@@ -238,15 +231,6 @@ public class JiraDataStore extends AbstractDataStore {
             return paramMap.get(JQL_PARAM);
         }
         return StringUtil.EMPTY;
-    }
-
-    public Issue parseIssueJson(final String content) {
-        final ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readValue(content, Issue.class);
-        } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
-        }
     }
 
 }

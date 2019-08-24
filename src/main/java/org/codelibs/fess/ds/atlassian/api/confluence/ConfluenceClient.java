@@ -20,12 +20,21 @@ import com.google.api.client.http.HttpRequestFactory;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 public class ConfluenceClient {
+
+    protected static final int CONTENT_LIMIT = 25;
 
     private final AtlassianClient client;
 
@@ -63,6 +72,35 @@ public class ConfluenceClient {
 
     public GetAttachmentsOfContentRequest getAttachmentsOfContent(String contentId) {
         return new GetAttachmentsOfContentRequest(this, contentId);
+    }
+
+    public void getContents(final Consumer<Content> consumer) {
+        for (int start = 0;; start += CONTENT_LIMIT) {
+            GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            if (contents.size() < CONTENT_LIMIT)
+                break;
+        }
+    }
+
+    public void getBlogContents(final Consumer<Content> consumer) {
+        for (int start = 0;; start += CONTENT_LIMIT) {
+            GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
+                    .expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            if (contents.size() < CONTENT_LIMIT)
+                break;
+        }
+    }
+
+    public void getContentComments(final String id, final Consumer<Comment> consumer) {
+        for (int start = 0;; start += CONTENT_LIMIT) {
+            final GetCommentsOfContentResponse response = getCommentsOfContent(id).start(start).limit(CONTENT_LIMIT).expand("body.view").execute();
+            final List<Comment> comments = response.getComments();
+            comments.forEach(consumer);
+            if (comments.size() < CONTENT_LIMIT)
+                break;
+        }
     }
 
 }

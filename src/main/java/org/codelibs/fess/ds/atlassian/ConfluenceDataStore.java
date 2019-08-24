@@ -32,7 +32,6 @@ import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
@@ -111,36 +110,15 @@ public class ConfluenceDataStore extends AbstractDataStore {
                             accessToken.temporaryToken = temporaryToken;
                         }).build());
 
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            // get contents
-            final List<Content> contents =
-                    client.getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute().getContents();
-
-            // store contents
-            for (final Content content : contents) {
+        client.getContents(content -> {
                 processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
-            }
+            });
 
-            if (contents.size() < CONTENT_LIMIT)
-                break;
-        }
-
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            // get blog contents
-            final List<Content> blogContents = client.getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
-                    .expand("space", "version", "body.view").execute().getContents();
-
-            // store blog contents
-            for (final Content content : blogContents) {
+        client.getBlogContents(content -> {
                 processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
-            }
-
-            if (blogContents.size() < CONTENT_LIMIT)
-                break;
-        }
-
+            });
     }
 
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
@@ -177,18 +155,11 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final StringBuilder sb = new StringBuilder();
         final String id = content.getId();
 
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            final List<Comment> comments =
-                    client.getCommentsOfContent(id).start(start).limit(CONTENT_LIMIT).expand("body.view").execute().getComments();
-
-            for (final Comment comment : comments) {
+        client.getContentComments(id, comment -> {
                 sb.append("\n\n");
                 sb.append(comment.getBody());
-            }
+            });
 
-            if (comments.size() < CONTENT_LIMIT)
-                break;
-        }
         return sb.toString();
     }
 
