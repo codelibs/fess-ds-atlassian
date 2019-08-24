@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,17 @@ import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
+
+import java.util.List;
+import java.util.function.Consumer;
 
 public class JiraClient {
 
-    private final AtlassianClient client;
+    protected static final int ISSUE_MAX_RESULTS = 50;
+
+    protected AtlassianClient client;
 
     public JiraClient(final AtlassianClient client) {
         this.client = client;
@@ -60,4 +66,14 @@ public class JiraClient {
         return new GetCommentsRequest(this, issueIdOrKey);
     }
 
+    public void getIssues(final String jql, final Consumer<Issue> consumer) {
+        for (int startAt = 0; ; startAt += ISSUE_MAX_RESULTS) {
+            final List<Issue> issues = search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
+                    .fields("summary", "description", "updated").execute().getIssues();
+            issues.forEach(consumer);
+            if (issues.size() < ISSUE_MAX_RESULTS) {
+                break;
+            }
+        }
+    }
 }

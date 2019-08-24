@@ -29,6 +29,7 @@ import com.google.api.client.http.HttpResponseException;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 public class GetIssueRequest extends JiraRequest {
 
@@ -85,7 +86,7 @@ public class GetIssueRequest extends JiraRequest {
     public static GetIssueResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Map<String, Object> issue = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            final Issue issue = mapper.readValue(json, new TypeReference<Issue>() {
             });
             return new GetIssueResponse(issue);
         } catch (IOException e) {

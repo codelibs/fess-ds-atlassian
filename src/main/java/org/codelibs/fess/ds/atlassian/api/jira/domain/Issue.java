@@ -13,23 +13,26 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira.issue;
+package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraResponse;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Issue {
+    protected String id;
+    protected String self;
+    protected String expand;
+    protected String key;
+    protected Fields fields;
 
-public class GetIssueResponse extends JiraResponse {
-    protected final Issue issue;
+    public String getId() { return id; }
 
-    public GetIssueResponse(final Issue issue) {
-        this.issue = issue;
-    }
+    public String getSelf() { return self; }
 
-    public Issue getIssue() {
-        return issue;
-    }
+    public String getExpand() { return expand; }
+
+    public String getKey() { return key; }
+
+    public Fields getFields() { return fields; }
 
 }

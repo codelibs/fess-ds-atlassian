@@ -13,30 +13,30 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api;
+package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
-import com.google.api.client.http.HttpRequestFactory;
+import java.util.Map;
 
-public class AtlassianClient {
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    protected final String appHome;
-    protected final HttpRequestFactory httpRequestFactory;
+public class Comment {
+    protected String title;
+    @JsonIgnore
+    protected String body;
 
-    public AtlassianClient(final String appHome, final HttpRequestFactory httpRequestFactory) {
-        this.appHome = appHome;
-        this.httpRequestFactory = httpRequestFactory;
+    public String getTitle() {
+        return title;
     }
 
-    public static AtlassianClientBuilder builder() {
-        return new AtlassianClientBuilder();
+    public String getBody() {
+        return body;
     }
 
-    public String appHome() {
-        return appHome;
+    @JsonProperty("body")
+    public void unpackNested(Map<String,Object> body) {
+        final Map<String, Object> view = (Map<String, Object>) body.get("view");
+        final String value = (String) view.get("value");
+        this.body = value;
     }
-
-    public HttpRequestFactory request() {
-        return httpRequestFactory;
-    }
-
 }

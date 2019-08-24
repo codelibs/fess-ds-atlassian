@@ -13,23 +13,17 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
+package org.codelibs.fess.ds.atlassian.api.jira.search;
 
-import java.util.List;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
-import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+public class SearchClient {
 
-public class GetCommentsOfContentResponse extends ConfluenceResponse {
+    protected final JiraClient client;
 
-    protected final List<Comment> comments;
-
-    public GetCommentsOfContentResponse(List<Comment> comments) {
-        this.comments = comments;
+    public SearchClient(final JiraClient client) {
+        this.client = client;
     }
 
-    public List<Comment> getComments() {
-        return comments;
-    }
-
+    public SearchRequest search() { return new SearchRequest(client); }
 }

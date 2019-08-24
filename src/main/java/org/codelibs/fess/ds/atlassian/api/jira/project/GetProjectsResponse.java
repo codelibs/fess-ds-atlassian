@@ -19,16 +19,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
+import org.codelibs.fess.ds.atlassian.api.jira.JiraResponse;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectsResponse extends Response {
+public class GetProjectsResponse extends JiraResponse {
 
-    protected final List<Map<String, Object>> projects;
+    protected final List<Project> projects;
 
-    public GetProjectsResponse(List<Map<String, Object>> projects) {
+    public GetProjectsResponse(List<Project> projects) {
         this.projects = projects;
     }
 
-    public List<Map<String, Object>> getProjects() {
+    public List<Project> getProjects() {
         return projects;
     }
 

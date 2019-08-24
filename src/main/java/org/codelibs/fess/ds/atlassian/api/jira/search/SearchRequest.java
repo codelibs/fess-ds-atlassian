@@ -16,12 +16,8 @@
 package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
@@ -43,7 +39,7 @@ public class SearchRequest extends JiraRequest {
     private Boolean validateQuery;
     private String[] fields, expand;
 
-    public SearchRequest(JiraClient jiraClient) {
+    public SearchRequest(final JiraClient jiraClient) {
         super(jiraClient);
     }
 
@@ -72,7 +68,7 @@ public class SearchRequest extends JiraRequest {
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
-        return fromJson(result);
+        return parseResponse(result, SearchResponse.class);
     }
 
     public SearchRequest jql(String jql) {
@@ -105,19 +101,13 @@ public class SearchRequest extends JiraRequest {
         return this;
     }
 
-    public static SearchResponse fromJson(String json) {
+    public static SearchResponse parseResponse(final String content, final Class<SearchResponse> valueType) {
         final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> issues = new ArrayList<>();
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("issues");
-            issues.addAll(list);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("failed to parse issues from: \"" + json + "\"", e);
+            return mapper.readValue(content, valueType);
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
         }
-        return new SearchResponse(issues);
     }
 
     protected GenericUrl buildUrl(final String jiraHome) {

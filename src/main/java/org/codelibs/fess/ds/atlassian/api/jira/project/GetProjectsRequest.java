@@ -31,6 +31,7 @@ import com.google.api.client.http.HttpResponseException;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
 public class GetProjectsRequest extends JiraRequest {
 
@@ -75,9 +76,9 @@ public class GetProjectsRequest extends JiraRequest {
 
     public static GetProjectsResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> projects = new ArrayList<>();
+        final List<Project> projects = new ArrayList<>();
         try {
-            projects.addAll(mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {
+            projects.addAll(mapper.readValue(json, new TypeReference<List<Project>>() {
             }));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse projects from: \"" + json + "\"", e);

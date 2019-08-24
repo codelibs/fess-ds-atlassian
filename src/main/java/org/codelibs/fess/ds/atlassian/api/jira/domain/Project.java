@@ -13,30 +13,35 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api;
+package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
-import com.google.api.client.http.HttpRequestFactory;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-public class AtlassianClient {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Project {
 
-    protected final String appHome;
-    protected final HttpRequestFactory httpRequestFactory;
+    protected String self;
+    protected String key;
+    protected Long id;
+    protected String name;
+    protected String description;
 
-    public AtlassianClient(final String appHome, final HttpRequestFactory httpRequestFactory) {
-        this.appHome = appHome;
-        this.httpRequestFactory = httpRequestFactory;
+    public String getSelf() {
+        return self;
     }
 
-    public static AtlassianClientBuilder builder() {
-        return new AtlassianClientBuilder();
+    public String getKey() {
+        return key;
     }
 
-    public String appHome() {
-        return appHome;
+    public String getName() {
+        return name;
     }
 
-    public HttpRequestFactory request() {
-        return httpRequestFactory;
+    public Long getId() {
+        return id;
     }
+
+    public String getDescription() { return description; }
 
 }

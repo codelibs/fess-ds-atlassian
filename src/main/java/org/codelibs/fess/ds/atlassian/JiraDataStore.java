@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.apache.ApacheHttpTransport;
 
 import org.codelibs.core.lang.StringUtil;
@@ -31,6 +33,8 @@ import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
@@ -102,34 +106,21 @@ public class JiraDataStore extends AbstractDataStore {
 
         final JiraClient client = basic ? new JiraClient(AtlassianClient.builder().basicAuth(jiraHome, userName, password).build())
                 : new JiraClient(AtlassianClient.builder().oAuthToken(jiraHome, accessToken -> {
-                    accessToken.consumerKey = consumerKey;
-                    accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
-                    accessToken.transport = new ApacheHttpTransport();
-                    accessToken.verifier = verifier;
-                    accessToken.temporaryToken = temporaryToken;
-                }).build());
+            accessToken.consumerKey = consumerKey;
+            accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
+            accessToken.transport = new ApacheHttpTransport();
+            accessToken.verifier = verifier;
+            accessToken.temporaryToken = temporaryToken;
+        }).build());
 
-        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
-
-            // get issues
-            final List<Map<String, Object>> issues = client.search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
-                    .fields("summary", "description", "updated").execute().getIssues();
-
-            // store issues
-            for (final Map<String, Object> issue : issues) {
-                processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, jiraHome, issue);
-            }
-
-            if (issues.size() < ISSUE_MAX_RESULTS)
-                break;
-
-        }
-
+        client.getIssues(jql, issue -> {
+            processIssue(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, jiraHome, issue);
+        });
     }
 
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final JiraClient client, final long readInterval, final String jiraHome, final Map<String, Object> issue) {
+            final JiraClient client, final long readInterval, final String jiraHome, final Issue issue) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
         final Map<String, Object> resultMap = new LinkedHashMap<>();
@@ -137,8 +128,9 @@ public class JiraDataStore extends AbstractDataStore {
         final Map<String, Object> issueMap = new HashMap<>();
 
         try {
-            issueMap.put(ISSUE_SUMMARY, getIssueSummary(issue));
-            issueMap.put(ISSUE_DESCRIPTION, getIssueDescription(issue));
+            // TODO
+            issueMap.put(ISSUE_SUMMARY, issue.getFields().getSummary());
+            issueMap.put(ISSUE_DESCRIPTION, issue.getFields().getDescription());
             issueMap.put(ISSUE_COMMENTS, getIssueComments(issue, client));
             issueMap.put(ISSUE_LAST_MODIFIED, getIssueLastModified(issue));
             issueMap.put(ISSUE_VIEW_URL, getIssueViewUrl(issue, jiraHome));
@@ -156,33 +148,21 @@ public class JiraDataStore extends AbstractDataStore {
         }
     }
 
-    protected String getIssueViewUrl(final Map<String, Object> issue, final String jiraHome) {
-        return jiraHome + "/browse/" + (String) issue.get("key");
+    protected String getIssueViewUrl(final Issue issue, final String jiraHome) {
+        return jiraHome + "/browse/" + issue.getKey();
     }
 
-    protected String getIssueSummary(final Map<String, Object> issue) {
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-        return (String) fields.getOrDefault("summary", "");
-    }
-
-    protected String getIssueDescription(final Map<String, Object> issue) {
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-        return (String) fields.getOrDefault("description", "");
-    }
-
-    protected String getIssueComments(final Map<String, Object> issue, final JiraClient client) {
+    protected String getIssueComments(final Issue issue, final JiraClient client) {
         final StringBuilder sb = new StringBuilder();
-        final String id = (String) issue.get("id");
+        final String id = issue.getId();
 
         for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
-            final List<Map<String, Object>> comments =
+            final List<Comment> comments =
                     client.getComments(id).startAt(startAt).maxResults(ISSUE_MAX_RESULTS).execute().getComments();
 
-            for (final Map<String, Object> comment : comments) {
+            for (final Comment comment : comments) {
                 sb.append("\n\n");
-                sb.append(comment.get("body"));
+                sb.append(comment.getBody());
             }
 
             if (comments.size() < ISSUE_MAX_RESULTS)
@@ -191,16 +171,15 @@ public class JiraDataStore extends AbstractDataStore {
         return sb.toString();
     }
 
-    protected Date getIssueLastModified(final Map<String, Object> issue) {
+    protected Date getIssueLastModified(final Issue issue) {
         @SuppressWarnings("unchecked")
-        final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-        final String updated = (String) fields.get("updated");
+        final String updated = issue.getFields().getUpdated();
         try {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             return format.parse(updated);
         } catch (final ParseException e) {
-            logger.warn("Fail to parse: " + updated, e);
+            logger.warn("Failed to parse: " + updated, e);
         }
         return null;
     }
@@ -259,6 +238,15 @@ public class JiraDataStore extends AbstractDataStore {
             return paramMap.get(JQL_PARAM);
         }
         return StringUtil.EMPTY;
+    }
+
+    public Issue parseIssueJson(final String content) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(content, Issue.class);
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
+        }
     }
 
 }

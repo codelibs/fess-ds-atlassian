@@ -19,16 +19,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 
 public class GetCommentsResponse extends Response {
 
-    protected final List<Map<String, Object>> comments;
+    protected final List<Comment> comments;
 
-    public GetCommentsResponse(List<Map<String, Object>> comments) {
+    public GetCommentsResponse(final List<Comment> comments) {
         this.comments = comments;
     }
 
-    public List<Map<String, Object>> getComments() {
+    public List<Comment> getComments() {
         return comments;
     }
 

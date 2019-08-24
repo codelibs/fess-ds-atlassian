@@ -18,16 +18,17 @@ package org.codelibs.fess.ds.atlassian.api.jira.project;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
 public class GetProjectResponse extends Response {
 
-    protected final Map<String, Object> project;
+    protected final Project project;
 
-    public GetProjectResponse(Map<String, Object> project) {
+    public GetProjectResponse(final Project project) {
         this.project = project;
     }
 
-    public Map<String, Object> getProject() {
+    public Project getProject() {
         return project;
     }
 

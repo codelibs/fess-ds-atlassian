@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,10 @@ package org.codelibs.fess.ds.atlassian;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
 import com.google.api.client.http.apache.ApacheHttpTransport;
 
@@ -36,6 +32,9 @@ import org.codelibs.fess.ds.AbstractDataStore;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.mylasta.direction.FessConfig;
@@ -67,7 +66,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
     protected static final int CONTENT_LIMIT = 25;
 
-    protected Extractor extractor;
+    protected static final Extractor htmlExtractor = new HtmlExtractor();
 
     protected String getName() {
         return this.getClass().getSimpleName();
@@ -112,15 +111,13 @@ public class ConfluenceDataStore extends AbstractDataStore {
                             accessToken.temporaryToken = temporaryToken;
                         }).build());
 
-        extractor = new HtmlExtractor();
-
         for (int start = 0;; start += CONTENT_LIMIT) {
             // get contents
-            final List<Map<String, Object>> contents =
+            final List<Content> contents =
                     client.getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute().getContents();
 
             // store contents
-            for (final Map<String, Object> content : contents) {
+            for (final Content content : contents) {
                 processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
             }
@@ -131,11 +128,11 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
         for (int start = 0;; start += CONTENT_LIMIT) {
             // get blog contents
-            final List<Map<String, Object>> blogContents = client.getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
+            final List<Content> blogContents = client.getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
                     .expand("space", "version", "body.view").execute().getContents();
 
             // store blog contents
-            for (final Map<String, Object> content : blogContents) {
+            for (final Content content : blogContents) {
                 processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
                         content);
             }
@@ -148,7 +145,7 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final ConfluenceClient client, final long readInterval, final String confluenceHome, final Map<String, Object> content) {
+            final ConfluenceClient client, final long readInterval, final String confluenceHome, final Content content) {
         final Map<String, Object> dataMap = new HashMap<>();
         dataMap.putAll(defaultDataMap);
         final Map<String, Object> resultMap = new LinkedHashMap<>();
@@ -156,10 +153,10 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final Map<String, Object> contentMap = new HashMap<>();
 
         try {
-            contentMap.put(CONTENT_TITLE, getContentTitle(content));
-            contentMap.put(CONTENT_BODY, getContentBody(content));
+            contentMap.put(CONTENT_TITLE, content.getTitle());
+            contentMap.put(CONTENT_BODY, content.getBody());
             contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
-            contentMap.put(CONTENT_LAST_MODIFIED, getContentLastModified(content));
+            contentMap.put(CONTENT_LAST_MODIFIED, content.getLastModified());
             contentMap.put(CONTENT_VIEW_URL, getContentViewUrl(content, confluenceHome));
             resultMap.put(CONTENT, contentMap);
 
@@ -175,33 +172,18 @@ public class ConfluenceDataStore extends AbstractDataStore {
         }
     }
 
-    protected String getContentTitle(final Map<String, Object> content) {
-        return (String) content.getOrDefault("title", "");
-    }
-
     @SuppressWarnings("unchecked")
-    protected String getContentBody(final Map<String, Object> content) {
-        final Map<String, Object> body = (Map<String, Object>) content.get("body");
-        final Map<String, Object> view = (Map<String, Object>) body.get("view");
-        final String value = (String) view.get("value");
-        return getExtractedText(value);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected String getContentComments(final Map<String, Object> content, final ConfluenceClient client) {
+    protected String getContentComments(final Content content, final ConfluenceClient client) {
         final StringBuilder sb = new StringBuilder();
-        final String id = (String) content.get("id");
+        final String id = content.getId();
 
         for (int start = 0;; start += CONTENT_LIMIT) {
-            final List<Map<String, Object>> comments =
+            final List<Comment> comments =
                     client.getCommentsOfContent(id).start(start).limit(CONTENT_LIMIT).expand("body.view").execute().getComments();
 
-            for (final Map<String, Object> comment : comments) {
-                final Map<String, Object> body = (Map<String, Object>) comment.get("body");
-                final Map<String, Object> view = (Map<String, Object>) body.get("view");
-                final String value = (String) view.get("value");
+            for (final Comment comment : comments) {
                 sb.append("\n\n");
-                sb.append(getExtractedText(value));
+                sb.append(comment.getBody());
             }
 
             if (comments.size() < CONTENT_LIMIT)
@@ -210,31 +192,18 @@ public class ConfluenceDataStore extends AbstractDataStore {
         return sb.toString();
     }
 
-    protected String getExtractedText(final String text) {
+    // TODO
+    public static String getExtractedText(final String text) {
         final InputStream in = new ByteArrayInputStream(text.getBytes());
-        return extractor.getText(in, null).getContent();
+        return htmlExtractor.getText(in, null).getContent();
     }
 
-    @SuppressWarnings("unchecked")
-    protected Date getContentLastModified(final Map<String, Object> content) {
-        final Map<String, Object> version = (Map<String, Object>) content.get("version");
-        final String when = (String) version.get("when");
-        try {
-            final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
-            format.setTimeZone(TimeZone.getTimeZone("UTC"));
-            return format.parse(when);
-        } catch (final ParseException e) {
-            logger.warn("Fail to parse: " + when, e);
-        }
-        return null;
-    }
-
-    protected String getContentViewUrl(final Map<String, Object> content, final String confluenceHome) {
-        final String id = (String) content.get("id");
-        final String type = (String) content.get("type");
+    protected String getContentViewUrl(final Content content, final String confluenceHome) {
+        final String id = content.getId();
+        final String type = content.getType();
         @SuppressWarnings("unchecked")
-        final Map<String, Object> space = (Map<String, Object>) content.get("space");
-        final String spaceKey = (String) space.get("key");
+        final Space space = content.getSpace();
+        final String spaceKey = space.getKey();
         return confluenceHome + "/spaces/" + spaceKey + "/" + (type.equals("blogpost") ? "blog" : "page") + "/" + id;
     }
 

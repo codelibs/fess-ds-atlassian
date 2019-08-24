@@ -13,23 +13,18 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
+package org.codelibs.fess.ds.atlassian.api.jira.domain;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
-import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Comments {
+    protected Long total;
+    protected List<Comment> comments;
 
-public class GetCommentsOfContentResponse extends ConfluenceResponse {
+    public Long getTotal() { return total; }
 
-    protected final List<Comment> comments;
-
-    public GetCommentsOfContentResponse(List<Comment> comments) {
-        this.comments = comments;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
-    }
-
+    public List<Comment> getComments() { return comments; }
 }

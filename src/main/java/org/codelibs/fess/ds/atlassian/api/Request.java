@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-public abstract class Request {
+import org.codelibs.curl.Curl;
+import org.codelibs.curl.CurlRequest;
+
+import java.util.function.Function;
+
+public abstract class Request<T extends Response> {
+
+    public static final Function<String, CurlRequest> GET = Curl::get;
+    public static final Function<String, CurlRequest> POST = Curl::post;
+    public static final Function<String, CurlRequest> PUT = Curl::put;
+    public static final Function<String, CurlRequest> DELETE = Curl::delete;
 
     public abstract Response execute();
-
 }

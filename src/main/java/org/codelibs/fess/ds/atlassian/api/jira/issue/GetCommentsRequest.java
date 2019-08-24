@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,8 @@ package org.codelibs.fess.ds.atlassian.api.jira.issue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
@@ -31,6 +29,8 @@ import com.google.api.client.http.HttpResponseException;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
 
 public class GetCommentsRequest extends JiraRequest {
 
@@ -96,13 +96,9 @@ public class GetCommentsRequest extends JiraRequest {
 
     public static GetCommentsResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> comments = new ArrayList<>();
+        final List<Comment> comments = new ArrayList<>();
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("comments");
-            comments.addAll(results);
+            comments.addAll(mapper.readValue(json, Comments.class).getComments());
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: \"" + json + "\"", e);
         }
