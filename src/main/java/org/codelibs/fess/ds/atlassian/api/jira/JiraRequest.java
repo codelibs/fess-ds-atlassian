@@ -24,4 +24,6 @@ public abstract class JiraRequest extends Request {
     protected JiraRequest(final JiraClient jiraClient) {
         this.jiraClient = jiraClient;
     }
+
+
 }

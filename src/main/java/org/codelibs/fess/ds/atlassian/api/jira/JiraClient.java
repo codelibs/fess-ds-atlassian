@@ -17,6 +17,8 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 
 import com.google.api.client.http.HttpRequestFactory;
 
+import org.codelibs.curl.CurlRequest;
+import org.codelibs.elasticsearch.client.util.UrlUtils;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
@@ -30,12 +32,18 @@ import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public class JiraClient {
 
     protected static final int ISSUE_MAX_RESULTS = 50;
 
     protected AtlassianClient client;
+
+    protected String basicAuth;
+
+    protected final String oAuthGetAccessToken;
 
     public JiraClient(final AtlassianClient client) {
         this.client = client;
@@ -88,5 +96,23 @@ public class JiraClient {
             if (comments.size() < ISSUE_MAX_RESULTS)
                 break;
         }
+    }
+
+    public CurlRequest getCurlRequest(final Function<String, CurlRequest> method, final String path, final String... indices) {
+        final StringBuilder buf = new StringBuilder(100);
+        buf.append((jiraHome()));
+        if (indices.length > 0) {
+            buf.append('/').append(UrlUtils.joinAndEncode(",", indices));
+        }
+        if (path != null) {
+            buf.append(path);
+        }
+        CurlRequest request = method.apply(buf.toString()).header("Content-Type", "application/json");
+        if (basicAuth != null) {
+            request = request.header("Authorization", basicAuth);
+        } else if(oAuthGetAccessToken != null) {
+            // TODO
+        }
+        return request;
     }
 }
