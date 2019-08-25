@@ -29,6 +29,7 @@ import com.google.api.client.http.HttpResponseException;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 public class GetSpaceRequest extends ConfluenceRequest {
 
@@ -77,8 +78,7 @@ public class GetSpaceRequest extends ConfluenceRequest {
     public static GetSpaceResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Map<String, Object> space = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
+            final Space space = mapper.readValue(json, Space.class);
             return new GetSpaceResponse(space);
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse space from: " + json, e);

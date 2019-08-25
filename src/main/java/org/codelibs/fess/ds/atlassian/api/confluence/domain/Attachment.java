@@ -15,6 +15,40 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Map;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Attachment {
-    //TODO
+    protected String title;
+    @JsonIgnore
+    protected String mediaType;
+    @JsonIgnore
+    protected String downloadLink;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public String getDownloadLink() {
+        return downloadLink;
+    }
+
+
+    @JsonProperty("metadata")
+    public void unpackMetadata(Map<String,Object> metadata) {
+        this.mediaType = (String) metadata.get("mediaType");
+    }
+
+    @JsonProperty("_links")
+    public void unpackLinks(Map<String,Object> links) {
+        this.downloadLink = (String) links.get("download");
+    }
 }

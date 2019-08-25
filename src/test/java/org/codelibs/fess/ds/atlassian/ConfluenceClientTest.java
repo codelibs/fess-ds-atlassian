@@ -25,8 +25,10 @@ import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachment
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 
@@ -138,14 +140,10 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         if (!contents.isEmpty()) {
             final String id =  contents.get(0).getId();
             final GetAttachmentsOfContentResponse response = confluenceClient.getAttachmentsOfContent(id).execute();
-            for (final Map<String, Object> attachment : response.getAttachments()) {
-                assertTrue("not contains \"title\"", attachment.containsKey("title"));
-                assertTrue("not contains \"metadata\"", attachment.containsKey("metadata"));
-                final Map<String, Object> metadata = (Map<String, Object>) attachment.get("metadata");
-                assertTrue("not contains \"mediaType\" in \"metadata\"", metadata.containsKey("mediaType"));
-                assertTrue("not contains \"_links\"", attachment.containsKey("_links"));
-                final Map<String, Object> links = (Map<String, Object>) attachment.get("_links");
-                assertTrue("not contains \"download\" in \"_links\"", links.containsKey("download"));
+            for (final Attachment attachment : response.getAttachments()) {
+                assertTrue("not contains \"title\"", attachment.getTitle() != null);
+                assertTrue("not contains \"mediaType\" in \"metadata\"", attachment.getMediaType() != null);
+                assertTrue("not contains \"download\" in \"_links\"", attachment.getDownloadLink() != null);
             }
         }
     }
@@ -164,20 +162,18 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "  ]" + //
                 "}";
         final GetAttachmentsOfContentResponse response = GetAttachmentsOfContentRequest.fromJson(json);
-        final List<Map<String, Object>> attachments = response.getAttachments();
-        final Map<String, Object> attachment = attachments.get(0);
-        assertEquals(attachment.get("title"), "title.txt");
-        final Map<String, Object> metadata = (Map<String, Object>) attachment.get("metadata");
-        assertEquals(metadata.get("mediaType"), "text/plain");
-        final Map<String, Object> links = (Map<String, Object>) attachment.get("_links");
-        assertEquals(links.get("download"), "/download");
+        final List<Attachment> attachments = response.getAttachments();
+        final Attachment attachment = attachments.get(0);
+        assertEquals("title.txt", attachment.getTitle());
+        assertEquals("text/plain", attachment.getMediaType());
+        assertEquals("/download", attachment.getDownloadLink());
     }
 
     protected void doGetSpacesTest(final ConfluenceClient confluenceClient) {
         final GetSpacesResponse response = confluenceClient.getSpaces().expand("description").execute();
-        for (final Map<String, Object> space : response.getSpaces()) {
-            assertTrue("not contains \"name\"", space.containsKey("name"));
-            assertTrue("not contains \"description\"", space.containsKey("description"));
+        for (final Space space : response.getSpaces()) {
+            assertTrue("not contains \"name\"", space.getName() != null);
+            assertTrue("not contains \"description\"", space.getDescription() != null);
         }
     }
 
@@ -189,10 +185,17 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "  ]" + //
                 "}";
         final GetSpacesResponse response = GetSpacesRequest.fromJson(json);
-        final List<Map<String, Object>> spaces = response.getSpaces();
+        final List<Space> spaces = response.getSpaces();
         for (int i = 0; i < spaces.size(); i++) {
-            final Map<String, Object> space = spaces.get(i);
-            assertEquals(space.get("name"), "Space-" + i);
+            final Space space = spaces.get(i);
+            assertEquals(space.getName(), "Space-" + i);
         }
+    }
+
+    protected void doGetSpaceTest(final ConfluenceClient confluenceClient) {
+        // TODO
+    }
+    public void test_getSpace_fromJson() {
+        // TODO
     }
 }

@@ -19,16 +19,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 
 public class GetAttachmentsOfContentResponse extends ConfluenceResponse {
 
-    protected final List<Map<String, Object>> attachments;
+    protected List<Attachment> attachments;
 
-    public GetAttachmentsOfContentResponse(List<Map<String, Object>> attachments) {
+    public GetAttachmentsOfContentResponse(List<Attachment> attachments) {
         this.attachments = attachments;
     }
 
-    public List<Map<String, Object>> getAttachments() {
+    public List<Attachment> getAttachments() {
         return attachments;
     }
 

@@ -31,6 +31,8 @@ import com.google.api.client.http.HttpResponseException;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
 
@@ -99,13 +101,11 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
 
     public static GetAttachmentsOfContentResponse fromJson(String json) {
         final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> attachments = new ArrayList<>();
+        final List<Attachment> attachments = new ArrayList<>();
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
-            attachments.addAll(results);
+            final String results = mapper.readTree(json).get("results").toString();
+            attachments.addAll(mapper.readValue(results, new TypeReference<List<Attachment>>() {
+            }));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse attachments from: " + json, e);
         }

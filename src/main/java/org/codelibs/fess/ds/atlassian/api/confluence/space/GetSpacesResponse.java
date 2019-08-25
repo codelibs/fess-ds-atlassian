@@ -16,19 +16,19 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.util.List;
-import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 public class GetSpacesResponse extends ConfluenceResponse {
 
-    protected final List<Map<String, Object>> spaces;
+    protected List<Space> spaces;
 
-    public GetSpacesResponse(List<Map<String, Object>> spaces) {
+    public GetSpacesResponse(List<Space> spaces) {
         this.spaces = spaces;
     }
 
-    public List<Map<String, Object>> getSpaces() {
+    public List<Space> getSpaces() {
         return spaces;
     }
 
