@@ -15,17 +15,8 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import org.codelibs.curl.Curl;
-import org.codelibs.curl.CurlRequest;
-
-import java.util.function.Function;
-
 public abstract class Request<T extends Response> {
 
-    public static final Function<String, CurlRequest> GET = Curl::get;
-    public static final Function<String, CurlRequest> POST = Curl::post;
-    public static final Function<String, CurlRequest> PUT = Curl::put;
-    public static final Function<String, CurlRequest> DELETE = Curl::delete;
-
     public abstract Response execute();
+
 }

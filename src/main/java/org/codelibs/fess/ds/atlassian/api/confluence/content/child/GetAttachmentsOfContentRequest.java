@@ -28,6 +28,7 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
+import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
@@ -58,7 +59,7 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
             }
             final Scanner s = new Scanner(response.getContent());
             s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
+            result = s.hasNext() ? s.next() : StringUtil.EMPTY;
             s.close();
         } catch (HttpResponseException e) {
             if (e.getStatusCode() == 404) {

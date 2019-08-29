@@ -26,9 +26,6 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
-import org.codelibs.curl.CurlException;
-import org.codelibs.curl.CurlRequest;
-import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
@@ -51,40 +48,30 @@ public class GetCommentsRequest extends JiraRequest {
     @Override
     public GetCommentsResponse execute() {
         String result = "";
-        CurlRequest request = getCurlRequest(issueIdOrKey, startAt, maxResults, orderBy, expand);
+        final GenericUrl url = buildUrl(jiraClient.jiraHome(), issueIdOrKey, startAt, maxResults, orderBy, expand);
         try {
-            final CurlResponse response = request.execute();
-            if (response.getHttpStatusCode() != 200) {
-                throw new CurlException("HTTP Status : " + response.getHttpStatusCode());
+            final HttpRequest request = jiraClient.request().buildGetRequest(url);
+            final HttpResponse response = request.execute();
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
             }
-            // TODO
-            final Scanner s = new Scanner(response.getContentAsString());
+            final Scanner s = new Scanner(response.getContent());
             s.useDelimiter("\\A");
             result = s.hasNext() ? s.next() : "";
             s.close();
-        } catch (CurlException e) {
-            throw new AtlassianDataStoreException(e);
+        } catch (HttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new AtlassianDataStoreException(
+                        "The issue with the given id/key does not exist or if the currently authenticated user does not have permission to view it: "
+                                + issueIdOrKey,
+                        e);
+            } else {
+                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
+            }
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
         return fromJson(result);
-    }
-
-    public CurlRequest getCurlRequest( final String issueIdOrKey, final Long startAt, final Integer maxResults,
-                                       final String orderBy, final String[] expand) {
-        final CurlRequest request = jiraClient.getCurlRequest(GET,  "/rest/api/latest/issue/" + issueIdOrKey + "/comment");
-        if (startAt != null) {
-            request.param("startAt", String.valueOf(startAt));
-        }
-        if (maxResults != null) {
-            request.param("maxResults", String.valueOf(maxResults));
-        }
-        if (orderBy != null) {
-            request.param("orderBy", orderBy);
-        }
-        if (expand != null) {
-            request.param("expand", String.join(",", expand));
-        }
-        return request;
-
     }
 
     public GetCommentsRequest startAt(long startAt) {
@@ -119,7 +106,7 @@ public class GetCommentsRequest extends JiraRequest {
     }
 
     protected GenericUrl buildUrl(final String jiraHome, final String issueIdOrKey, final Long startAt, final Integer maxResults,
-            final String orderBy, final String[] expand) {
+                                  final String orderBy, final String[] expand) {
         final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/issue/" + issueIdOrKey + "/comment");
         if (startAt != null) {
             url.put("startAt", startAt);
