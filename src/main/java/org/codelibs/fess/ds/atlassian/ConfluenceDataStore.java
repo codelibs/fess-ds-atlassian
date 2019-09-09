@@ -42,9 +42,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ConfluenceDataStore extends AbstractDataStore {
+
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
+    protected static final String MIMETYPE_HTML = "text/html";
+
     // parameters
+    protected static final String IGNORE_ERROR = "ignore_error";
+    protected static final String INCLUDE_PATTERN = "include_pattern";
+    protected static final String EXCLUDE_PATTERN = "exclude_pattern";
+    protected static final String URL_FILTER = "url_filter";
+    protected static final String NUMBER_OF_THREADS = "number_of_threads";
+
     protected static final String HOME_PARAM = "home";
 
     protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
@@ -55,6 +64,8 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected static final String USERNAME_PARAM = "basicauth.username";
     protected static final String PASSWORD_PARAM = "basicauth.password";
 
+    protected static final String extractorName = "tikaExtractor";
+
     // scripts
     protected static final String CONTENT = "content";
     protected static final String CONTENT_TITLE = "title";
@@ -64,8 +75,6 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected static final String CONTENT_VIEW_URL = "view_url";
 
     protected static final int CONTENT_LIMIT = 25;
-
-    protected static final Extractor htmlExtractor = new HtmlExtractor();
 
     protected String getName() {
         return this.getClass().getSimpleName();
@@ -124,15 +133,14 @@ public class ConfluenceDataStore extends AbstractDataStore {
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
             final ConfluenceClient client, final long readInterval, final String confluenceHome, final Content content) {
-        final Map<String, Object> dataMap = new HashMap<>();
-        dataMap.putAll(defaultDataMap);
-        final Map<String, Object> resultMap = new LinkedHashMap<>();
-        resultMap.putAll(paramMap);
-        final Map<String, Object> contentMap = new HashMap<>();
+        final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
 
         try {
+            final Map<String, Object> resultMap = new LinkedHashMap<>(defaultDataMap);
+            final Map<String, Object> contentMap = new HashMap<>();
+
             contentMap.put(CONTENT_TITLE, content.getTitle());
-            contentMap.put(CONTENT_BODY, content.getBody());
+            contentMap.put(CONTENT_BODY, getExtractedTextFromBody(content.getBody()));
             contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
             contentMap.put(CONTENT_LAST_MODIFIED, content.getLastModified());
             contentMap.put(CONTENT_VIEW_URL, getContentViewUrl(content, confluenceHome));
@@ -163,10 +171,21 @@ public class ConfluenceDataStore extends AbstractDataStore {
         return sb.toString();
     }
 
-    // TODO
-    public static String getExtractedText(final String text) {
+
+    public static String getExtractedTextFromBody(final String body) {
+        return getExtractedText(body, MIMETYPE_HTML);
+    }
+
+    public static String getExtractedText(final String text, final String mimeType) {
+        Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(mimeType);
         final InputStream in = new ByteArrayInputStream(text.getBytes());
-        return htmlExtractor.getText(in, null).getContent();
+        if (extractor == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("use a default extractor as {} by {}", extractorName, mimeType);
+            }
+            extractor = ComponentUtil.getComponent(extractorName);
+        }
+        return extractor.getText(in, null).getContent();
     }
 
     protected String getContentViewUrl(final Content content, final String confluenceHome) {

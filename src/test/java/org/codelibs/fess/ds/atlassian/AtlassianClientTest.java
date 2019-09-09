@@ -16,9 +16,9 @@
 package org.codelibs.fess.ds.atlassian;
 
 import org.codelibs.fess.util.ComponentUtil;
-import org.dbflute.utflute.lastadi.ContainerTestCase;
+import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
-public class AtlassianClientTest extends ContainerTestCase {
+public class AtlassianClientTest extends LastaFluteTestCase {
 
     @Override
     protected String prepareConfigFile() {

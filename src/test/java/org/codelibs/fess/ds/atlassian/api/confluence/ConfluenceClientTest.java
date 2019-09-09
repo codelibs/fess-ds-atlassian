@@ -13,12 +13,12 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian;
+package org.codelibs.fess.ds.atlassian.api.confluence;
 
 import com.google.api.client.http.apache.ApacheHttpTransport;
+import org.codelibs.fess.ds.atlassian.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
@@ -34,7 +34,6 @@ import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
