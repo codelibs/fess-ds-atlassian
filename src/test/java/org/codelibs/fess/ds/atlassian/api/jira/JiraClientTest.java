@@ -134,7 +134,7 @@ public class JiraClientTest extends AtlassianClientTest {
                 "    }" + //
                 "  ]" + //
                 "}";
-        final SearchResponse response = SearchRequest.parseResponse(json, SearchResponse.class);
+        final SearchResponse response = SearchRequest.parseResponse(json);
         final List<Issue> issues = response.getIssues();
         for(int i = 0;i < issues.size();i++) {
             final Issue issue = issues.get(i);

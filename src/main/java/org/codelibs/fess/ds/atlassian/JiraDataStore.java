@@ -231,12 +231,12 @@ public class JiraDataStore extends AbstractDataStore {
         return sb.toString();
     }
 
-    protected Date getIssueLastModified(final Issue issue) {
+    protected String getIssueLastModified(final Issue issue) {
         final String updated = issue.getFields().getUpdated();
         try {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
-            return format.parse(updated);
+            return format.parse(updated).toString();
         } catch (final ParseException e) {
             logger.warn("Failed to parse: " + updated, e);
         }

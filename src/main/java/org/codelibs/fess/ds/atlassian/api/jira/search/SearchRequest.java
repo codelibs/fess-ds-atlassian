@@ -29,6 +29,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.GenericData;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.Response;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
@@ -68,7 +69,16 @@ public class SearchRequest extends JiraRequest {
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
-        return parseResponse(result, SearchResponse.class);
+        return parseResponse(result);
+    }
+
+    public static SearchResponse parseResponse(final String content) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(content, SearchResponse.class);
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
+        }
     }
 
     public SearchRequest jql(String jql) {
@@ -99,15 +109,6 @@ public class SearchRequest extends JiraRequest {
     public SearchRequest expand(String... expand) {
         this.expand = expand;
         return this;
-    }
-
-    public static SearchResponse parseResponse(final String content, final Class<SearchResponse> valueType) {
-        final ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readValue(content, valueType);
-        } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
-        }
     }
 
     protected GenericUrl buildUrl(final String jiraHome) {
