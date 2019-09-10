@@ -22,5 +22,8 @@ public class Comment {
 
     protected String body;
 
-    public String getBody() { return body; }
+    public String getBody() {
+        return body;
+    }
+
 }

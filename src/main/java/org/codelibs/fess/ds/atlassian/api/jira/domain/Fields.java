@@ -19,21 +19,31 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Fields {
+
     protected String summary;
     protected String updated;
     protected String description;
     protected Comments comment;
 
-    public String getSummary() { return summary; }
+    public String getSummary() {
+        return summary;
+    }
 
-    public String getUpdated() { return updated; }
+    public String getUpdated() {
+        return updated;
+    }
 
-    public String getDescription() { return description; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Comments getComment() { return comment; }
+    public Comments getComment() {
+        return comment;
+    }
 
     @Override
     public String toString() {
         return "Fields [summary=" + summary + ", updated=" + updated + ", description=" + description + "]";
     }
+
 }

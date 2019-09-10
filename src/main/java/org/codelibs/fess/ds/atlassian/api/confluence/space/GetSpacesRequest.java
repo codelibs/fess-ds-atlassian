@@ -18,68 +18,67 @@ package org.codelibs.fess.ds.atlassian.api.confluence.space;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 public class GetSpacesRequest extends ConfluenceRequest {
 
-    private String spaceKey, type, status, label, favourite;
+    private String spaceKey;
+    private String type;
+    private String status;
+    private String label;
+    private String favourite;
     private String[] expand;
-    private Integer start, limit;
+    private Integer start;
+    private Integer limit;
 
     public GetSpacesRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
         super(httpRequestFactory, appHome);
     }
 
-    public GetSpacesRequest spaceKey(String spaceKey) {
+    public GetSpacesRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
     }
 
-    public GetSpacesRequest type(String type) {
+    public GetSpacesRequest type(final String type) {
         this.type = type;
         return this;
     }
 
-    public GetSpacesRequest status(String status) {
+    public GetSpacesRequest status(final String status) {
         this.status = status;
         return this;
     }
 
-    public GetSpacesRequest label(String label) {
+    public GetSpacesRequest label(final String label) {
         this.label = label;
         return this;
     }
 
-    public GetSpacesRequest favourite(String favourite) {
+    public GetSpacesRequest favourite(final String favourite) {
         this.favourite = favourite;
         return this;
     }
 
-    public GetSpacesRequest expand(String... expand) {
+    public GetSpacesRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetSpacesRequest start(int start) {
+    public GetSpacesRequest start(final int start) {
         this.start = start;
         return this;
     }
 
-    public GetSpacesRequest limit(int limit) {
+    public GetSpacesRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }

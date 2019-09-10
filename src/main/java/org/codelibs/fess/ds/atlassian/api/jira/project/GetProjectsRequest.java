@@ -18,18 +18,13 @@ package org.codelibs.fess.ds.atlassian.api.jira.project;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
@@ -42,12 +37,12 @@ public class GetProjectsRequest extends JiraRequest {
         super(httpRequestFactory, appHome);
     }
 
-    public GetProjectsRequest expand(String... expand) {
+    public GetProjectsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetProjectsRequest recent(int recent) {
+    public GetProjectsRequest recent(final int recent) {
         this.recent = recent;
         return this;
     }
@@ -56,7 +51,7 @@ public class GetProjectsRequest extends JiraRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetProjectsResponse parseResponse(String json) {
+    public static GetProjectsResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Project> projects = new ArrayList<>();
         try {

@@ -16,42 +16,38 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
 public class GetContentRequest extends ConfluenceRequest {
 
-    private String id, status;
+    private String id;
+    private String status;
     private Integer version;
     private String[] expand;
 
-    public GetContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String id) {
+    public GetContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String id) {
         super(httpRequestFactory,  appHome);
         this.id = id;
     }
 
-    public GetContentRequest status(String status) {
+    public GetContentRequest status(final String status) {
         this.status = status;
         return this;
     }
 
-    public GetContentRequest version(int version) {
+    public GetContentRequest version(final int version) {
         this.version = version;
         return this;
     }
 
-    public GetContentRequest expand(String... expand) {
+    public GetContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
@@ -60,7 +56,7 @@ public class GetContentRequest extends ConfluenceRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetContentResponse parseResponse(String json) {
+    public static GetContentResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             return new GetContentResponse(mapper.readValue(json, Content.class));

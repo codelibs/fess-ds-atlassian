@@ -18,57 +18,51 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
-import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
-import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
 
     private final String id;
-    private Integer start, limit;
-    private String filename, mediaType;
+    private Integer start;
+    private Integer limit;
+    private String filename;
+    private String mediaType;
     private String[] expand;
 
-    public GetAttachmentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String id) {
+    public GetAttachmentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String id) {
         super(httpRequestFactory, appHome);
         this.id = id;
     }
 
-    public GetAttachmentsOfContentRequest start(int start) {
+    public GetAttachmentsOfContentRequest start(final int start) {
         this.start = start;
         return this;
     }
 
-    public GetAttachmentsOfContentRequest limit(int limit) {
+    public GetAttachmentsOfContentRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
-    public GetAttachmentsOfContentRequest filename(String filename) {
+    public GetAttachmentsOfContentRequest filename(final String filename) {
         this.filename = filename;
         return this;
     }
 
-    public GetAttachmentsOfContentRequest mediaType(String mediaType) {
+    public GetAttachmentsOfContentRequest mediaType(final String mediaType) {
         this.mediaType = mediaType;
         return this;
     }
 
-    public GetAttachmentsOfContentRequest expand(String... expand) {
+    public GetAttachmentsOfContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
@@ -77,7 +71,7 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetAttachmentsOfContentResponse parseResponse(String json) {
+    public static GetAttachmentsOfContentResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Attachment> attachments = new ArrayList<>();
         try {

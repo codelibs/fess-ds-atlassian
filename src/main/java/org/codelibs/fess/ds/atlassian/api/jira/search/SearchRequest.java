@@ -28,9 +28,11 @@ import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 public class SearchRequest extends JiraRequest {
 
     private String jql;
-    private Integer startAt, maxResults;
+    private Integer startAt;
+    private Integer maxResults;
     private Boolean validateQuery;
-    private String[] fields, expand;
+    private String[] fields;
+    private String[] expand;
 
     public SearchResponse execute() {
         return parseResponse(getHttpResponseAsString());
@@ -49,32 +51,32 @@ public class SearchRequest extends JiraRequest {
         }
     }
 
-    public SearchRequest jql(String jql) {
+    public SearchRequest jql(final String jql) {
         this.jql = jql;
         return this;
     }
 
-    public SearchRequest startAt(int startAt) {
+    public SearchRequest startAt(final int startAt) {
         this.startAt = startAt;
         return this;
     }
 
-    public SearchRequest maxResults(int maxResults) {
+    public SearchRequest maxResults(final int maxResults) {
         this.maxResults = maxResults;
         return this;
     }
 
-    public SearchRequest validateQuery(boolean validateQuery) {
+    public SearchRequest validateQuery(final boolean validateQuery) {
         this.validateQuery = validateQuery;
         return this;
     }
 
-    public SearchRequest fields(String... fields) {
+    public SearchRequest fields(final String... fields) {
         this.fields = fields;
         return this;
     }
 
-    public SearchRequest expand(String... expand) {
+    public SearchRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
@@ -85,7 +87,7 @@ public class SearchRequest extends JiraRequest {
     }
 
     protected GenericData buildData() {
-        GenericData data = new GenericData();
+        final GenericData data = new GenericData();
         if (jql != null && !jql.isEmpty()) {
             data.put("jql", jql);
         }

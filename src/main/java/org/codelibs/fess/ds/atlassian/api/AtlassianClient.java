@@ -98,7 +98,7 @@ public abstract class AtlassianClient {
         return httpRequestFactory;
     }
 
-    protected String getHome(Map<String, String> paramMap) {
+    protected String getHome(final Map<String, String> paramMap) {
         if (paramMap.containsKey(HOME_PARAM)) {
             return paramMap.get(HOME_PARAM);
         }

@@ -19,20 +19,31 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Issue {
+
     protected String id;
     protected String self;
     protected String expand;
     protected String key;
     protected Fields fields;
 
-    public String getId() { return id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getSelf() { return self; }
+    public String getSelf() {
+        return self;
+    }
 
-    public String getExpand() { return expand; }
+    public String getExpand() {
+        return expand;
+    }
 
-    public String getKey() { return key; }
+    public String getKey() {
+        return key;
+    }
 
-    public Fields getFields() { return fields; }
+    public Fields getFields() {
+        return fields;
+    }
 
 }

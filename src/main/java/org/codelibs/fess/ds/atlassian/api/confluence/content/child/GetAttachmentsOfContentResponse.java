@@ -23,7 +23,7 @@ public class GetAttachmentsOfContentResponse {
 
     protected List<Attachment> attachments;
 
-    public GetAttachmentsOfContentResponse(List<Attachment> attachments) {
+    public GetAttachmentsOfContentResponse(final List<Attachment> attachments) {
         this.attachments = attachments;
     }
 

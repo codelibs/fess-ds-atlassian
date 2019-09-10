@@ -16,18 +16,12 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
-import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
@@ -36,12 +30,12 @@ public class GetSpaceRequest extends ConfluenceRequest {
     private final String spaceKey;
     private String[] expand;
 
-    public GetSpaceRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String spaceKey) {
+    public GetSpaceRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String spaceKey) {
         super(httpRequestFactory, appHome);
         this.spaceKey = spaceKey;
     }
 
-    public GetSpaceRequest expand(String... expand) {
+    public GetSpaceRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
@@ -50,7 +44,7 @@ public class GetSpaceRequest extends ConfluenceRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetSpaceResponse parseResponse(String json) {
+    public static GetSpaceResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final Space space = mapper.readValue(json, Space.class);
@@ -68,4 +62,5 @@ public class GetSpaceRequest extends ConfluenceRequest {
         }
         return url;
     }
+
 }

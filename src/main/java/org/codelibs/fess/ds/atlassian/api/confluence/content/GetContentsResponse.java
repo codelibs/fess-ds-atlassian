@@ -23,7 +23,7 @@ public class GetContentsResponse {
 
     protected final List<Content> contents;
 
-    public GetContentsResponse(List<Content> contents) {
+    public GetContentsResponse(final List<Content> contents) {
         this.contents = contents;
     }
 

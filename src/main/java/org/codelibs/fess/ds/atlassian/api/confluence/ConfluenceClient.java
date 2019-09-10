@@ -60,7 +60,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return new GetSpacesRequest(request(), getConfluenceHome());
     }
 
-    public GetSpaceRequest getSpace(String spaceKey) {
+    public GetSpaceRequest getSpace(final String spaceKey) {
         return new GetSpaceRequest(request(), getConfluenceHome(), spaceKey);
     }
 
@@ -68,15 +68,15 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return new GetContentsRequest(request(), getConfluenceHome());
     }
 
-    public GetContentRequest getContent(String contentId) {
+    public GetContentRequest getContent(final String contentId) {
         return new GetContentRequest(request(), getConfluenceHome(), contentId);
     }
 
-    public GetCommentsOfContentRequest getCommentsOfContent(String contentId) {
+    public GetCommentsOfContentRequest getCommentsOfContent(final String contentId) {
         return new GetCommentsOfContentRequest(request(), getConfluenceHome(), contentId);
     }
 
-    public GetAttachmentsOfContentRequest getAttachmentsOfContent(String contentId) {
+    public GetAttachmentsOfContentRequest getAttachmentsOfContent(final String contentId) {
         return new GetAttachmentsOfContentRequest(request(), getConfluenceHome(), contentId);
     }
 

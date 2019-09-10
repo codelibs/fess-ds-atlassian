@@ -26,6 +26,7 @@ import java.util.TimeZone;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Content {
+
     protected String id;
     protected String type;
     protected String title;
@@ -75,4 +76,5 @@ public class Content {
             throw e; // TODO
         }
     }
+
 }

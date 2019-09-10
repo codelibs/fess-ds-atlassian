@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comment {
+
     protected String title;
     @JsonIgnore
     protected String body;
@@ -41,4 +42,5 @@ public class Comment {
         final String value = (String) view.get("value");
         this.body = value;
     }
+
 }

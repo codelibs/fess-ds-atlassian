@@ -23,7 +23,7 @@ public class GetProjectsResponse {
 
     protected final List<Project> projects;
 
-    public GetProjectsResponse(List<Project> projects) {
+    public GetProjectsResponse(final List<Project> projects) {
         this.projects = projects;
     }
 

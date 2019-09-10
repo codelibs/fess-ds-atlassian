@@ -16,42 +16,39 @@
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 public class GetIssueRequest extends JiraRequest {
 
     private final String issueIdOrKey;
-    private String[] fields, expand, properties;
+    private String[] fields;
+    private String[] expand;
+    private String[] properties;
 
-    public GetIssueRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String issueIdOrKey) {
+    public GetIssueRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String issueIdOrKey) {
         super(httpRequestFactory, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
 
-    public GetIssueRequest fields(String... fields) {
+    public GetIssueRequest fields(final String... fields) {
         this.fields = fields;
         return this;
     }
 
-    public GetIssueRequest expand(String... expand) {
+    public GetIssueRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetIssueRequest properties(String... properties) {
+    public GetIssueRequest properties(final String... properties) {
         this.properties = properties;
         return this;
     }
@@ -60,7 +57,7 @@ public class GetIssueRequest extends JiraRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetIssueResponse parseResponse(String json) {
+    public static GetIssueResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final Issue issue = mapper.readValue(json, new TypeReference<Issue>() {

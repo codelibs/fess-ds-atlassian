@@ -23,6 +23,7 @@ import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Attachment {
+
     protected String title;
     @JsonIgnore
     protected String mediaType;
@@ -51,4 +52,5 @@ public class Attachment {
     public void unpackLinks(Map<String,Object> links) {
         this.downloadLink = (String) links.get("download");
     }
+
 }

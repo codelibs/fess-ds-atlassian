@@ -21,10 +21,16 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comments {
+
     protected Long total;
     protected List<Comment> comments;
 
-    public Long getTotal() { return total; }
+    public Long getTotal() {
+        return total;
+    }
 
-    public List<Comment> getComments() { return comments; }
+    public List<Comment> getComments() {
+        return comments;
+    }
+
 }

@@ -16,17 +16,11 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
-import java.util.Scanner;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
@@ -35,12 +29,12 @@ public class GetProjectRequest extends JiraRequest {
     private final String projectIdOrKey;
     private String[] expand;
 
-    public GetProjectRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String projectIdOrKey) {
+    public GetProjectRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String projectIdOrKey) {
         super(httpRequestFactory, appHome);
         this.projectIdOrKey = projectIdOrKey;
     }
 
-    public GetProjectRequest expand(String... expand) {
+    public GetProjectRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }

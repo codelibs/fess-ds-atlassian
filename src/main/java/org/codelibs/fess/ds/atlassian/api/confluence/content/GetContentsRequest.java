@@ -18,68 +18,67 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
-import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
 public class GetContentsRequest extends ConfluenceRequest {
 
-    private String type, spaceKey, title, status, postingDay;
+    private String type;
+    private String spaceKey;
+    private String title;
+    private String status;
+    private String postingDay;
     private String[] expand;
-    private Integer start, limit;
+    private Integer start;
+    private Integer limit;
 
     public GetContentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
         super(httpRequestFactory, appHome);
     }
 
-    public GetContentsRequest type(String type) {
+    public GetContentsRequest type(final String type) {
         this.type = type;
         return this;
     }
 
-    public GetContentsRequest spaceKey(String spaceKey) {
+    public GetContentsRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
     }
 
-    public GetContentsRequest title(String title) {
+    public GetContentsRequest title(final String title) {
         this.title = title;
         return this;
     }
 
-    public GetContentsRequest status(String status) {
+    public GetContentsRequest status(final String status) {
         this.status = status;
         return this;
     }
 
-    public GetContentsRequest postingDay(String postingDay) {
+    public GetContentsRequest postingDay(final String postingDay) {
         this.postingDay = postingDay;
         return this;
     }
 
-    public GetContentsRequest expand(String... expand) {
+    public GetContentsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetContentsRequest start(int start) {
+    public GetContentsRequest start(final int start) {
         this.start = start;
         return this;
     }
 
-    public GetContentsRequest limit(int limit) {
+    public GetContentsRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
@@ -88,7 +87,7 @@ public class GetContentsRequest extends ConfluenceRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetContentsResponse parseResponse(String json) {
+    public static GetContentsResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Content> contents = new ArrayList<>();
         try {
@@ -130,4 +129,5 @@ public class GetContentsRequest extends ConfluenceRequest {
         }
         return url;
     }
+
 }

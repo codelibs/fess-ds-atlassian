@@ -23,7 +23,7 @@ public class GetCommentsOfContentResponse {
 
     protected final List<Comment> comments;
 
-    public GetCommentsOfContentResponse(List<Comment> comments) {
+    public GetCommentsOfContentResponse(final List<Comment> comments) {
         this.comments = comments;
     }
 

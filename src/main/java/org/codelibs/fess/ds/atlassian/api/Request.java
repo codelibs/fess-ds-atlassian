@@ -46,7 +46,6 @@ public abstract class Request {
     public abstract GenericUrl buildUrl();
 
     public String getHttpResponseAsString() {
-        String result = "";
         final GenericUrl url = buildUrl();
         try {
             final HttpRequest request = request().buildGetRequest(url);
@@ -56,8 +55,9 @@ public abstract class Request {
             }
             final Scanner s = new Scanner(response.getContent());
             s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
+            final String result = s.hasNext() ? s.next() : "";
             s.close();
+            return result;
         } catch (HttpResponseException e) {
             if (e.getStatusCode() == 404) {
                 throw new AtlassianDataStoreException("The requested issue is not found, or the user does not have permission to view it.",
@@ -68,7 +68,6 @@ public abstract class Request {
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to request: " + url, e);
         }
-        return result;
     }
 
 

@@ -21,7 +21,7 @@ public class GetContentResponse {
 
     protected final Content content;
 
-    public GetContentResponse(Content content) {
+    public GetContentResponse(final Content content) {
         this.content = content;
     }
 

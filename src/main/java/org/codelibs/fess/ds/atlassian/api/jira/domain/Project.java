@@ -42,6 +42,8 @@ public class Project {
         return id;
     }
 
-    public String getDescription() { return description; }
+    public String getDescription() {
+        return description;
+    }
 
 }

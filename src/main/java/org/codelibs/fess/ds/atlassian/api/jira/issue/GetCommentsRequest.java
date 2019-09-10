@@ -18,17 +18,12 @@ package org.codelibs.fess.ds.atlassian.api.jira.issue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
@@ -41,7 +36,7 @@ public class GetCommentsRequest extends JiraRequest {
     private String orderBy;
     private String[] expand;
 
-    public GetCommentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String issueIdOrKey) {
+    public GetCommentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String issueIdOrKey) {
         super(httpRequestFactory, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
@@ -70,7 +65,7 @@ public class GetCommentsRequest extends JiraRequest {
         return parseResponse(getHttpResponseAsString());
     }
 
-    public static GetCommentsResponse parseResponse(String json) {
+    public static GetCommentsResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Comment> comments = new ArrayList<>();
         try {

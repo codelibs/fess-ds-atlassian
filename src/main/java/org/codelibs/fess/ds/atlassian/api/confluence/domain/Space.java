@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Space {
+
     protected String key;
     protected String name;
     protected String description;
@@ -34,4 +35,5 @@ public class Space {
     public String getDescription() {
         return description;
     }
+
 }

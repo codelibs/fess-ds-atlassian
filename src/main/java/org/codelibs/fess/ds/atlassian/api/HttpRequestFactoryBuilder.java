@@ -63,7 +63,7 @@ public class HttpRequestFactoryBuilder {
         void apply(OAuthGetAccessToken accessToken);
     }
 
-    public static OAuthRsaSigner getOAuthRsaSigner(String privateKey) {
+    public static OAuthRsaSigner getOAuthRsaSigner(final String privateKey) {
         try {
             OAuthRsaSigner oAuthRsaSigner = new OAuthRsaSigner();
             oAuthRsaSigner.privateKey = getPrivateKey(privateKey);
@@ -73,7 +73,7 @@ public class HttpRequestFactoryBuilder {
         }
     }
 
-    private static PrivateKey getPrivateKey(String privateKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static PrivateKey getPrivateKey(final String privateKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] privateBytes = Base64.decodeBase64(privateKey);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateBytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");

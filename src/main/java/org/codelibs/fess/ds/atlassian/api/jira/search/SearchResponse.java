@@ -31,4 +31,5 @@ public class SearchResponse {
     public List<Issue> getIssues() {
         return issues;
     }
+
 }

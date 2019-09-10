@@ -20,6 +20,7 @@ import java.util.List;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 
 public class GetCommentsResponse {
+
     protected final List<Comment> comments;
 
     public GetCommentsResponse(final List<Comment> comments) {
