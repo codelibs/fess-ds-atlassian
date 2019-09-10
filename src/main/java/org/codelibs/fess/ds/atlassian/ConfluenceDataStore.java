@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,8 +55,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     protected static final String CONTENT_LAST_MODIFIED = "last_modified";
     protected static final String CONTENT_VIEW_URL = "view_url";
 
-    protected static final int CONTENT_LIMIT = 25;
-
+    @Override
     protected String getName() {
         return this.getClass().getSimpleName();
     }
@@ -127,7 +127,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             contentMap.put(CONTENT_TITLE, content.getTitle());
             contentMap.put(CONTENT_BODY, getExtractedTextFromBody(content.getBody()));
             contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
-            contentMap.put(CONTENT_LAST_MODIFIED, content.getLastModified());
+            contentMap.put(CONTENT_LAST_MODIFIED, getLastModifiedAsDate(content.getLastModified()));
             contentMap.put(CONTENT_VIEW_URL, url);
             resultMap.put(CONTENT, contentMap);
 
@@ -175,7 +175,6 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected String getContentComments(final Content content, final ConfluenceClient client) {
         final StringBuilder sb = new StringBuilder();
         final String id = content.getId();
@@ -186,6 +185,10 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             });
 
         return sb.toString();
+    }
+
+    protected Date getLastModifiedAsDate(final Long date) {
+        return new Date(date * 1000L);
     }
 
     public static String getExtractedTextFromBody(final String body) {
@@ -207,7 +210,6 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     protected String getContentViewUrl(final Content content, final String confluenceHome) {
         final String id = content.getId();
         final String type = content.getType();
-        @SuppressWarnings("unchecked")
         final Space space = content.getSpace();
         final String spaceKey = space.getKey();
         return confluenceHome + "/spaces/" + spaceKey + "/" + (type.equals("blogpost") ? "blog" : "page") + "/" + id;

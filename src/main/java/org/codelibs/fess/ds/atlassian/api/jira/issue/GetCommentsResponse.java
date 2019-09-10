@@ -17,10 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 
-public class GetCommentsResponse extends Response {
+public class GetCommentsResponse {
     protected final List<Comment> comments;
 
     public GetCommentsResponse(final List<Comment> comments) {

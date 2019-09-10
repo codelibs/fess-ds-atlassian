@@ -44,28 +44,6 @@ public class GetSpacesRequest extends ConfluenceRequest {
         super(httpRequestFactory, appHome);
     }
 
-    @Override
-    public GetSpacesResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), spaceKey, type, status, label, favourite, expand, start, limit);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetSpacesRequest spaceKey(String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
@@ -106,7 +84,11 @@ public class GetSpacesRequest extends ConfluenceRequest {
         return this;
     }
 
-    public static GetSpacesResponse fromJson(String json) {
+    public GetSpacesResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetSpacesResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Space> spaces = new ArrayList<>();
         try {
@@ -119,9 +101,9 @@ public class GetSpacesRequest extends ConfluenceRequest {
         return new GetSpacesResponse(spaces);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String type, final String status,
-            final String label, final String favourite, final String[] expand, final Integer start, final Integer limit) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/space");
         if (spaceKey != null) {
             url.put("spaceKey", spaceKey);
         }

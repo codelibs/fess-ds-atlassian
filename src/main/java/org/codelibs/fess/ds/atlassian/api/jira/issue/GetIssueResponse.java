@@ -15,10 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
-import org.codelibs.fess.ds.atlassian.api.jira.JiraResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
-public class GetIssueResponse extends JiraResponse {
+public class GetIssueResponse {
     protected final Issue issue;
 
     public GetIssueResponse(final Issue issue) {

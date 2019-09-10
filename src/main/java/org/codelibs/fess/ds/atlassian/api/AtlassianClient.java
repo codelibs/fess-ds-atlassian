@@ -15,7 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.io.Closeable;
 import java.util.Map;
 
 import com.google.api.client.http.HttpRequestFactory;
@@ -49,7 +48,7 @@ public abstract class AtlassianClient {
     public AtlassianClient(final Map<String, String> paramMap) {
 
         final String home = getHome(paramMap);
-        final String userName = getUserName(paramMap);
+        final String username = getUserName(paramMap);
         final String password = getPassword(paramMap);
         final String consumerKey = getConsumerKey(paramMap);
         final String privateKey = getPrivateKey(paramMap);
@@ -64,10 +63,10 @@ public abstract class AtlassianClient {
         final String authType = getAuthType(paramMap);
         switch (authType) {
             case BASIC: {
-                if (userName.isEmpty() || password.isEmpty()) {
+                if (username.isEmpty() || password.isEmpty()) {
                     throw new AtlassianDataStoreException("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + " required for Basic authentication.");
                 }
-                httpRequestFactory = builder().basicAuth(userName, password).build();
+                httpRequestFactory = builder().basicAuth(username, password).build();
                 break;
             }
             case OAUTH: {
@@ -77,7 +76,7 @@ public abstract class AtlassianClient {
                 }
                 httpRequestFactory = builder().oAuthToken(home, accessToken -> {
                     accessToken.consumerKey = consumerKey;
-                    accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
+                    accessToken.signer = HttpRequestFactoryBuilder.getOAuthRsaSigner(privateKey);
                     accessToken.transport = new ApacheHttpTransport();
                     accessToken.verifier = verifier;
                     accessToken.temporaryToken = temporaryToken;
@@ -91,8 +90,8 @@ public abstract class AtlassianClient {
 
     }
 
-    public static AtlassianClientBuilder builder() {
-        return new AtlassianClientBuilder();
+    public static HttpRequestFactoryBuilder builder() {
+        return new HttpRequestFactoryBuilder();
     }
 
     public HttpRequestFactory request() {

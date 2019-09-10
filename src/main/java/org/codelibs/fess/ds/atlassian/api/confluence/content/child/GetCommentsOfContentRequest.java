@@ -45,34 +45,6 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
         this.id = id;
     }
 
-    @Override
-    public GetCommentsOfContentResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), id, parentVersion, start, limit, location, depth, expand);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "There is no content with the given id, or the calling user does not have permission to view the content: " + id,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetCommentsOfContentRequest parentVersion(int parentVersion) {
         this.parentVersion = parentVersion;
         return this;
@@ -103,7 +75,11 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
         return this;
     }
 
-    public static GetCommentsOfContentResponse fromJson(String json) {
+    public GetCommentsOfContentResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetCommentsOfContentResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         List<Comment> comments = new ArrayList<>();
         try {
@@ -116,9 +92,9 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
         return new GetCommentsOfContentResponse(comments);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String id, final Integer parentVersion, final Integer start,
-            final Integer limit, final String location, final String depth, final String[] expand) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content/" + id + "/child/comment");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content/" + id + "/child/comment");
         if (parentVersion != null) {
             url.put("parentVersion", parentVersion);
         }

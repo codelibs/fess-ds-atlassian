@@ -16,12 +16,10 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.util.List;
-import java.util.Map;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 
-public class GetAttachmentsOfContentResponse extends ConfluenceResponse {
+public class GetAttachmentsOfContentResponse {
 
     protected List<Attachment> attachments;
 

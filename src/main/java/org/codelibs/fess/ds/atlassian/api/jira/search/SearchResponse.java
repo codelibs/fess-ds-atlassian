@@ -18,11 +18,10 @@ package org.codelibs.fess.ds.atlassian.api.jira.search;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.codelibs.fess.ds.atlassian.api.Response;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchResponse extends Response {
+public class SearchResponse {
 
     protected Long total;
     protected List<Issue> issues;

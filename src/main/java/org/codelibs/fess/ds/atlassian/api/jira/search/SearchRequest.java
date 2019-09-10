@@ -16,22 +16,13 @@
 package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.GenericData;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Response;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
 public class SearchRequest extends JiraRequest {
@@ -41,44 +32,20 @@ public class SearchRequest extends JiraRequest {
     private Boolean validateQuery;
     private String[] fields, expand;
 
+    public SearchResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
     public SearchRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
         super(httpRequestFactory, appHome);
     }
 
-    @Override
-    public SearchResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome());
-        final HttpContent content =
-                new JsonHttpContent(new JacksonFactory(), buildData(jql, startAt, maxResults, validateQuery, fields, expand));
-        try {
-            final HttpRequest request = request().buildPostRequest(url, content);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 400) {
-                throw new AtlassianDataStoreException("There is a problem with the JQL query: " + jql, e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return parseResponse(result);
-    }
-
-    public static SearchResponse parseResponse(final String content) {
+    public static SearchResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.readValue(content, SearchResponse.class);
+            return mapper.readValue(json, SearchResponse.class);
         } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse: \"" + content + "\"", e);
+            throw new AtlassianDataStoreException("Failed to parse: \"" + json + "\"", e);
         }
     }
 
@@ -112,12 +79,12 @@ public class SearchRequest extends JiraRequest {
         return this;
     }
 
-    protected GenericUrl buildUrl(final String jiraHome) {
-        return new GenericUrl(jiraHome + "/rest/api/latest/search");
+    @Override
+    public GenericUrl buildUrl() {
+        return new GenericUrl(appHome() + "/rest/api/latest/search");
     }
 
-    protected GenericData buildData(final String jql, final Integer startAt, final Integer maxResults, final Boolean validateQuery,
-            final String[] fields, final String[] expand) {
+    protected GenericData buildData() {
         GenericData data = new GenericData();
         if (jql != null && !jql.isEmpty()) {
             data.put("jql", jql);

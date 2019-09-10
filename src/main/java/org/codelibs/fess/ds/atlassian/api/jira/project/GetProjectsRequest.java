@@ -42,28 +42,6 @@ public class GetProjectsRequest extends JiraRequest {
         super(httpRequestFactory, appHome);
     }
 
-    @Override
-    public GetProjectsResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), expand, recent);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetProjectsRequest expand(String... expand) {
         this.expand = expand;
         return this;
@@ -74,7 +52,11 @@ public class GetProjectsRequest extends JiraRequest {
         return this;
     }
 
-    public static GetProjectsResponse fromJson(String json) {
+    public GetProjectsResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetProjectsResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Project> projects = new ArrayList<>();
         try {
@@ -86,8 +68,9 @@ public class GetProjectsRequest extends JiraRequest {
         return new GetProjectsResponse(projects);
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String[] expand, final Integer recent) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/project");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/project");
         if (expand != null) {
             url.put("expand", String.join(",", expand));
         }

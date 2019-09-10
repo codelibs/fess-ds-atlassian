@@ -15,9 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import com.google.api.client.http.HttpRequestFactory;
+import java.io.IOException;
+import java.util.Scanner;
 
-public abstract class Request<T extends Response> {
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+
+public abstract class Request {
 
     protected final HttpRequestFactory httpRequestFactory;
     protected final String appHome;
@@ -35,6 +43,33 @@ public abstract class Request<T extends Response> {
         return appHome;
     }
 
-    public abstract T execute();
+    public abstract GenericUrl buildUrl();
+
+    public String getHttpResponseAsString() {
+        String result = "";
+        final GenericUrl url = buildUrl();
+        try {
+            final HttpRequest request = request().buildGetRequest(url);
+            final HttpResponse response = request.execute();
+            if (response.getStatusCode() != 200) {
+                throw new HttpResponseException(response);
+            }
+            final Scanner s = new Scanner(response.getContent());
+            s.useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (HttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new AtlassianDataStoreException("The requested issue is not found, or the user does not have permission to view it.",
+                        e);
+            } else {
+                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
+            }
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to request: " + url, e);
+        }
+        return result;
+    }
+
 
 }

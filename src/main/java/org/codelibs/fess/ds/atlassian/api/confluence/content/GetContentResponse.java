@@ -15,10 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-public class GetContentResponse extends ConfluenceResponse {
+public class GetContentResponse {
 
     protected final Content content;
 

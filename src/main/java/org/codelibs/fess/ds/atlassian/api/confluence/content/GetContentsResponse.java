@@ -17,10 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-public class GetContentsResponse extends ConfluenceResponse {
+public class GetContentsResponse {
 
     protected final List<Content> contents;
 

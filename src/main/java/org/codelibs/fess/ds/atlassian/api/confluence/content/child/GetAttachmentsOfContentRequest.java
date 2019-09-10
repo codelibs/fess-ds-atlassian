@@ -48,34 +48,6 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
         this.id = id;
     }
 
-    @Override
-    public GetAttachmentsOfContentResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), id, start, limit, filename, mediaType, expand);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : StringUtil.EMPTY;
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "There is no content with the given id, or the calling user does not have permission to view the content: " + id,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetAttachmentsOfContentRequest start(int start) {
         this.start = start;
         return this;
@@ -101,7 +73,11 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
         return this;
     }
 
-    public static GetAttachmentsOfContentResponse fromJson(String json) {
+    public GetAttachmentsOfContentResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetAttachmentsOfContentResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Attachment> attachments = new ArrayList<>();
         try {
@@ -114,9 +90,9 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
         return new GetAttachmentsOfContentResponse(attachments);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String id, final Integer start, final Integer limit,
-            final String filename, final String mediaType, final String[] expand) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content/" + id + "/child/attachment");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content/" + id + "/child/attachment");
         if (start != null) {
             url.put("start", start);
         }

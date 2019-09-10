@@ -15,10 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectResponse extends Response {
+public class GetProjectResponse {
 
     protected final Project project;
 

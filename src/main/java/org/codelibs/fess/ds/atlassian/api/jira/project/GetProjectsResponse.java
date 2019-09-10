@@ -17,10 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.jira.JiraResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectsResponse extends JiraResponse {
+public class GetProjectsResponse {
 
     protected final List<Project> projects;
 

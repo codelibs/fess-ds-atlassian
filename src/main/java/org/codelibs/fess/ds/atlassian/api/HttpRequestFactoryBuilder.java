@@ -28,21 +28,21 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 
-public class AtlassianClientBuilder {
+public class HttpRequestFactoryBuilder {
 
     private OAuthGetAccessToken oAuthGetAccessToken;
     private BasicAuthentication basicAuthentication;
 
-    AtlassianClientBuilder() {
+    HttpRequestFactoryBuilder() {
     }
 
-    public AtlassianClientBuilder oAuthToken(final String appHome, final OAuthTokenSupplier supplier) {
+    public HttpRequestFactoryBuilder oAuthToken(final String appHome, final OAuthTokenSupplier supplier) {
         oAuthGetAccessToken = new OAuthGetAccessToken(appHome);
         supplier.apply(oAuthGetAccessToken);
         return this;
     }
 
-    public AtlassianClientBuilder basicAuth(final String userName, final String password) {
+    public HttpRequestFactoryBuilder basicAuth(final String userName, final String password) {
         basicAuthentication = new BasicAuthentication(userName, password);
         return this;
     }

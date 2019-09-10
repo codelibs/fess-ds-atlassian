@@ -41,41 +41,16 @@ public class GetSpaceRequest extends ConfluenceRequest {
         this.spaceKey = spaceKey;
     }
 
-    @Override
-    public GetSpaceResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), spaceKey, expand);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : StringUtil.EMPTY;
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "There is no space with the given key, or if the calling user does not have permission to view the space: "
-                                + spaceKey,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetSpaceRequest expand(String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public static GetSpaceResponse fromJson(String json) {
+    public GetSpaceResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetSpaceResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final Space space = mapper.readValue(json, Space.class);
@@ -85,8 +60,9 @@ public class GetSpaceRequest extends ConfluenceRequest {
         }
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String[] expand) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space/" + spaceKey);
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/space/" + spaceKey);
         if (expand != null) {
             url.put("expand", String.join(",", expand));
         }

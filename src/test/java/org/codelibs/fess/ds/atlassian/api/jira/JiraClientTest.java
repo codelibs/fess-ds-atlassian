@@ -59,7 +59,7 @@ public class JiraClientTest extends AtlassianClientTest {
         }
     }
 
-    public void test_getProjects_fromJson() {
+    public void test_getProjects_parseResponse() {
         String json = "[{" + //
                 "    \"name\": \"Project-0\"" + //
                 "  }," + //
@@ -67,7 +67,7 @@ public class JiraClientTest extends AtlassianClientTest {
                 "    \"name\": \"Project-1\"" + //
                 "  }" + //
                 "]";
-        final GetProjectsResponse response = GetProjectsRequest.fromJson(json);
+        final GetProjectsResponse response = GetProjectsRequest.parseResponse(json);
         final List<Project> projects = response.getProjects();
         for (int i = 0; i < projects.size(); i++) {
             final Project project = projects.get(i);
@@ -102,7 +102,7 @@ public class JiraClientTest extends AtlassianClientTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void test_search_fromJson() {
+    public void test_search_parseResponse() {
         final String json = "{" + //
                 "  \"total\": 2," + //
                 "  \"issues\": [{" + //
@@ -158,7 +158,7 @@ public class JiraClientTest extends AtlassianClientTest {
         }
     }
 
-    public void test_getComments_fromJson() {
+    public void test_getComments_parseResponse() {
         final String json = "{" + //
                 "  \"total\": 1," + //
                 "  \"comments\": [" + //
@@ -166,7 +166,7 @@ public class JiraClientTest extends AtlassianClientTest {
                 "    { \"body\": \"Comment-1\" }" + //
                 "  ]" + //
                 "}";
-        final GetCommentsResponse response = GetCommentsRequest.fromJson(json);
+        final GetCommentsResponse response = GetCommentsRequest.parseResponse(json);
         final List<Comment> comments = response.getComments();
         for (int i = 0; i < comments.size(); i++) {
             final Comment comment = comments.get(i);

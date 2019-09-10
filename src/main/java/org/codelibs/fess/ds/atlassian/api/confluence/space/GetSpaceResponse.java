@@ -15,10 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-public class GetSpaceResponse extends ConfluenceResponse {
+public class GetSpaceResponse {
 
     protected Space space;
 

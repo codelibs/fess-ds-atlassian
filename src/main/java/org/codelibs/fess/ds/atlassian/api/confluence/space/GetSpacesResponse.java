@@ -17,10 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-public class GetSpacesResponse extends ConfluenceResponse {
+public class GetSpacesResponse {
 
     protected List<Space> spaces;
 

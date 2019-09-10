@@ -66,7 +66,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void test_getContents_fromJson() {
+    public void test_getContents_parseResponse() {
         final String json = "{" + //
                 "  \"results\": [{" + //
                 "      \"title\": \"Title-0\"," + //
@@ -80,7 +80,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "    }" + //
                 "  ]" + //
                 "}";
-        final GetContentsResponse response = GetContentsRequest.fromJson(json);
+        final GetContentsResponse response = GetContentsRequest.parseResponse(json);
         final List<Content> contents = response.getContents();
         for (int i = 0; i < contents.size(); i++) {
             final Content content = contents.get(i);
@@ -112,7 +112,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void test_getCommentsOfContent_fromJson() {
+    public void test_getCommentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
                 "    {" + //
@@ -125,7 +125,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "    }" + //
                 "  ]" + //
                 "}";
-        final GetCommentsOfContentResponse response = GetCommentsOfContentRequest.fromJson(json);
+        final GetCommentsOfContentResponse response = GetCommentsOfContentRequest.parseResponse(json);
         final List<Comment> comments = response.getComments();
         for (int i = 0; i < comments.size(); i++) {
             final Comment comment = comments.get(i);
@@ -149,7 +149,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void test_getAttachmentsOfContent_fromJson() {
+    public void test_getAttachmentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
                 "    {" + //
@@ -161,7 +161,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "    }" + //
                 "  ]" + //
                 "}";
-        final GetAttachmentsOfContentResponse response = GetAttachmentsOfContentRequest.fromJson(json);
+        final GetAttachmentsOfContentResponse response = GetAttachmentsOfContentRequest.parseResponse(json);
         final List<Attachment> attachments = response.getAttachments();
         final Attachment attachment = attachments.get(0);
         assertEquals("title.txt", attachment.getTitle());
@@ -177,14 +177,14 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    public void test_getSpaces_fromJson() {
+    public void test_getSpaces_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
                 "    { \"name\": \"Space-0\" }," + //
                 "    { \"name\": \"Space-1\" }" + //
                 "  ]" + //
                 "}";
-        final GetSpacesResponse response = GetSpacesRequest.fromJson(json);
+        final GetSpacesResponse response = GetSpacesRequest.parseResponse(json);
         final List<Space> spaces = response.getSpaces();
         for (int i = 0; i < spaces.size(); i++) {
             final Space space = spaces.get(i);
@@ -195,7 +195,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     protected void doGetSpaceTest(final ConfluenceClient confluenceClient) {
         // TODO
     }
-    public void test_getSpace_fromJson() {
+    public void test_getSpace_parseResponse() {
         // TODO
     }
 }

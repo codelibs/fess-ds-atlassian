@@ -46,35 +46,6 @@ public class GetCommentsRequest extends JiraRequest {
         this.issueIdOrKey = issueIdOrKey;
     }
 
-    @Override
-    public GetCommentsResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), issueIdOrKey, startAt, maxResults, orderBy, expand);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "The issue with the given id/key does not exist or if the currently authenticated user does not have permission to view it: "
-                                + issueIdOrKey,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetCommentsRequest startAt(long startAt) {
         this.startAt = startAt;
         return this;
@@ -95,7 +66,11 @@ public class GetCommentsRequest extends JiraRequest {
         return this;
     }
 
-    public static GetCommentsResponse fromJson(String json) {
+    public GetCommentsResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetCommentsResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Comment> comments = new ArrayList<>();
         try {
@@ -106,9 +81,9 @@ public class GetCommentsRequest extends JiraRequest {
         return new GetCommentsResponse(comments);
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String issueIdOrKey, final Long startAt, final Integer maxResults,
-                                  final String orderBy, final String[] expand) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/issue/" + issueIdOrKey + "/comment");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/issue/" + issueIdOrKey + "/comment");
         if (startAt != null) {
             url.put("startAt", startAt);
         }

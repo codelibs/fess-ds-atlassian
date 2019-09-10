@@ -42,10 +42,6 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
     protected static final String READ_INTERVAL = "read_interval";
 
-    protected String getName() {
-        return "Atlassian";
-    }
-
     protected UrlFilter getUrlFilter(final Map<String, String> paramMap) {
         final UrlFilter urlFilter = ComponentUtil.getComponent(UrlFilter.class);
         final String include = paramMap.get(INCLUDE_PATTERN);

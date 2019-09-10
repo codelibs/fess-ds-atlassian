@@ -25,8 +25,6 @@ import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.codelibs.core.lang.StringUtil;
-import org.codelibs.fess.Constants;
 import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
@@ -56,8 +54,9 @@ public class JiraDataStore extends AtlassianDataStore {
     protected static final String ISSUE_LAST_MODIFIED = "last_modified";
     protected static final String ISSUE_VIEW_URL = "view_url";
 
+    @Override
     protected String getName() {
-        return "Jira";
+        return this.getClass().getSimpleName();
     }
 
     @Override

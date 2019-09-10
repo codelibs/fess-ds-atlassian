@@ -44,32 +44,6 @@ public class GetContentsRequest extends ConfluenceRequest {
         super(httpRequestFactory, appHome);
     }
 
-    @Override
-    public GetContentsResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), type, spaceKey, title, status, postingDay, expand, start, limit);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : StringUtil.EMPTY;
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException("You don't have permission to view the content.", e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetContentsRequest type(String type) {
         this.type = type;
         return this;
@@ -110,7 +84,11 @@ public class GetContentsRequest extends ConfluenceRequest {
         return this;
     }
 
-    public static GetContentsResponse fromJson(String json) {
+    public GetContentsResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetContentsResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         final List<Content> contents = new ArrayList<>();
         try {
@@ -123,9 +101,9 @@ public class GetContentsRequest extends ConfluenceRequest {
         return new GetContentsResponse(contents);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String type, final String spaceKey, final String title, final String status,
-            final String postingDay, final String[] expand, final Integer start, final Integer limit) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content");
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content");
         if (type != null) {
             url.put("type", type);
         }

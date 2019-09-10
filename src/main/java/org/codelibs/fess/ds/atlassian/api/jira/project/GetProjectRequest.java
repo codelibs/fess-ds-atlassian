@@ -40,39 +40,16 @@ public class GetProjectRequest extends JiraRequest {
         this.projectIdOrKey = projectIdOrKey;
     }
 
-    @Override
-    public GetProjectResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), projectIdOrKey, expand);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "The project is not found, or the calling user does not have permission to view it: " + projectIdOrKey, e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetProjectRequest expand(String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public static GetProjectResponse fromJson(String json) {
+    public GetProjectResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetProjectResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final Project project = mapper.readValue(json, Project.class);
@@ -82,8 +59,9 @@ public class GetProjectRequest extends JiraRequest {
         }
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String projectIdOrKey, final String[] expand) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/project/" + projectIdOrKey);
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/project/" + projectIdOrKey);
         if (expand != null) {
             url.put("expand", String.join(",", expand));
         }

@@ -17,10 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.util.List;
 
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
-public class GetCommentsOfContentResponse extends ConfluenceResponse {
+public class GetCommentsOfContentResponse {
 
     protected final List<Comment> comments;
 

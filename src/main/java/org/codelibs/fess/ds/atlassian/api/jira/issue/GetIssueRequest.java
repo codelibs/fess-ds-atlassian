@@ -41,33 +41,6 @@ public class GetIssueRequest extends JiraRequest {
         this.issueIdOrKey = issueIdOrKey;
     }
 
-    @Override
-    public GetIssueResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(appHome(), issueIdOrKey, fields, expand, properties);
-        try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException("The requested issue is not found, or the user does not have permission to view it.",
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
     public GetIssueRequest fields(String... fields) {
         this.fields = fields;
         return this;
@@ -83,7 +56,11 @@ public class GetIssueRequest extends JiraRequest {
         return this;
     }
 
-    public static GetIssueResponse fromJson(String json) {
+    public GetIssueResponse execute() {
+        return parseResponse(getHttpResponseAsString());
+    }
+
+    public static GetIssueResponse parseResponse(String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final Issue issue = mapper.readValue(json, new TypeReference<Issue>() {
@@ -94,9 +71,9 @@ public class GetIssueRequest extends JiraRequest {
         }
     }
 
-    protected GenericUrl buildUrl(final String getJiraHome, final String issueIdOrKey, final String[] fields, final String[] expand,
-            final String[] properties) {
-        final GenericUrl url = new GenericUrl(getJiraHome + "/rest/api/latest/issue/" + issueIdOrKey);
+    @Override
+    public GenericUrl buildUrl() {
+        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/issue/" + issueIdOrKey);
         if (fields != null) {
             url.put("fields", String.join(",", fields));
         }
