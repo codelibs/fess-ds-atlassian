@@ -40,14 +40,12 @@ public class GetProjectRequest extends JiraRequest {
     }
 
     public GetProjectResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetProjectResponse parseResponse(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Project project = mapper.readValue(json, Project.class);
-            return new GetProjectResponse(project);
+            return new GetProjectResponse(mapper.readValue(json, Project.class));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse project from: \"" + json + "\"", e);
         }

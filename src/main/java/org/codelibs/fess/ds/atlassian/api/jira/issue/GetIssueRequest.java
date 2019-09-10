@@ -54,15 +54,12 @@ public class GetIssueRequest extends JiraRequest {
     }
 
     public GetIssueResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetIssueResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Issue issue = mapper.readValue(json, new TypeReference<Issue>() {
-            });
-            return new GetIssueResponse(issue);
+            return new GetIssueResponse(mapper.readValue(json, new TypeReference<Issue>() {}));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse issue from: \"" + json + "\"", e);
         }

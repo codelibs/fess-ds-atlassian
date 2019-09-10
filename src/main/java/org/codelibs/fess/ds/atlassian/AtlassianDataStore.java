@@ -37,7 +37,6 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(AtlassianDataStore.class);
 
-    protected static final String extractorName = "tikaExtractor";
     protected static final String MIMETYPE_HTML = "text/html";
 
     // parameters
@@ -47,6 +46,12 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     protected static final String URL_FILTER = "url_filter";
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
     protected static final String READ_INTERVAL = "read_interval";
+
+    protected String extractorName = "tikaExtractor";
+
+    public void setExtractorName(final String extractorName) {
+        this.extractorName = extractorName;
+    }
 
     protected UrlFilter getUrlFilter(final Map<String, String> paramMap) {
         final UrlFilter urlFilter = ComponentUtil.getComponent(UrlFilter.class);
@@ -89,11 +94,11 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
         return configMap;
     }
 
-    public static String getExtractedTextFromBody(final String body) {
+    public String getExtractedTextFromHtml(final String body) {
         return getExtractedText(body, MIMETYPE_HTML);
     }
 
-    public static String getExtractedText(final String text, final String mimeType) {
+    public String getExtractedText(final String text, final String mimeType) {
         Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(mimeType);
         final InputStream in = new ByteArrayInputStream(text.getBytes());
         if (extractor == null) {

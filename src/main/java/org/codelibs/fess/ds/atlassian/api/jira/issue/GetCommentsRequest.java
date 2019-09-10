@@ -62,18 +62,15 @@ public class GetCommentsRequest extends JiraRequest {
     }
 
     public GetCommentsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetCommentsResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Comment> comments = new ArrayList<>();
         try {
-            comments.addAll(mapper.readValue(json, Comments.class).getComments());
+            return new GetCommentsResponse(mapper.readValue(json, Comments.class).getComments());
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: \"" + json + "\"", e);
         }
-        return new GetCommentsResponse(comments);
     }
 
     @Override

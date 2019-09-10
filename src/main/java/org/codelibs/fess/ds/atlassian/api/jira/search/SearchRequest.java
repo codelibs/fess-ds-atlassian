@@ -17,11 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.util.GenericData;
-
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
 
@@ -35,7 +33,7 @@ public class SearchRequest extends JiraRequest {
     private String[] expand;
 
     public SearchResponse execute() {
-        return parseResponse(getHttpResponseAsString(POST_REQUEST));
+        return parseResponse(getHttpResponseAsString(POST));
     }
 
     public SearchRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
@@ -43,7 +41,6 @@ public class SearchRequest extends JiraRequest {
     }
 
     public static SearchResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(json, SearchResponse.class);
         } catch (final IOException e) {

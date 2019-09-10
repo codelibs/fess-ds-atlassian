@@ -84,20 +84,17 @@ public class GetContentsRequest extends ConfluenceRequest {
     }
 
     public GetContentsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetContentsResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Content> contents = new ArrayList<>();
         try {
-            String results = mapper.readTree(json).get("results").toString();
-            contents.addAll(mapper.readValue(results, new TypeReference<List<Content>>() {
-            }));
+            final String results = mapper.readTree(json).get("results").toString();
+            final List<Content> contents = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Content>>(){}));
+            return new GetContentsResponse(contents);
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
         }
-        return new GetContentsResponse(contents);
     }
 
     @Override

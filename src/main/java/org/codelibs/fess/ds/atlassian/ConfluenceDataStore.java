@@ -28,10 +28,8 @@ import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
-import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
-import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,19 +60,17 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             logger.debug("configMap: {}", configMap);
         }
 
-        final FessConfig fessConfig = ComponentUtil.getFessConfig();
-
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
         try (final ConfluenceClient client = createClient(paramMap)) {
             client.getContents(content ->
                     executorService.execute(() ->
-                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, fessConfig, client, content)
+                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)
                     )
             );
 
             client.getBlogContents(content ->
                     executorService.execute(() ->
-                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, fessConfig, client, content)
+                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)
                     )
             );
 
@@ -98,7 +94,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
 
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap
             , final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
-                                  final FessConfig fessConfig, final ConfluenceClient client, final Content content) {
+                                  final ConfluenceClient client, final Content content) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final String confluenceHome = client.getConfluenceHome();
         final String url = getContentViewUrl(content, confluenceHome);
@@ -118,7 +114,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             final Map<String, Object> contentMap = new HashMap<>();
 
             contentMap.put(CONTENT_TITLE, content.getTitle());
-            contentMap.put(CONTENT_BODY, getExtractedTextFromBody(content.getBody()));
+            contentMap.put(CONTENT_BODY, getExtractedTextFromHtml(content.getBody()));
             contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
             contentMap.put(CONTENT_LAST_MODIFIED, getLastModifiedAsDate(content.getLastModified()));
             contentMap.put(CONTENT_VIEW_URL, url);
@@ -169,12 +165,12 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     }
 
     protected String getContentComments(final Content content, final ConfluenceClient client) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuffer sb = new StringBuffer();
         final String id = content.getId();
 
         client.getContentComments(id, comment -> {
                 sb.append("\n\n");
-                sb.append(comment.getBody());
+                sb.append(getExtractedTextFromHtml(comment.getBody()));
             });
 
         return sb.toString();
@@ -185,11 +181,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     }
 
     protected String getContentViewUrl(final Content content, final String confluenceHome) {
-        final String id = content.getId();
-        final String type = content.getType();
-        final Space space = content.getSpace();
-        final String spaceKey = space.getKey();
-        return confluenceHome + "/spaces/" + spaceKey + "/" + (type.equals("blogpost") ? "blog" : "page") + "/" + id;
+        return confluenceHome + "/pages/viewpage.action?pageId=" + content.getId();
     }
 
 }

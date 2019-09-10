@@ -84,20 +84,17 @@ public class GetSpacesRequest extends ConfluenceRequest {
     }
 
     public GetSpacesResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetSpacesResponse parseResponse(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Space> spaces = new ArrayList<>();
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            spaces.addAll(mapper.readValue(results, new TypeReference<List<Space>>() {
-            }));
+            final List<Space> spaces = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Space>>(){}));
+            return new GetSpacesResponse(spaces);
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse spaces from: " + json, e);
         }
-        return new GetSpacesResponse(spaces);
     }
 
     @Override

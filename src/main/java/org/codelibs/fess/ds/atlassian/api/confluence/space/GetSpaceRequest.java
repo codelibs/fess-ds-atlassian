@@ -41,14 +41,12 @@ public class GetSpaceRequest extends ConfluenceRequest {
     }
 
     public GetSpaceResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetSpaceResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Space space = mapper.readValue(json, Space.class);
-            return new GetSpaceResponse(space);
+            return new GetSpaceResponse(mapper.readValue(json, Space.class));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse space from: " + json, e);
         }

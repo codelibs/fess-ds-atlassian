@@ -15,9 +15,11 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Scanner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
@@ -33,12 +35,14 @@ import org.slf4j.LoggerFactory;
 
 public abstract class Request {
 
-    protected final static String GET_REQUEST = "GET";
-    protected final static String PUT_REQUEST = "PUT";
-    protected final static String POST_REQUEST = "POST";
-    protected final static String DELETE_REQUEST = "DELETE";
+    protected final static String GET = "GET";
+    protected final static String DELETE = "DELETE";
+    protected final static String POST = "POST";
+    protected final static String PUT = "PUT";
 
     private static final Logger logger = LoggerFactory.getLogger(Request.class);
+
+    protected static final ObjectMapper mapper = new ObjectMapper();
 
     protected final HttpRequestFactory httpRequestFactory;
     protected final String appHome;
@@ -64,26 +68,26 @@ public abstract class Request {
             synchronized (httpRequestFactory) {
                 HttpRequest request;
                 switch (requestMethod) {
-                    case GET_REQUEST: {
+                    case GET: {
                         request = httpRequestFactory.buildGetRequest(url);
                         break;
                     }
-                    case PUT_REQUEST: {
+                    case PUT: {
                         final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
                         request = httpRequestFactory.buildPutRequest(url, content);
                         break;
                     }
-                    case POST_REQUEST: {
+                    case POST: {
                         final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
                         request = httpRequestFactory.buildPostRequest(url, content);
                         break;
                     }
-                    case DELETE_REQUEST: {
+                    case DELETE: {
                         request = httpRequestFactory.buildDeleteRequest(url);
                         break;
                     }
                     default: {
-                        throw new AtlassianDataStoreException("unknown request method : " + requestMethod);
+                        throw new IllegalArgumentException("invalid request method : " + requestMethod);
                     }
                 }
                 final HttpResponse response = request.execute();
@@ -93,19 +97,26 @@ public abstract class Request {
                 return getContentAsString(response);
             }
         } catch (final HttpResponseException e) {
-            throw new AtlassianDataStoreException("HTTP Status :" + e.getStatusCode(), e);
+            throw new AtlassianDataStoreException("HTTP Status : " + e.getStatusCode(), e);
         }  catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to request : " + url, e);
         }
     }
 
     protected String getContentAsString(final HttpResponse response) {
-        try (final Scanner s = new Scanner(response.getContent())) {
-            s.useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            return result;
+        final byte[] bytes = new byte[4096];
+        try (BufferedInputStream bis = new BufferedInputStream(response.getContent());
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int length = bis.read(bytes);
+            while (length != -1) {
+                if (length != 0) {
+                    baos.write(bytes, 0, length);
+                }
+                length = bis.read(bytes);
+            }
+            return baos.toString(response.getContentCharset());
         } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to get response content.", e);
+            throw new AtlassianDataStoreException("Failed to convert get response content as string.", e);
         }
     }
 

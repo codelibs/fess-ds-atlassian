@@ -68,20 +68,16 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     }
 
     public GetAttachmentsOfContentResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetAttachmentsOfContentResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Attachment> attachments = new ArrayList<>();
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            attachments.addAll(mapper.readValue(results, new TypeReference<List<Attachment>>() {
-            }));
+            return new GetAttachmentsOfContentResponse(mapper.readValue(results, new TypeReference<List<Attachment>>(){}));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse attachments from: " + json, e);
         }
-        return new GetAttachmentsOfContentResponse(attachments);
     }
 
     @Override

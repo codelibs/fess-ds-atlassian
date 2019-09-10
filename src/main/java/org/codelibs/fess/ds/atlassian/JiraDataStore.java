@@ -29,11 +29,10 @@ import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.filter.UrlFilter;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
-import org.codelibs.fess.mylasta.direction.FessConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,14 +63,12 @@ public class JiraDataStore extends AtlassianDataStore {
             logger.debug("configMap: {}", configMap);
         }
 
-        final FessConfig fessConfig = ComponentUtil.getFessConfig();
-
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
 
         try (final JiraClient client = createClient(paramMap)) {
             client.getIssues(issue ->
                 executorService.execute(() ->
-                    processIssue(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, fessConfig, client, issue)
+                    processIssue(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, issue)
                 )
             );
 
@@ -94,9 +91,8 @@ public class JiraDataStore extends AtlassianDataStore {
     }
 
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
-                                final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final JiraClient client, final Issue issue) {
+                                final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
+                                final JiraClient client, final Issue issue) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final String url =  getIssueViewUrl(issue, client);
         try {
@@ -171,13 +167,13 @@ public class JiraDataStore extends AtlassianDataStore {
     }
 
     protected String getIssueComments(final Issue issue, final JiraClient client) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuffer sb = new StringBuffer();
         final String id = issue.getId();
 
         client.getComments(id, comment -> {
-                sb.append("\n\n");
-                sb.append(getExtractedTextFromBody(comment.getBody()));
-            });
+            sb.append("\n\n");
+            sb.append(getExtractedTextFromHtml(comment.getBody()));
+        });
 
         return sb.toString();
     }

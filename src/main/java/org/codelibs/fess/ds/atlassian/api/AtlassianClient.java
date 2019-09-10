@@ -36,8 +36,8 @@ public abstract class AtlassianClient {
     protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
     protected static final String SECRET_PARAM = "oauth.secret";
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
-    protected static final String USERNAME_PARAM = "basic.username";
-    protected static final String PASSWORD_PARAM = "basic.password";
+    protected static final String BASIC_USERNAME_PARAM = "basic.username";
+    protected static final String BASIC_PASS_PARAM = "basic.password";
 
     // values for parameters
     protected static final String BASIC = "basic";
@@ -48,12 +48,6 @@ public abstract class AtlassianClient {
     public AtlassianClient(final Map<String, String> paramMap) {
 
         final String home = getHome(paramMap);
-        final String username = getUserName(paramMap);
-        final String password = getPassword(paramMap);
-        final String consumerKey = getConsumerKey(paramMap);
-        final String privateKey = getPrivateKey(paramMap);
-        final String verifier = getSecret(paramMap);
-        final String temporaryToken = getAccessToken(paramMap);
 
         if (home.isEmpty()) {
             logger.warn("parameter \"{}\" required", HOME_PARAM);
@@ -63,13 +57,19 @@ public abstract class AtlassianClient {
         final String authType = getAuthType(paramMap);
         switch (authType) {
             case BASIC: {
+                final String username = getBasicUsername(paramMap);
+                final String password = getBasicPass(paramMap);
                 if (username.isEmpty() || password.isEmpty()) {
-                    throw new AtlassianDataStoreException("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + " required for Basic authentication.");
+                    throw new AtlassianDataStoreException("parameter \"" + BASIC_USERNAME_PARAM + "\" and \"" + BASIC_PASS_PARAM + " required for Basic authentication.");
                 }
                 httpRequestFactory = builder().basicAuth(username, password).build();
                 break;
             }
             case OAUTH: {
+                final String consumerKey = getConsumerKey(paramMap);
+                final String privateKey = getPrivateKey(paramMap);
+                final String verifier = getSecret(paramMap);
+                final String temporaryToken = getAccessToken(paramMap);
                 if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
                     throw new AtlassianDataStoreException("parameter \"" + CONSUMER_KEY_PARAM + "\", \""
                             + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" required for OAuth authentication.");
@@ -105,16 +105,16 @@ public abstract class AtlassianClient {
         return StringUtil.EMPTY;
     }
 
-    protected String getUserName(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(USERNAME_PARAM)) {
-            return paramMap.get(USERNAME_PARAM);
+    protected String getBasicUsername(final Map<String, String> paramMap) {
+        if (paramMap.containsKey(BASIC_USERNAME_PARAM)) {
+            return paramMap.get(BASIC_USERNAME_PARAM);
         }
         return StringUtil.EMPTY;
     }
 
-    protected String getPassword(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(PASSWORD_PARAM)) {
-            return paramMap.get(PASSWORD_PARAM);
+    protected String getBasicPass(final Map<String, String> paramMap) {
+        if (paramMap.containsKey(BASIC_PASS_PARAM)) {
+            return paramMap.get(BASIC_PASS_PARAM);
         }
         return StringUtil.EMPTY;
     }

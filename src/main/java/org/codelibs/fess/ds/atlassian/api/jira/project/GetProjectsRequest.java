@@ -48,19 +48,16 @@ public class GetProjectsRequest extends JiraRequest {
     }
 
     public GetProjectsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET_REQUEST));
+        return parseResponse(getHttpResponseAsString(GET));
     }
 
     public static GetProjectsResponse parseResponse(final String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Project> projects = new ArrayList<>();
         try {
-            projects.addAll(mapper.readValue(json, new TypeReference<List<Project>>() {
+            return new GetProjectsResponse(mapper.readValue(json, new TypeReference<List<Project>>() {
             }));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse projects from: \"" + json + "\"", e);
         }
-        return new GetProjectsResponse(projects);
     }
 
     @Override
