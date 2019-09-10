@@ -15,7 +15,25 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import com.google.api.client.http.HttpRequestFactory;
+
 public abstract class Request<T extends Response> {
+
+    protected final HttpRequestFactory httpRequestFactory;
+    protected final String appHome;
+
+    public Request(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        this.httpRequestFactory = httpRequestFactory;
+        this.appHome = appHome;
+    }
+
+    public HttpRequestFactory request() {
+        return httpRequestFactory;
+    }
+
+    public String appHome() {
+        return appHome;
+    }
 
     public abstract T execute();
 

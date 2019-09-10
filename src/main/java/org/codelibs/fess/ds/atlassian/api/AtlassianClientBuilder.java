@@ -30,7 +30,6 @@ import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 
 public class AtlassianClientBuilder {
 
-    private String appHome;
     private OAuthGetAccessToken oAuthGetAccessToken;
     private BasicAuthentication basicAuthentication;
 
@@ -38,19 +37,17 @@ public class AtlassianClientBuilder {
     }
 
     public AtlassianClientBuilder oAuthToken(final String appHome, final OAuthTokenSupplier supplier) {
-        this.appHome = appHome;
         oAuthGetAccessToken = new OAuthGetAccessToken(appHome);
         supplier.apply(oAuthGetAccessToken);
         return this;
     }
 
-    public AtlassianClientBuilder basicAuth(final String appHome, final String userName, final String password) {
-        this.appHome = appHome;
+    public AtlassianClientBuilder basicAuth(final String userName, final String password) {
         basicAuthentication = new BasicAuthentication(userName, password);
         return this;
     }
 
-    public AtlassianClient build() {
+    public HttpRequestFactory build() {
         final HttpRequestFactory httpRequestFactory;
         if (basicAuthentication != null) {
             httpRequestFactory = new NetHttpTransport().createRequestFactory(basicAuthentication);
@@ -59,7 +56,7 @@ public class AtlassianClientBuilder {
         } else {
             httpRequestFactory = new NetHttpTransport().createRequestFactory();
         }
-        return new AtlassianClient(appHome, httpRequestFactory);
+        return httpRequestFactory;
     }
 
     public interface OAuthTokenSupplier {

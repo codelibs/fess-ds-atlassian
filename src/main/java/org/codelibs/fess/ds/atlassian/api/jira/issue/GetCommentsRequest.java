@@ -23,6 +23,7 @@ import java.util.Scanner;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -40,17 +41,17 @@ public class GetCommentsRequest extends JiraRequest {
     private String orderBy;
     private String[] expand;
 
-    public GetCommentsRequest(JiraClient jiraClient, String issueIdOrKey) {
-        super(jiraClient);
+    public GetCommentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String issueIdOrKey) {
+        super(httpRequestFactory, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
 
     @Override
     public GetCommentsResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome(), issueIdOrKey, startAt, maxResults, orderBy, expand);
+        final GenericUrl url = buildUrl(appHome(), issueIdOrKey, startAt, maxResults, orderBy, expand);
         try {
-            final HttpRequest request = jiraClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

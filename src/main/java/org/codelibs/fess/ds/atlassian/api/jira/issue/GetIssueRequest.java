@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -35,17 +36,17 @@ public class GetIssueRequest extends JiraRequest {
     private final String issueIdOrKey;
     private String[] fields, expand, properties;
 
-    public GetIssueRequest(JiraClient jiraClient, String issueIdOrKey) {
-        super(jiraClient);
+    public GetIssueRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String issueIdOrKey) {
+        super(httpRequestFactory, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
 
     @Override
     public GetIssueResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome(), issueIdOrKey, fields, expand, properties);
+        final GenericUrl url = buildUrl(appHome(), issueIdOrKey, fields, expand, properties);
         try {
-            final HttpRequest request = jiraClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);
@@ -93,9 +94,9 @@ public class GetIssueRequest extends JiraRequest {
         }
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String issueIdOrKey, final String[] fields, final String[] expand,
+    protected GenericUrl buildUrl(final String getJiraHome, final String issueIdOrKey, final String[] fields, final String[] expand,
             final String[] properties) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/issue/" + issueIdOrKey);
+        final GenericUrl url = new GenericUrl(getJiraHome + "/rest/api/latest/issue/" + issueIdOrKey);
         if (fields != null) {
             url.put("fields", String.join(",", fields));
         }

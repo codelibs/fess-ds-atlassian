@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -42,17 +43,17 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     private String filename, mediaType;
     private String[] expand;
 
-    public GetAttachmentsOfContentRequest(ConfluenceClient confluenceClient, String id) {
-        super(confluenceClient);
+    public GetAttachmentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String id) {
+        super(httpRequestFactory, appHome);
         this.id = id;
     }
 
     @Override
     public GetAttachmentsOfContentResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), id, start, limit, filename, mediaType, expand);
+        final GenericUrl url = buildUrl(appHome(), id, start, limit, filename, mediaType, expand);
         try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

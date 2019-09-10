@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -37,16 +38,16 @@ public class GetProjectsRequest extends JiraRequest {
     private String[] expand;
     private Integer recent;
 
-    public GetProjectsRequest(JiraClient jiraClient) {
-        super(jiraClient);
+    public GetProjectsRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        super(httpRequestFactory, appHome);
     }
 
     @Override
     public GetProjectsResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome(), expand, recent);
+        final GenericUrl url = buildUrl(appHome(), expand, recent);
         try {
-            final HttpRequest request = jiraClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

@@ -17,6 +17,6 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 
 import org.codelibs.fess.ds.atlassian.api.Response;
 
-public class JiraResponse extends Response {
+public abstract class JiraResponse extends Response {
 
 }

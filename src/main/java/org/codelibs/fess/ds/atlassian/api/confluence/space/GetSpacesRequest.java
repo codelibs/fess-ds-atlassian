@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -39,16 +40,16 @@ public class GetSpacesRequest extends ConfluenceRequest {
     private String[] expand;
     private Integer start, limit;
 
-    public GetSpacesRequest(ConfluenceClient confluenceClient) {
-        super(confluenceClient);
+    public GetSpacesRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        super(httpRequestFactory, appHome);
     }
 
     @Override
     public GetSpacesResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), spaceKey, type, status, label, favourite, expand, start, limit);
+        final GenericUrl url = buildUrl(appHome(), spaceKey, type, status, label, favourite, expand, start, limit);
         try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

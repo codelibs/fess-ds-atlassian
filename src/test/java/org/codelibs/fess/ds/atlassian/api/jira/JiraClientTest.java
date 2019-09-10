@@ -15,10 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira;
 
-import com.google.api.client.http.apache.ApacheHttpTransport;
-import org.codelibs.fess.ds.atlassian.AtlassianClientTest;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Fields;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
@@ -36,18 +33,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.codelibs.fess.ds.atlassian.api.jira.JiraClient.*;
-
 public class JiraClientTest extends AtlassianClientTest {
 
     protected void doProductionTest() {
 
         final Map<String, String> paramMap = new HashMap<>();
+        /*
         paramMap.put(CONSUMER_KEY_PARAM, "");
         paramMap.put(PRIVATE_KEY_PARAM, "");
         paramMap.put(SECRET_PARAM, "");
         paramMap.put(ACCESS_TOKEN_PARAM, "");
-
+        */
         final JiraClient jiraClient = new JiraClient(paramMap);
 
         doGetProjectsTest(jiraClient);

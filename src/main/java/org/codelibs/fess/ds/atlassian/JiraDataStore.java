@@ -15,22 +15,15 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.apache.ApacheHttpTransport;
 
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.Constants;
@@ -38,10 +31,6 @@ import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.filter.UrlFilter;
-import org.codelibs.fess.ds.AbstractDataStore;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
@@ -51,16 +40,13 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JiraDataStore extends AbstractDataStore {
+public class JiraDataStore extends AtlassianDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
     // parameters
     protected static final String IGNORE_ERROR = "ignore_error";
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
-    protected static final String INCLUDE_PATTERN = "include_pattern";
-    protected static final String EXCLUDE_PATTERN = "exclude_pattern";
-    protected static final String URL_FILTER = "url_filter";
 
     // scripts
     protected static final String ISSUE = "issue";
@@ -77,9 +63,8 @@ public class JiraDataStore extends AbstractDataStore {
     @Override
     protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
-        final Map<String, Object> configMap = new HashMap<>();
-        configMap.put(IGNORE_ERROR, isIgnoreError(paramMap));
-        configMap.put(URL_FILTER, getUrlFilter(paramMap));
+        final Map<String, Object> configMap = getDefaultConfigMap(paramMap);
+
         if (logger.isDebugEnabled()) {
             logger.debug("configMap: {}", configMap);
         }
@@ -113,36 +98,7 @@ public class JiraDataStore extends AbstractDataStore {
         return new JiraClient(paramMap);
     }
 
-    protected boolean isIgnoreError(final Map<String, String> paramMap) {
-        return paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE).equalsIgnoreCase(Constants.TRUE);
-    }
-
-    protected UrlFilter getUrlFilter(final Map<String, String> paramMap) {
-        final UrlFilter urlFilter = ComponentUtil.getComponent(UrlFilter.class);
-        final String include = paramMap.get(INCLUDE_PATTERN);
-        if (StringUtil.isNotBlank(include)) {
-            urlFilter.addInclude(include);
-        }
-        final String exclude = paramMap.get(EXCLUDE_PATTERN);
-        if (StringUtil.isNotBlank(exclude)) {
-            urlFilter.addExclude(exclude);
-        }
-        urlFilter.init(paramMap.get(Constants.CRAWLING_INFO_ID));
-        if (logger.isDebugEnabled()) {
-            logger.debug("urlFilter: {}", urlFilter);
-        }
-        return urlFilter;
-    }
-
-    protected ExecutorService newFixedThreadPool(final int nThreads) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Executor Thread Pool: {}", nThreads);
-        }
-        return new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(nThreads),
-                new ThreadPoolExecutor.CallerRunsPolicy());
-    }
-
-    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback,  final Map<String, Object> configMap,
+    protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
                                 final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
             final JiraClient client, final Issue issue) {
@@ -216,7 +172,7 @@ public class JiraDataStore extends AbstractDataStore {
     }
 
     protected String getIssueViewUrl(final Issue issue, final JiraClient client) {
-        return client.jiraHome() + "/browse/" + issue.getKey();
+        return client.getJiraHome() + "/browse/" + issue.getKey();
     }
 
     protected String getIssueComments(final Issue issue, final JiraClient client) {
@@ -231,16 +187,16 @@ public class JiraDataStore extends AbstractDataStore {
         return sb.toString();
     }
 
-    protected String getIssueLastModified(final Issue issue) {
+    protected Date getIssueLastModified(final Issue issue) {
         final String updated = issue.getFields().getUpdated();
         try {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
-            return format.parse(updated).toString();
+            return format.parse(updated);
         } catch (final ParseException e) {
             logger.warn("Failed to parse: " + updated, e);
         }
-        return StringUtil.EMPTY;
+        return null;
     }
 
 }

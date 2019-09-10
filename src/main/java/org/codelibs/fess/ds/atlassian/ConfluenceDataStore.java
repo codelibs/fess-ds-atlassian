@@ -19,18 +19,15 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import com.google.api.client.http.apache.ApacheHttpTransport;
-
-import org.codelibs.core.lang.StringUtil;
+import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
+import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.extractor.Extractor;
-import org.codelibs.fess.crawler.extractor.impl.HtmlExtractor;
-import org.codelibs.fess.ds.AbstractDataStore;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
+import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
@@ -41,28 +38,11 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConfluenceDataStore extends AbstractDataStore {
+public class ConfluenceDataStore extends AtlassianDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
     protected static final String MIMETYPE_HTML = "text/html";
-
-    // parameters
-    protected static final String IGNORE_ERROR = "ignore_error";
-    protected static final String INCLUDE_PATTERN = "include_pattern";
-    protected static final String EXCLUDE_PATTERN = "exclude_pattern";
-    protected static final String URL_FILTER = "url_filter";
-    protected static final String NUMBER_OF_THREADS = "number_of_threads";
-
-    protected static final String HOME_PARAM = "home";
-
-    protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
-    protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
-    protected static final String SECRET_PARAM = "oauth.secret";
-    protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
-
-    protected static final String USERNAME_PARAM = "basicauth.username";
-    protected static final String PASSWORD_PARAM = "basicauth.password";
 
     protected static final String extractorName = "tikaExtractor";
 
@@ -83,59 +63,64 @@ public class ConfluenceDataStore extends AbstractDataStore {
     @Override
     protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
-        final FessConfig fessConfig = ComponentUtil.getFessConfig();
+        final Map<String, Object> configMap = getDefaultConfigMap(paramMap);
 
-        final String confluenceHome = getConfluenceHome(paramMap);
-
-        final String userName = getUserName(paramMap);
-        final String password = getPassword(paramMap);
-
-        final String consumerKey = getConsumerKey(paramMap);
-        final String privateKey = getPrivateKey(paramMap);
-        final String verifier = getSecret(paramMap);
-        final String temporaryToken = getAccessToken(paramMap);
-
-        final long readInterval = getReadInterval(paramMap);
-
-        boolean basic = false;
-        if (confluenceHome.isEmpty()) {
-            logger.warn("parameter \"" + HOME_PARAM + "\" is required");
-            return;
-        } else if (!userName.isEmpty() && !password.isEmpty()) {
-            basic = true;
-        } else if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
-            logger.warn("parameter \"" + USERNAME_PARAM + "\" and \"" + PASSWORD_PARAM + "\" or \"" + CONSUMER_KEY_PARAM + "\", \""
-                    + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" are required");
-            return;
+        if (logger.isDebugEnabled()) {
+            logger.debug("configMap: {}", configMap);
         }
 
-        final ConfluenceClient client =
-                basic ? new ConfluenceClient(AtlassianClient.builder().basicAuth(confluenceHome, userName, password).build())
-                        : new ConfluenceClient(AtlassianClient.builder().oAuthToken(confluenceHome, accessToken -> {
-                            accessToken.consumerKey = consumerKey;
-                            accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner(privateKey);
-                            accessToken.transport = new ApacheHttpTransport();
-                            accessToken.verifier = verifier;
-                            accessToken.temporaryToken = temporaryToken;
-                        }).build());
+        final FessConfig fessConfig = ComponentUtil.getFessConfig();
 
-        client.getContents(content -> {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
-                        content);
-            });
+        final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
+        try (final ConfluenceClient client = createClient(paramMap)) {
+            client.getContents(content ->
+                    executorService.execute(() ->
+                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, fessConfig, client, content)
+                    )
+            );
 
-        client.getBlogContents(content -> {
-                processContent(dataConfig, callback, paramMap, scriptMap, defaultDataMap, fessConfig, client, readInterval, confluenceHome,
-                        content);
-            });
+            client.getBlogContents(content ->
+                    executorService.execute(() ->
+                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, fessConfig, client, content)
+                    )
+            );
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Shutting down thread executor.");
+            }
+            executorService.shutdown();
+            executorService.awaitTermination(60, TimeUnit.SECONDS);
+        } catch(final InterruptedException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Interrupted.", e);
+            }
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 
-    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
-            final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap, final FessConfig fessConfig,
-            final ConfluenceClient client, final long readInterval, final String confluenceHome, final Content content) {
-        final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
+    protected ConfluenceClient createClient(final Map<String, String> paramMap) {
+        return new ConfluenceClient(paramMap);
+    }
 
+    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap
+            , final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
+                                  final FessConfig fessConfig, final ConfluenceClient client, final Content content) {
+        final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
+        final String confluenceHome = client.getConfluenceHome();
+        final String url = getContentViewUrl(content, confluenceHome);
         try {
+
+            final UrlFilter urlFilter = (UrlFilter) configMap.get(URL_FILTER);
+            if (urlFilter != null && !urlFilter.match(url)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Not matched: {}", url);
+                }
+                return;
+            }
+
+            logger.info("Crawling URL: {}", url);
+
             final Map<String, Object> resultMap = new LinkedHashMap<>(defaultDataMap);
             final Map<String, Object> contentMap = new HashMap<>();
 
@@ -143,8 +128,12 @@ public class ConfluenceDataStore extends AbstractDataStore {
             contentMap.put(CONTENT_BODY, getExtractedTextFromBody(content.getBody()));
             contentMap.put(CONTENT_COMMENTS, getContentComments(content, client));
             contentMap.put(CONTENT_LAST_MODIFIED, content.getLastModified());
-            contentMap.put(CONTENT_VIEW_URL, getContentViewUrl(content, confluenceHome));
+            contentMap.put(CONTENT_VIEW_URL, url);
             resultMap.put(CONTENT, contentMap);
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("contentMap: {}", contentMap);
+            }
 
             for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
                 final Object convertValue = convertValue(entry.getValue(), resultMap);
@@ -152,9 +141,37 @@ public class ConfluenceDataStore extends AbstractDataStore {
                     dataMap.put(entry.getKey(), convertValue);
                 }
             }
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("dataMap: {}", dataMap);
+            }
+
             callback.store(paramMap, dataMap);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
+
+            Throwable target = e;
+            if (target instanceof MultipleCrawlingAccessException) {
+                final Throwable[] causes = ((MultipleCrawlingAccessException) target).getCauses();
+                if (causes.length > 0) {
+                    target = causes[causes.length - 1];
+                }
+            }
+
+            String errorName;
+            final Throwable cause = target.getCause();
+            if (cause != null) {
+                errorName = cause.getClass().getCanonicalName();
+            } else {
+                errorName = target.getClass().getCanonicalName();
+            }
+
+            final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
+            failureUrlService.store(dataConfig, errorName, url, target);
+        } catch (final Throwable t) {
+            logger.warn("Crawling Access Exception at : " + dataMap, t);
+            final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
+            failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
         }
     }
 
@@ -170,7 +187,6 @@ public class ConfluenceDataStore extends AbstractDataStore {
 
         return sb.toString();
     }
-
 
     public static String getExtractedTextFromBody(final String body) {
         return getExtractedText(body, MIMETYPE_HTML);
@@ -195,55 +211,6 @@ public class ConfluenceDataStore extends AbstractDataStore {
         final Space space = content.getSpace();
         final String spaceKey = space.getKey();
         return confluenceHome + "/spaces/" + spaceKey + "/" + (type.equals("blogpost") ? "blog" : "page") + "/" + id;
-    }
-
-    protected String getConfluenceHome(Map<String, String> paramMap) {
-        if (paramMap.containsKey(HOME_PARAM)) {
-            return paramMap.get(HOME_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getUserName(Map<String, String> paramMap) {
-        if (paramMap.containsKey(USERNAME_PARAM)) {
-            return paramMap.get(USERNAME_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getPassword(Map<String, String> paramMap) {
-        if (paramMap.containsKey(PASSWORD_PARAM)) {
-            return paramMap.get(PASSWORD_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getConsumerKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
-            return paramMap.get(CONSUMER_KEY_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getPrivateKey(Map<String, String> paramMap) {
-        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
-            return paramMap.get(PRIVATE_KEY_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getSecret(Map<String, String> paramMap) {
-        if (paramMap.containsKey(SECRET_PARAM)) {
-            return paramMap.get(SECRET_PARAM);
-        }
-        return StringUtil.EMPTY;
-    }
-
-    protected String getAccessToken(Map<String, String> paramMap) {
-        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
-            return paramMap.get(ACCESS_TOKEN_PARAM);
-        }
-        return StringUtil.EMPTY;
     }
 
 }

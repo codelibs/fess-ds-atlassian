@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 
@@ -39,17 +40,17 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
     private String location, depth;
     private String[] expand;
 
-    public GetCommentsOfContentRequest(ConfluenceClient confluenceClient, String id) {
-        super(confluenceClient);
+    public GetCommentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, String id) {
+        super(httpRequestFactory, appHome);
         this.id = id;
     }
 
     @Override
     public GetCommentsOfContentResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), id, parentVersion, start, limit, location, depth, expand);
+        final GenericUrl url = buildUrl(appHome(), id, parentVersion, start, limit, location, depth, expand);
         try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
+            final HttpRequest request = request().buildGetRequest(url);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

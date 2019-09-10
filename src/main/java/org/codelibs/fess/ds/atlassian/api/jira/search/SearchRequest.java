@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.json.JsonHttpContent;
@@ -40,18 +41,18 @@ public class SearchRequest extends JiraRequest {
     private Boolean validateQuery;
     private String[] fields, expand;
 
-    public SearchRequest(final JiraClient jiraClient) {
-        super(jiraClient);
+    public SearchRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        super(httpRequestFactory, appHome);
     }
 
     @Override
     public SearchResponse execute() {
         String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome());
+        final GenericUrl url = buildUrl(appHome());
         final HttpContent content =
                 new JsonHttpContent(new JacksonFactory(), buildData(jql, startAt, maxResults, validateQuery, fields, expand));
         try {
-            final HttpRequest request = jiraClient.request().buildPostRequest(url, content);
+            final HttpRequest request = request().buildPostRequest(url, content);
             final HttpResponse response = request.execute();
             if (response.getStatusCode() != 200) {
                 throw new HttpResponseException(response);

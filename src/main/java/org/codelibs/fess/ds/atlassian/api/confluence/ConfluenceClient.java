@@ -15,8 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
-import com.google.api.client.http.HttpRequestFactory;
-
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
@@ -28,56 +26,65 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
-public class ConfluenceClient {
+public class ConfluenceClient extends AtlassianClient implements Closeable {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConfluenceClient.class);
 
     protected static final int CONTENT_LIMIT = 25;
 
-    private final AtlassianClient client;
+    protected final String confluenceHome;
 
-    public ConfluenceClient(final AtlassianClient client) {
-        this.client = client;
+    public ConfluenceClient(final Map<String, String> paramMap) {
+        super(paramMap);
+        confluenceHome = getHome(paramMap);
     }
 
-    public String confluenceHome() {
-        return client.appHome();
+    @Override
+    public void close() {
+        // TODO
     }
 
-    public HttpRequestFactory request() {
-        return client.request();
+    public String getConfluenceHome() {
+        return confluenceHome;
     }
 
     public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest(this);
+        return new GetSpacesRequest(request(), getConfluenceHome());
     }
 
     public GetSpaceRequest getSpace(String spaceKey) {
-        return new GetSpaceRequest(this, spaceKey);
+        return new GetSpaceRequest(request(), getConfluenceHome(), spaceKey);
     }
 
     public GetContentsRequest getContents() {
-        return new GetContentsRequest(this);
+        return new GetContentsRequest(request(), getConfluenceHome());
     }
 
     public GetContentRequest getContent(String contentId) {
-        return new GetContentRequest(this, contentId);
+        return new GetContentRequest(request(), getConfluenceHome(), contentId);
     }
 
     public GetCommentsOfContentRequest getCommentsOfContent(String contentId) {
-        return new GetCommentsOfContentRequest(this, contentId);
+        return new GetCommentsOfContentRequest(request(), getConfluenceHome(), contentId);
     }
 
     public GetAttachmentsOfContentRequest getAttachmentsOfContent(String contentId) {
-        return new GetAttachmentsOfContentRequest(this, contentId);
+        return new GetAttachmentsOfContentRequest(request(), getConfluenceHome(), contentId);
     }
 
     public void getContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += CONTENT_LIMIT) {
             GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
             if (contents.size() < CONTENT_LIMIT)
                 break;
         }
@@ -88,6 +95,7 @@ public class ConfluenceClient {
             GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
                     .expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
             if (contents.size() < CONTENT_LIMIT)
                 break;
         }

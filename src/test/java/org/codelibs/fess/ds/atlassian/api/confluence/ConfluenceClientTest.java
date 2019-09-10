@@ -15,10 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
-import com.google.api.client.http.apache.ApacheHttpTransport;
-import org.codelibs.fess.ds.atlassian.AtlassianClientTest;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
-import org.codelibs.fess.ds.atlassian.api.AtlassianClientBuilder;
+import org.codelibs.fess.ds.atlassian.api.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
@@ -33,19 +30,23 @@ import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
+    protected final String confluenceHome = "";
 
     protected void doProductionTest() {
-        final ConfluenceClient confluenceClient = new ConfluenceClient(AtlassianClient.builder().oAuthToken("", accessToken -> {
-            accessToken.consumerKey = "";
-            accessToken.signer = AtlassianClientBuilder.getOAuthRsaSigner("");
-            accessToken.transport = new ApacheHttpTransport();
-            accessToken.verifier = "";
-            accessToken.temporaryToken = "";
-        }).build());
+        final Map<String, String> paramMap = new HashMap<>();
+        /*
+        paramMap.put(CONSUMER_KEY_PARAM, "");
+        paramMap.put(PRIVATE_KEY_PARAM, "");
+        paramMap.put(SECRET_PARAM, "");
+        paramMap.put(ACCESS_TOKEN_PARAM, "");
+        */
+        final ConfluenceClient confluenceClient = new ConfluenceClient(paramMap);
         doGetContentsTest(confluenceClient);
         doGetCommentsOfContentTest(confluenceClient);
         doGetAttachmentsOfContentTest(confluenceClient);

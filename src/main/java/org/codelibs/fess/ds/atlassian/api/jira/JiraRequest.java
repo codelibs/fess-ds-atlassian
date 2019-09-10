@@ -15,15 +15,13 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira;
 
+import com.google.api.client.http.HttpRequestFactory;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public abstract class JiraRequest extends Request {
 
-    protected final JiraClient jiraClient;
-
-    protected JiraRequest(final JiraClient jiraClient) {
-        this.jiraClient = jiraClient;
+    protected JiraRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        super(httpRequestFactory, appHome);
     }
-
 
 }

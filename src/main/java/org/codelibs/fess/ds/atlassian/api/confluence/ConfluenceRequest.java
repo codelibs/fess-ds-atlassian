@@ -15,14 +15,13 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
+import com.google.api.client.http.HttpRequestFactory;
 import org.codelibs.fess.ds.atlassian.api.Request;
 
 public abstract class ConfluenceRequest extends Request {
 
-    protected final ConfluenceClient confluenceClient;
-
-    protected ConfluenceRequest(final ConfluenceClient confluenceClient) {
-        this.confluenceClient = confluenceClient;
+    protected ConfluenceRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
+        super(httpRequestFactory, appHome);
     }
 
 }
