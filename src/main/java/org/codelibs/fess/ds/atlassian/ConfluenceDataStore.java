@@ -63,7 +63,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     @Override
     protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
-        final Map<String, Object> configMap = getDefaultConfigMap(paramMap);
+        final Map<String, Object> configMap = createConfigMap(paramMap);
 
         if (logger.isDebugEnabled()) {
             logger.debug("configMap: {}", configMap);

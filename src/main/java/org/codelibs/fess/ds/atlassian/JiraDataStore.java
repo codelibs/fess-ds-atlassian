@@ -42,10 +42,6 @@ public class JiraDataStore extends AtlassianDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
 
-    // parameters
-    protected static final String IGNORE_ERROR = "ignore_error";
-    protected static final String NUMBER_OF_THREADS = "number_of_threads";
-
     // scripts
     protected static final String ISSUE = "issue";
     protected static final String ISSUE_SUMMARY = "summary";
@@ -62,7 +58,7 @@ public class JiraDataStore extends AtlassianDataStore {
     @Override
     protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
-        final Map<String, Object> configMap = getDefaultConfigMap(paramMap);
+        final Map<String, Object> configMap = createConfigMap(paramMap);
 
         if (logger.isDebugEnabled()) {
             logger.debug("configMap: {}", configMap);
@@ -70,7 +66,7 @@ public class JiraDataStore extends AtlassianDataStore {
 
         final FessConfig fessConfig = ComponentUtil.getFessConfig();
 
-        final ExecutorService executorService = newFixedThreadPool(Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1")));
+        final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
 
         try (final JiraClient client = createClient(paramMap)) {
             client.getIssues(issue ->
