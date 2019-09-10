@@ -176,7 +176,7 @@ public class JiraDataStore extends AtlassianDataStore {
 
         client.getComments(id, comment -> {
                 sb.append("\n\n");
-                sb.append(comment.getBody());
+                sb.append(getExtractedTextFromBody(comment.getBody()));
             });
 
         return sb.toString();

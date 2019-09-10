@@ -71,23 +71,23 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public GetProjectsRequest getProjects() {
-        return new GetProjectsRequest(request(), getJiraHome());
+        return new GetProjectsRequest(request(), jiraHome);
     }
 
     public GetProjectRequest getProject(final String projectIdOrKey) {
-        return new GetProjectRequest(request(), getJiraHome(), projectIdOrKey);
+        return new GetProjectRequest(request(), jiraHome, projectIdOrKey);
     }
 
     public SearchRequest search() {
-        return new SearchRequest(request(), getJiraHome());
+        return new SearchRequest(request(), jiraHome);
     }
 
     public GetIssueRequest getIssue(final String issueIdOrKey) {
-        return new GetIssueRequest(request(), getJiraHome(), issueIdOrKey);
+        return new GetIssueRequest(request(), jiraHome, issueIdOrKey);
     }
 
     public GetCommentsRequest getComments(final String issueIdOrKey) {
-        return new GetCommentsRequest(request(), getJiraHome(), issueIdOrKey);
+        return new GetCommentsRequest(request(), jiraHome, issueIdOrKey);
     }
 
     public void getIssues(final Consumer<Issue> consumer) {

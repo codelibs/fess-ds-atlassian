@@ -15,8 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -27,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import org.codelibs.fess.app.service.FailureUrlService;
 import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
-import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
@@ -42,10 +39,6 @@ import org.slf4j.LoggerFactory;
 public class ConfluenceDataStore extends AtlassianDataStore {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
-
-    protected static final String MIMETYPE_HTML = "text/html";
-
-    protected static final String extractorName = "tikaExtractor";
 
     // scripts
     protected static final String CONTENT = "content";
@@ -189,22 +182,6 @@ public class ConfluenceDataStore extends AtlassianDataStore {
 
     protected Date getLastModifiedAsDate(final Long date) {
         return new Date(date * 1000L);
-    }
-
-    public static String getExtractedTextFromBody(final String body) {
-        return getExtractedText(body, MIMETYPE_HTML);
-    }
-
-    public static String getExtractedText(final String text, final String mimeType) {
-        Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(mimeType);
-        final InputStream in = new ByteArrayInputStream(text.getBytes());
-        if (extractor == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("use a default extractor as {} by {}", extractorName, mimeType);
-            }
-            extractor = ComponentUtil.getComponent(extractorName);
-        }
-        return extractor.getText(in, null).getContent();
     }
 
     protected String getContentViewUrl(final Content content, final String confluenceHome) {

@@ -68,7 +68,7 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     }
 
     public GetAttachmentsOfContentResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetAttachmentsOfContentResponse parseResponse(final String json) {

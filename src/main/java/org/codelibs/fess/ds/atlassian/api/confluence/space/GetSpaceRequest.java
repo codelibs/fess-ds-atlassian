@@ -41,7 +41,7 @@ public class GetSpaceRequest extends ConfluenceRequest {
     }
 
     public GetSpaceResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetSpaceResponse parseResponse(final String json) {

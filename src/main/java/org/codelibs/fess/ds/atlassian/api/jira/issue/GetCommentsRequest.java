@@ -62,7 +62,7 @@ public class GetCommentsRequest extends JiraRequest {
     }
 
     public GetCommentsResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetCommentsResponse parseResponse(final String json) {

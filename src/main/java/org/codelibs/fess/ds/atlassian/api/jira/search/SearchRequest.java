@@ -35,7 +35,7 @@ public class SearchRequest extends JiraRequest {
     private String[] expand;
 
     public SearchResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(POST_REQUEST));
     }
 
     public SearchRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
@@ -86,7 +86,8 @@ public class SearchRequest extends JiraRequest {
         return new GenericUrl(appHome() + "/rest/api/latest/search");
     }
 
-    protected GenericData buildData() {
+    @Override
+    public GenericData buildData() {
         final GenericData data = new GenericData();
         if (jql != null && !jql.isEmpty()) {
             data.put("jql", jql);

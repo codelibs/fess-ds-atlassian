@@ -53,7 +53,7 @@ public class GetContentRequest extends ConfluenceRequest {
     }
 
     public GetContentResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetContentResponse parseResponse(final String json) {

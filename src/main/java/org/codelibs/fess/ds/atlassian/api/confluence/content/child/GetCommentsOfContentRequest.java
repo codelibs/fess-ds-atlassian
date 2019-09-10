@@ -74,7 +74,7 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
     }
 
     public GetCommentsOfContentResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetCommentsOfContentResponse parseResponse(final String json) {

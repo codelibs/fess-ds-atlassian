@@ -54,7 +54,7 @@ public class GetIssueRequest extends JiraRequest {
     }
 
     public GetIssueResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetIssueResponse parseResponse(final String json) {

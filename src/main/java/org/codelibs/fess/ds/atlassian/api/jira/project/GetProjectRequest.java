@@ -40,7 +40,7 @@ public class GetProjectRequest extends JiraRequest {
     }
 
     public GetProjectResponse execute() {
-        return parseResponse(getHttpResponseAsString());
+        return parseResponse(getHttpResponseAsString(GET_REQUEST));
     }
 
     public static GetProjectResponse parseResponse(String json) {

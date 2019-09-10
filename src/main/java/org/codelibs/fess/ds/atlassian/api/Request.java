@@ -19,13 +19,26 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
+import com.google.api.client.http.json.JsonHttpContent;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.GenericData;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Request {
+
+    protected final static String GET_REQUEST = "GET";
+    protected final static String PUT_REQUEST = "PUT";
+    protected final static String POST_REQUEST = "POST";
+    protected final static String DELETE_REQUEST = "DELETE";
+
+    private static final Logger logger = LoggerFactory.getLogger(Request.class);
 
     protected final HttpRequestFactory httpRequestFactory;
     protected final String appHome;
@@ -35,40 +48,65 @@ public abstract class Request {
         this.appHome = appHome;
     }
 
-    public HttpRequestFactory request() {
-        return httpRequestFactory;
-    }
-
     public String appHome() {
         return appHome;
     }
 
     public abstract GenericUrl buildUrl();
 
-    public String getHttpResponseAsString() {
+    public GenericData buildData() {
+        return null;
+    }
+
+    public String getHttpResponseAsString(final String requestMethod) {
         final GenericUrl url = buildUrl();
         try {
-            final HttpRequest request = request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
+            synchronized (httpRequestFactory) {
+                HttpRequest request;
+                switch (requestMethod) {
+                    case GET_REQUEST: {
+                        request = httpRequestFactory.buildGetRequest(url);
+                        break;
+                    }
+                    case PUT_REQUEST: {
+                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
+                        request = httpRequestFactory.buildPutRequest(url, content);
+                        break;
+                    }
+                    case POST_REQUEST: {
+                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
+                        request = httpRequestFactory.buildPostRequest(url, content);
+                        break;
+                    }
+                    case DELETE_REQUEST: {
+                        request = httpRequestFactory.buildDeleteRequest(url);
+                        break;
+                    }
+                    default: {
+                        throw new AtlassianDataStoreException("unknown request method : " + requestMethod);
+                    }
+                }
+                final HttpResponse response = request.execute();
+                if (response.getStatusCode() != 200) {
+                    throw new HttpResponseException(response);
+                }
+                return getContentAsString(response);
             }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            final String result = s.hasNext() ? s.next() : "";
-            s.close();
-            return result;
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException("The requested issue is not found, or the user does not have permission to view it.",
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
+        } catch (final HttpResponseException e) {
+            throw new AtlassianDataStoreException("HTTP Status :" + e.getStatusCode(), e);
+        }  catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to request : " + url, e);
         }
     }
 
+    protected String getContentAsString(final HttpResponse response) {
+        try (final Scanner s = new Scanner(response.getContent())) {
+            s.useDelimiter("\\A");
+            final String result = s.hasNext() ? s.next() : "";
+            return result;
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to get response content.", e);
+        }
+    }
 
 }
