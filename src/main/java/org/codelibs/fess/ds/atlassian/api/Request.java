@@ -72,9 +72,8 @@ public abstract class Request {
                         request = httpRequestFactory.buildGetRequest(url);
                         break;
                     }
-                    case PUT: {
-                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
-                        request = httpRequestFactory.buildPutRequest(url, content);
+                    case DELETE: {
+                        request = httpRequestFactory.buildDeleteRequest(url);
                         break;
                     }
                     case POST: {
@@ -82,8 +81,9 @@ public abstract class Request {
                         request = httpRequestFactory.buildPostRequest(url, content);
                         break;
                     }
-                    case DELETE: {
-                        request = httpRequestFactory.buildDeleteRequest(url);
+                    case PUT: {
+                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
+                        request = httpRequestFactory.buildPutRequest(url, content);
                         break;
                     }
                     default: {

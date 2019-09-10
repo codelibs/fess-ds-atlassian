@@ -42,8 +42,8 @@ public class HttpRequestFactoryBuilder {
         return this;
     }
 
-    public HttpRequestFactoryBuilder basicAuth(final String userName, final String password) {
-        basicAuthentication = new BasicAuthentication(userName, password);
+    public HttpRequestFactoryBuilder basicAuth(final String username, final String password) {
+        basicAuthentication = new BasicAuthentication(username, password);
         return this;
     }
 
