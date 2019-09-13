@@ -15,6 +15,8 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -32,6 +34,8 @@ public class HttpRequestFactoryBuilder {
 
     private OAuthGetAccessToken oAuthGetAccessToken;
     private BasicAuthentication basicAuthentication;
+    private String proxyHost;
+    private Integer proxyPort;
 
     HttpRequestFactoryBuilder() {
     }
@@ -47,16 +51,26 @@ public class HttpRequestFactoryBuilder {
         return this;
     }
 
+    public HttpRequestFactoryBuilder proxy(final String proxyHost, final Integer proxyPort) {
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
+        return this;
+    }
+
     public HttpRequestFactory build() {
-        final HttpRequestFactory httpRequestFactory;
-        if (basicAuthentication != null) {
-            httpRequestFactory = new NetHttpTransport().createRequestFactory(basicAuthentication);
-        } else if (oAuthGetAccessToken != null) {
-            httpRequestFactory = new NetHttpTransport().createRequestFactory(oAuthGetAccessToken.createParameters());
-        } else {
-            httpRequestFactory = new NetHttpTransport().createRequestFactory();
+        final NetHttpTransport.Builder netHttpTransportBuilder = new NetHttpTransport.Builder();
+        if(proxyHost != null) {
+            final Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+            netHttpTransportBuilder.setProxy(proxy);
         }
-        return httpRequestFactory;
+        final NetHttpTransport netHttpTransport = netHttpTransportBuilder.build();
+        if (basicAuthentication != null) {
+            return netHttpTransport.createRequestFactory(basicAuthentication);
+        }
+        if (oAuthGetAccessToken != null) {
+            return netHttpTransport.createRequestFactory(oAuthGetAccessToken.createParameters());
+        }
+        return netHttpTransport.createRequestFactory();
     }
 
     public interface OAuthTokenSupplier {

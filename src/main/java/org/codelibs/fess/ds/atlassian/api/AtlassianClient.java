@@ -38,6 +38,8 @@ public abstract class AtlassianClient {
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
     protected static final String BASIC_PASS_PARAM = "basic.password";
+    protected static final String PROXY_HOST_PARAM = "proxy_host";
+    protected static final String PROXY_PORT_PARAM = "proxy_port";
 
     // values for parameters
     protected static final String BASIC = "basic";
@@ -55,6 +57,8 @@ public abstract class AtlassianClient {
         }
 
         final String authType = getAuthType(paramMap);
+        final HttpRequestFactoryBuilder builder = createBuilder();
+
         switch (authType) {
             case BASIC: {
                 final String username = getBasicUsername(paramMap);
@@ -62,7 +66,7 @@ public abstract class AtlassianClient {
                 if (username.isEmpty() || password.isEmpty()) {
                     throw new AtlassianDataStoreException("parameter \"" + BASIC_USERNAME_PARAM + "\" and \"" + BASIC_PASS_PARAM + " required for Basic authentication.");
                 }
-                httpRequestFactory = builder().basicAuth(username, password).build();
+                builder.basicAuth(username, password);
                 break;
             }
             case OAUTH: {
@@ -74,13 +78,13 @@ public abstract class AtlassianClient {
                     throw new AtlassianDataStoreException("parameter \"" + CONSUMER_KEY_PARAM + "\", \""
                             + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" required for OAuth authentication.");
                 }
-                httpRequestFactory = builder().oAuthToken(home, accessToken -> {
+                builder.oAuthToken(home, accessToken -> {
                     accessToken.consumerKey = consumerKey;
                     accessToken.signer = HttpRequestFactoryBuilder.getOAuthRsaSigner(privateKey);
                     accessToken.transport = new ApacheHttpTransport();
                     accessToken.verifier = verifier;
                     accessToken.temporaryToken = temporaryToken;
-                }).build();
+                });
                 break;
             }
             default: {
@@ -88,9 +92,16 @@ public abstract class AtlassianClient {
             }
         }
 
+        final String proxyHost = getProxyHost(paramMap);
+        final String proxyPort = getProxyPort(paramMap);
+        if(!proxyHost.isEmpty() && !proxyPort.isEmpty()) {
+            builder.proxy(proxyHost, Integer.parseInt(proxyPort));
+        }
+
+        httpRequestFactory = builder.build();
     }
 
-    public static HttpRequestFactoryBuilder builder() {
+    public static HttpRequestFactoryBuilder createBuilder() {
         return new HttpRequestFactoryBuilder();
     }
 
@@ -150,6 +161,20 @@ public abstract class AtlassianClient {
     protected String getAuthType(final Map<String, String> paramMap) {
         if (paramMap.containsKey(AUTH_TYPE_PARAM)) {
             return paramMap.get(AUTH_TYPE_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getProxyHost(final Map<String, String> paramMap) {
+        if (paramMap.containsKey(PROXY_HOST_PARAM)) {
+            return paramMap.get(PROXY_HOST_PARAM);
+        }
+        return StringUtil.EMPTY;
+    }
+
+    protected String getProxyPort(final Map<String, String> paramMap) {
+        if (paramMap.containsKey(PROXY_PORT_PARAM)) {
+            return paramMap.get(PROXY_PORT_PARAM);
         }
         return StringUtil.EMPTY;
     }

@@ -35,14 +35,13 @@ import org.slf4j.LoggerFactory;
 
 public abstract class Request {
 
+    private static final Logger logger = LoggerFactory.getLogger(Request.class);
+    protected static final ObjectMapper mapper = new ObjectMapper();
+
     protected final static String GET = "GET";
     protected final static String DELETE = "DELETE";
     protected final static String POST = "POST";
     protected final static String PUT = "PUT";
-
-    private static final Logger logger = LoggerFactory.getLogger(Request.class);
-
-    protected static final ObjectMapper mapper = new ObjectMapper();
 
     protected final HttpRequestFactory httpRequestFactory;
     protected final String appHome;
@@ -116,7 +115,7 @@ public abstract class Request {
             }
             return baos.toString(response.getContentCharset());
         } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to convert get response content as string.", e);
+            throw new AtlassianDataStoreException("Failed to convert response content to string.", e);
         }
     }
 
