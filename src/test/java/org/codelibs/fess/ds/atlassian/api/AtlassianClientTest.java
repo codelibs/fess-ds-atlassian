@@ -15,10 +15,19 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
 public class AtlassianClientTest extends LastaFluteTestCase {
+
+    protected static final String AUTH_TYPE_PARAM = "auth_type";
+    protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
+    protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
+    protected static final String SECRET_PARAM = "oauth.secret";
+    protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
 
     @Override
     protected String prepareConfigFile() {
@@ -45,4 +54,6 @@ public class AtlassianClientTest extends LastaFluteTestCase {
         // doProductionTest();
     }
 
+    protected void doProductionTest() {
+    }
 }

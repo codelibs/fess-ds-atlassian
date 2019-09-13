@@ -40,12 +40,11 @@ public class ConfluenceClientTest extends AtlassianClientTest {
 
     protected void doProductionTest() {
         final Map<String, String> paramMap = new HashMap<>();
-        /*
+        paramMap.put(AUTH_TYPE_PARAM, "oauth");
         paramMap.put(CONSUMER_KEY_PARAM, "");
         paramMap.put(PRIVATE_KEY_PARAM, "");
         paramMap.put(SECRET_PARAM, "");
         paramMap.put(ACCESS_TOKEN_PARAM, "");
-        */
         final ConfluenceClient confluenceClient = new ConfluenceClient(paramMap);
         doGetContentsTest(confluenceClient);
         doGetCommentsOfContentTest(confluenceClient);
