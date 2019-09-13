@@ -11,42 +11,32 @@ See [Maven Repository](http://central.maven.org/maven2/org/codelibs/fess/fess-ds
 
 ## Installation
 
-### For 13.2.x and older
-
-1. Download fess-ds-atlassian-X.X.X.jar
-2. Copy fess-ds-atlassian-X.X.X.jar to $FESS\_HOME/app/WEB-INF/lib or /usr/share/fess/app/WEB-INF/lib
-
-### For 13.3 and later
-
-You can also install the plugin on the administration (See [the Administration guide](https://fess.codelibs.org/13.3/admin/plugin-guide.html)).
-
-1. Download fess-ds-atlassian-X.X.X.jar
-2. Copy fess-ds-atlassian-X.X.X.jar to $FESS\_HOME/app/WEB-INF/plugin or /usr/share/fess/app/WEB-INF/plugin
+See [Plugin](https://fess.codelibs.org/13.3/admin/plugin-guide.html) of Administration guide.
 
 ## Getting Started
 
 ### Parameters
 
 ```
-home=https://example.atlassian.net
-auth_type=oauth
+home=...
+auth_type=...
 oauth.consumer_key=OauthKey
-oauth.private_key=MIICdw...QE=
-oauth.secret=qTJkPi
-oauth.access_token=W1jjOV...ye
-issue.jql=project = hoge
+oauth.private_key=...
+oauth.secret=...
+oauth.access_token=...
+issue.jql=...
 ```
 
 | Key | Value |
 | --- | --- |
-| home | URL of Atlassian applications(JIRA/Confluence) |
-| auth_type | `oauth` or `basic` |
-| oauth.consumer\_key | consumer key for OAuth |
-| oauth.private\_key | private key for OAuth |
-| oauth.secret | verification code for OAuth |
-| oauth.access\_token | access token for OAuth |
-| basic.username | username of Atlassian account |
-| basic.password | password of Atlassian account |
+| home | URL of the Atlassian application(JIRA/Confluence) |
+| auth_type | `oauth`(OAuth authentication) or `basic`(Basic authentication) |
+| oauth.consumer\_key | Consumer key for OAuth (Usually `OAuthKey`) |
+| oauth.private\_key | Private key for OAuth |
+| oauth.secret | Verification code for OAuth |
+| oauth.access\_token | Access token for OAuth |
+| basic.username | username of Atlassian account for Basic |
+| basic.password | password of Atlassian account for Basic |
 | issue.jql | [JQL](https://confluence.atlassian.com/jirasoftwarecloud/advanced-searching-764478330.html) for advanced search (JIRA only) (Optional) |
 
 ### Scripts
@@ -62,11 +52,11 @@ last_modified=issue.last_modified
 
 | Key | Value |
 | --- | --- |
-| issue.view\_url | URL for viewing the issue |
-| issue.summary | summary of the issue |
-| issue.description | description of the issue |
-| issue.comments | comments of the issue |
-| issue.last\_modified | last modified of the issue |
+| issue.view\_url | URL of the issue. |
+| issue.summary | Summary of the issue. |
+| issue.description | Description of the issue. |
+| issue.comments | Comments of the issue. |
+| issue.last\_modified | Last modified date of the issue. |
 
 #### ConfluenceDataStore
 
@@ -79,8 +69,8 @@ last_modified=content.last_modified
 
 | Key | Value |
 | --- | --- |
-| content.view\_url | URL for viewing the content page |
-| content.title | title of the content page |
-| content.body | body of the content page |
-| content.comments | comments of the content page |
-| content.last\_modified | last modified of the content |
+| content.view\_url | URL of the content page. |
+| content.title | Title of the content page. |
+| content.body | Body of the content page. |
+| content.comments | Comments of the content page. |
+| content.last\_modified | Last modified date of the content. |
