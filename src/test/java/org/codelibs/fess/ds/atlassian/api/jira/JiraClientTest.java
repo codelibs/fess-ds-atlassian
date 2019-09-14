@@ -73,7 +73,6 @@ public class JiraClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected void doSearchTest(final JiraClient jiraClient) {
         final SearchResponse response = jiraClient.search().fields("summary", "description", "comment", "updated").execute();
         response.getIssues().forEach( issue -> {
@@ -99,7 +98,6 @@ public class JiraClientTest extends AtlassianClientTest {
         });
     }
 
-    @SuppressWarnings("unchecked")
     public void test_search_parseResponse() {
         final String json = "{" + //
                 "  \"total\": 2," + //

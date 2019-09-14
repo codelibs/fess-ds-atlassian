@@ -85,7 +85,7 @@ public abstract class Request {
 
     public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
         try {
-            final StringBuffer urlBuf = new StringBuffer();
+            final StringBuilder urlBuf = new StringBuilder();
             urlBuf.append(getURL());
 
             final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());

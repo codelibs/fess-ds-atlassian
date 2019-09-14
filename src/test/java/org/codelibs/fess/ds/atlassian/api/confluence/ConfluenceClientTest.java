@@ -52,7 +52,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         doGetSpacesTest(confluenceClient);
     }
 
-    @SuppressWarnings("unchecked")
     protected void doGetContentsTest(final ConfluenceClient confluenceClient) {
         final List<Content> contents = confluenceClient.getContents().expand("body.view", "version").execute().getContents();
         if (!contents.isEmpty()) {
@@ -64,7 +63,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void test_getContents_parseResponse() {
         final String json = "{" + //
                 "  \"results\": [{" + //
@@ -96,7 +94,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected void doGetCommentsOfContentTest(final ConfluenceClient confluenceClient) {
         final List<Content> contents = confluenceClient.getContents().execute().getContents();
         if (!contents.isEmpty()) {
@@ -110,7 +107,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void test_getCommentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
@@ -133,7 +129,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
         final List<Content> contents = confluenceClient.getContents().execute().getContents();
         if (!contents.isEmpty()) {
@@ -147,7 +142,6 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void test_getAttachmentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //

@@ -32,7 +32,7 @@ public class UrlUtil {
             return null;
         }
 
-        final StringBuffer parametersBuf = new StringBuffer();
+        final StringBuilder parametersBuf = new StringBuilder();
         boolean first = true;
         for (final Map.Entry<String, String> entry : params.entrySet()) {
             if (first) {

@@ -61,7 +61,7 @@ public class OAuthUtil {
         final String nonce = generateNonce();
         final String timestamp = generateTimestamp();
         final String signature = generateSignature(consumerKey, privateKey, token, verifier, nonce, timestamp, requestMethod, url);
-        final StringBuffer buf = new StringBuffer("OAuth");
+        final StringBuilder buf = new StringBuilder("OAuth");
         appendParameter(buf, "oauth_consumer_key", consumerKey);
         appendParameter(buf, "oauth_nonce", nonce);
         appendParameter(buf, "oauth_signature", signature);
@@ -72,7 +72,7 @@ public class OAuthUtil {
         return buf.substring(0, buf.length() - 1);
     }
 
-    public static void appendParameter(final StringBuffer buf, final String name, final String value) {
+    public static void appendParameter(final StringBuilder buf, final String name, final String value) {
         buf.append(' ').append(UrlUtil.escape(name)).append("=\"").append(UrlUtil.escape(value)).append("\",");
     }
 
