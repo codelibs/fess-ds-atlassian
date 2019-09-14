@@ -16,25 +16,23 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
-
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectsRequest extends JiraRequest {
+public class GetProjectsRequest extends Request {
 
     private String[] expand;
     private Integer recent;
 
-    public GetProjectsRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
-        super(httpRequestFactory, appHome);
+    public GetProjectsRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
     public GetProjectsRequest expand(final String... expand) {
@@ -48,7 +46,7 @@ public class GetProjectsRequest extends JiraRequest {
     }
 
     public GetProjectsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetProjectsResponse parseResponse(final String json) {
@@ -61,15 +59,20 @@ public class GetProjectsRequest extends JiraRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/project");
+    public String getURL() {
+        return  appHome() + "/rest/api/latest/project";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (recent != null) {
-            url.put("recent", recent);
+            queryParams.put("recent", recent.toString());
         }
-        return url;
+        return queryParams;
     }
 
 }

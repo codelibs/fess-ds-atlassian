@@ -16,14 +16,14 @@
 package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.util.GenericData;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 
-public class SearchRequest extends JiraRequest {
+public class SearchRequest extends Request {
 
     private String jql;
     private Integer startAt;
@@ -31,21 +31,8 @@ public class SearchRequest extends JiraRequest {
     private Boolean validateQuery;
     private String[] fields;
     private String[] expand;
-
-    public SearchResponse execute() {
-        return parseResponse(getHttpResponseAsString(POST));
-    }
-
-    public SearchRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
-        super(httpRequestFactory, appHome);
-    }
-
-    public static SearchResponse parseResponse(final String json) {
-        try {
-            return mapper.readValue(json, SearchResponse.class);
-        } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse: \"" + json + "\"", e);
-        }
+    public SearchRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
     public SearchRequest jql(final String jql) {
@@ -78,33 +65,46 @@ public class SearchRequest extends JiraRequest {
         return this;
     }
 
-    @Override
-    public GenericUrl buildUrl() {
-        return new GenericUrl(appHome() + "/rest/api/latest/search");
+    public static SearchResponse parseResponse(final String json) {
+        try {
+            return mapper.readValue(json, SearchResponse.class);
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse: \"" + json + "\"", e);
+        }
+    }
+
+
+    public SearchResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     @Override
-    public GenericData buildData() {
-        final GenericData data = new GenericData();
+    public String getURL() {
+        return appHome + "/rest/api/latest/search";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (jql != null && !jql.isEmpty()) {
-            data.put("jql", jql);
+            queryParams.put("jql", jql);
         }
         if (startAt != null) {
-            data.put("startAt", startAt);
+            queryParams.put("startAt", startAt.toString());
         }
         if (maxResults != null) {
-            data.put("maxResults", maxResults);
+            queryParams.put("maxResults", maxResults.toString());
         }
         if (validateQuery != null) {
-            data.put("validateQuery", validateQuery);
+            queryParams.put("validateQuery", validateQuery.toString());
         }
         if (fields != null) {
-            data.put("fields", fields);
+            queryParams.put("fields", String.join(",", fields));
         }
         if (expand != null) {
-            data.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return data;
+        return queryParams;
     }
 
 }

@@ -16,24 +16,25 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-public class GetContentRequest extends ConfluenceRequest {
+public class GetContentRequest extends Request {
 
     private String id;
     private String status;
     private Integer version;
     private String[] expand;
 
-    public GetContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String id) {
-        super(httpRequestFactory,  appHome);
+    public GetContentRequest(final Authentication authentication, final String appHome, final String id) {
+        super(authentication,  appHome);
         this.id = id;
     }
 
@@ -53,7 +54,7 @@ public class GetContentRequest extends ConfluenceRequest {
     }
 
     public GetContentResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetContentResponse parseResponse(final String json) {
@@ -66,18 +67,23 @@ public class GetContentRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content/" + id);
+    public String getURL() {
+        return appHome + "/rest/api/latest/content/" + id;
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (status != null) {
-            url.put("status", status);
+            queryParams.put("status", status);
         }
         if (version != null) {
-            url.put("version", version);
+            queryParams.put("version", version.toString());
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

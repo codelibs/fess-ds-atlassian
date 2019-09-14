@@ -15,21 +15,20 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.GenericData;
+import org.codelibs.curl.Curl;
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlRequest;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,16 +37,21 @@ public abstract class Request {
     private static final Logger logger = LoggerFactory.getLogger(Request.class);
     protected static final ObjectMapper mapper = new ObjectMapper();
 
-    protected final static String GET = "GET";
-    protected final static String DELETE = "DELETE";
-    protected final static String POST = "POST";
-    protected final static String PUT = "PUT";
+    protected static final String GET = "GET";
+    protected static final String POST = "POST";
+    protected static final String PUT = "PUT";
+    protected static final String DELETE = "DELETE";
 
-    protected final HttpRequestFactory httpRequestFactory;
+    protected static final Function<String, CurlRequest> CURL_GET = Curl::get;
+    protected static final Function<String, CurlRequest> CURL_POST = Curl::post;
+    protected static final Function<String, CurlRequest> CURL_PUT = Curl::put;
+    protected static final Function<String, CurlRequest> CURL_DELETE = Curl::delete;
+
+    protected final Authentication authentication;
     protected final String appHome;
 
-    public Request(final HttpRequestFactory httpRequestFactory, final String appHome) {
-        this.httpRequestFactory = httpRequestFactory;
+    public Request(final Authentication authentication, final String appHome) {
+        this.authentication = authentication;
         this.appHome = appHome;
     }
 
@@ -55,67 +59,56 @@ public abstract class Request {
         return appHome;
     }
 
-    public abstract GenericUrl buildUrl();
+    public abstract String getURL();
 
-    public GenericData buildData() {
+    public Map<String, String> getQueryParamMap() {
         return null;
     }
 
-    public String getHttpResponseAsString(final String requestMethod) {
-        final GenericUrl url = buildUrl();
-        try {
-            synchronized (httpRequestFactory) {
-                HttpRequest request;
-                switch (requestMethod) {
-                    case GET: {
-                        request = httpRequestFactory.buildGetRequest(url);
-                        break;
-                    }
-                    case DELETE: {
-                        request = httpRequestFactory.buildDeleteRequest(url);
-                        break;
-                    }
-                    case POST: {
-                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
-                        request = httpRequestFactory.buildPostRequest(url, content);
-                        break;
-                    }
-                    case PUT: {
-                        final HttpContent content = new JsonHttpContent(new JacksonFactory(), buildData());
-                        request = httpRequestFactory.buildPutRequest(url, content);
-                        break;
-                    }
-                    default: {
-                        throw new IllegalArgumentException("invalid request method : " + requestMethod);
-                    }
-                }
-                final HttpResponse response = request.execute();
-                if (response.getStatusCode() != 200) {
-                    throw new HttpResponseException(response);
-                }
-                return getContentAsString(response);
+    public Map<String, Object> getBodyMap() { return null; }
+
+    public CurlResponse getCurlResponse(final String requestMethod) {
+        switch (requestMethod) {
+            case GET:
+                return getCurlResponse(CURL_GET, GET);
+            case DELETE:
+                return getCurlResponse(CURL_DELETE, DELETE);
+            case POST:
+                return getCurlResponse(CURL_DELETE, DELETE);
+            case PUT:
+                return getCurlResponse(CURL_DELETE, DELETE);
+            default: {
+                throw new IllegalArgumentException("Invalid request method : " + requestMethod);
             }
-        } catch (final HttpResponseException e) {
-            throw new AtlassianDataStoreException("HTTP Status : " + e.getStatusCode(), e);
-        }  catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to request : " + url, e);
         }
     }
 
-    protected String getContentAsString(final HttpResponse response) {
-        final byte[] bytes = new byte[4096];
-        try (BufferedInputStream bis = new BufferedInputStream(response.getContent());
-             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            int length = bis.read(bytes);
-            while (length != -1) {
-                if (length != 0) {
-                    baos.write(bytes, 0, length);
-                }
-                length = bis.read(bytes);
+    public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
+        try {
+            final StringBuffer urlBuf = new StringBuffer();
+            urlBuf.append(getURL());
+
+            final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());
+            if (queryParams != null) {
+                urlBuf.append('?').append(queryParams);
             }
-            return baos.toString(response.getContentCharset());
-        } catch (final IOException e) {
-            throw new AtlassianDataStoreException("Failed to convert response content to string.", e);
+
+            final CurlRequest request = authentication.getCurlRequest(method, requestMethod, new URL(urlBuf.toString()));
+
+            final Map<String, Object> bodyMap = getBodyMap();
+            if (bodyMap != null) {
+                String source = new JSONObject(bodyMap).toJSONString();
+                request.body(source);
+            }
+
+            final CurlResponse response = request.execute();
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+
+            return response;
+        } catch (final MalformedURLException e) {
+            throw new AtlassianDataStoreException("Invalid URL.", e);
         }
     }
 

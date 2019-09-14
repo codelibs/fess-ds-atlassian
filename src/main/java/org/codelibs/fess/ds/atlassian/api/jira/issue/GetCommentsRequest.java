@@ -16,19 +16,15 @@
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
 
-public class GetCommentsRequest extends JiraRequest {
+public class GetCommentsRequest extends Request {
 
     private final String issueIdOrKey;
     private Long startAt;
@@ -36,8 +32,8 @@ public class GetCommentsRequest extends JiraRequest {
     private String orderBy;
     private String[] expand;
 
-    public GetCommentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String issueIdOrKey) {
-        super(httpRequestFactory, appHome);
+    public GetCommentsRequest(final Authentication authentication, final String appHome, final String issueIdOrKey) {
+        super(authentication, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
 
@@ -62,7 +58,7 @@ public class GetCommentsRequest extends JiraRequest {
     }
 
     public GetCommentsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetCommentsResponse parseResponse(final String json) {
@@ -74,21 +70,26 @@ public class GetCommentsRequest extends JiraRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/issue/" + issueIdOrKey + "/comment");
+    public String getURL() {
+        return appHome + "/rest/api/latest/issue/" + issueIdOrKey + "/comment";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (startAt != null) {
-            url.put("startAt", startAt);
+            queryParams.put("startAt", startAt.toString());
         }
         if (maxResults != null) {
-            url.put("maxResults", maxResults);
+            queryParams.put("maxResults", maxResults.toString());
         }
         if (orderBy != null) {
-            url.put("orderBy", orderBy);
+            queryParams.put("orderBy", orderBy);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

@@ -16,19 +16,18 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 
-public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
+public class GetAttachmentsOfContentRequest extends Request {
 
     private final String id;
     private Integer start;
@@ -37,8 +36,8 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     private String mediaType;
     private String[] expand;
 
-    public GetAttachmentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String id) {
-        super(httpRequestFactory, appHome);
+    public GetAttachmentsOfContentRequest(final Authentication authentication, final String appHome, final String id) {
+        super(authentication, appHome);
         this.id = id;
     }
 
@@ -68,7 +67,7 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     }
 
     public GetAttachmentsOfContentResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetAttachmentsOfContentResponse parseResponse(final String json) {
@@ -81,24 +80,29 @@ public class GetAttachmentsOfContentRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content/" + id + "/child/attachment");
+    public String getURL() {
+        return appHome + "/rest/api/latest/content/" + id + "/child/attachment";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
         if (filename != null) {
-            url.put("filename", filename);
+            queryParams.put("filename", filename);
         }
         if (mediaType != null) {
-            url.put("mediaType", mediaType);
+            queryParams.put("mediaType", mediaType);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

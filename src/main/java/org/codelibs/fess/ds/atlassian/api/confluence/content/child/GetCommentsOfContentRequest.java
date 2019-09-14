@@ -17,18 +17,18 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
-public class GetCommentsOfContentRequest extends ConfluenceRequest {
+public class GetCommentsOfContentRequest extends Request {
 
     private final String id;
     private Integer parentVersion;
@@ -38,8 +38,8 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
     private String depth;
     private String[] expand;
 
-    public GetCommentsOfContentRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String id) {
-        super(httpRequestFactory, appHome);
+    public GetCommentsOfContentRequest(final Authentication authentication, final String appHome, final String id) {
+        super(authentication, appHome);
         this.id = id;
     }
 
@@ -74,7 +74,7 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
     }
 
     public GetCommentsOfContentResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetCommentsOfContentResponse parseResponse(final String json) {
@@ -88,27 +88,32 @@ public class GetCommentsOfContentRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content/" + id + "/child/comment");
+    public String getURL() {
+        return appHome + "/rest/api/latest/content/" + id + "/child/comment";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (parentVersion != null) {
-            url.put("parentVersion", parentVersion);
+            queryParams.put("parentVersion", parentVersion.toString());
         }
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
         if (location != null) {
-            url.put("location", location);
+            queryParams.put("location", location);
         }
         if (depth != null) {
-            url.put("depth", depth);
+            queryParams.put("depth", depth);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

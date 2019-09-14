@@ -16,22 +16,21 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.io.IOException;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-public class GetSpaceRequest extends ConfluenceRequest {
+public class GetSpaceRequest extends Request {
 
     private final String spaceKey;
     private String[] expand;
 
-    public GetSpaceRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String spaceKey) {
-        super(httpRequestFactory, appHome);
+    public GetSpaceRequest(final Authentication authentication, final String appHome, final String spaceKey) {
+        super(authentication, appHome);
         this.spaceKey = spaceKey;
     }
 
@@ -41,7 +40,7 @@ public class GetSpaceRequest extends ConfluenceRequest {
     }
 
     public GetSpaceResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetSpaceResponse parseResponse(final String json) {
@@ -53,12 +52,17 @@ public class GetSpaceRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/space/" + spaceKey);
+    public String getURL() {
+        return appHome + "/rest/api/latest/space/" + spaceKey;
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

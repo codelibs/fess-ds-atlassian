@@ -16,25 +16,24 @@
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
-
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
-public class GetIssueRequest extends JiraRequest {
+public class GetIssueRequest extends Request {
 
     private final String issueIdOrKey;
     private String[] fields;
     private String[] expand;
     private String[] properties;
 
-    public GetIssueRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String issueIdOrKey) {
-        super(httpRequestFactory, appHome);
+    public GetIssueRequest(final Authentication authentication, final String appHome, final String issueIdOrKey) {
+        super(authentication, appHome);
         this.issueIdOrKey = issueIdOrKey;
     }
 
@@ -54,7 +53,7 @@ public class GetIssueRequest extends JiraRequest {
     }
 
     public GetIssueResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetIssueResponse parseResponse(final String json) {
@@ -66,18 +65,23 @@ public class GetIssueRequest extends JiraRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/issue/" + issueIdOrKey);
+    public String getURL() {
+        return appHome + "/rest/api/latest/issue/" + issueIdOrKey;
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (fields != null) {
-            url.put("fields", String.join(",", fields));
+            queryParams.put("fields", String.join(",", fields));
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (properties != null) {
-            url.put("properties", String.join(",", properties));
+            queryParams.put("properties", String.join(",", properties));
         }
-        return url;
+        return queryParams;
     }
 
 }

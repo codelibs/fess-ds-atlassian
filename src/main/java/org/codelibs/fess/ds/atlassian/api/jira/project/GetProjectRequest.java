@@ -16,21 +16,21 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectRequest extends JiraRequest {
+public class GetProjectRequest extends Request {
 
     private final String projectIdOrKey;
     private String[] expand;
 
-    public GetProjectRequest(final HttpRequestFactory httpRequestFactory, final String appHome, final String projectIdOrKey) {
-        super(httpRequestFactory, appHome);
+    public GetProjectRequest(final Authentication authentication, final String appHome, final String projectIdOrKey) {
+        super(authentication, appHome);
         this.projectIdOrKey = projectIdOrKey;
     }
 
@@ -40,7 +40,7 @@ public class GetProjectRequest extends JiraRequest {
     }
 
     public GetProjectResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetProjectResponse parseResponse(String json) {
@@ -52,12 +52,17 @@ public class GetProjectRequest extends JiraRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/project/" + projectIdOrKey);
+    public String getURL() {
+        return appHome + "/rest/api/latest/project/" + projectIdOrKey;
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

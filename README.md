@@ -31,7 +31,7 @@ issue.jql=...
 | --- | --- |
 | home | URL of the Atlassian application(JIRA/Confluence) |
 | auth_type | `oauth`(OAuth authentication) or `basic`(Basic authentication) |
-| oauth.consumer\_key | Consumer key for OAuth (Usually `OAuthKey`) |
+| oauth.consumer\_key | Consumer key for OAuth (Usually `OauthKey`) |
 | oauth.private\_key | Private key for OAuth |
 | oauth.secret | Verification code for OAuth |
 | oauth.access\_token | Access token for OAuth |

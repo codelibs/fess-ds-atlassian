@@ -17,18 +17,18 @@ package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-public class GetSpacesRequest extends ConfluenceRequest {
+public class GetSpacesRequest extends Request {
 
     private String spaceKey;
     private String type;
@@ -39,8 +39,8 @@ public class GetSpacesRequest extends ConfluenceRequest {
     private Integer start;
     private Integer limit;
 
-    public GetSpacesRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
-        super(httpRequestFactory, appHome);
+    public GetSpacesRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
     public GetSpacesRequest spaceKey(final String spaceKey) {
@@ -84,7 +84,7 @@ public class GetSpacesRequest extends ConfluenceRequest {
     }
 
     public GetSpacesResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetSpacesResponse parseResponse(String json) {
@@ -98,33 +98,38 @@ public class GetSpacesRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/space");
+    public String getURL() {
+        return appHome + "/rest/api/latest/space";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (spaceKey != null) {
-            url.put("spaceKey", spaceKey);
+            queryParams.put("spaceKey", spaceKey);
         }
         if (type != null) {
-            url.put("type", type);
+            queryParams.put("type", type);
         }
         if (status != null) {
-            url.put("status", status);
+            queryParams.put("status", status);
         }
         if (label != null) {
-            url.put("label", label);
+            queryParams.put("label", label);
         }
         if (favourite != null) {
-            url.put("favourite", favourite);
+            queryParams.put("favourite", favourite);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
-        return url;
+        return queryParams;
     }
 
 }

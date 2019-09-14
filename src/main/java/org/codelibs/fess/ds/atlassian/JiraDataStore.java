@@ -110,7 +110,6 @@ public class JiraDataStore extends AtlassianDataStore {
             final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap);
             final Map<String, Object> issueMap = new HashMap<>();
 
-            // TODO
             issueMap.put(ISSUE_SUMMARY, issue.getFields().getSummary());
             issueMap.put(ISSUE_DESCRIPTION, issue.getFields().getDescription());
             issueMap.put(ISSUE_COMMENTS, getIssueComments(issue, client));

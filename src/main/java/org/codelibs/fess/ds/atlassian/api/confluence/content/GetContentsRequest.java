@@ -17,18 +17,18 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-public class GetContentsRequest extends ConfluenceRequest {
+public class GetContentsRequest extends Request {
 
     private String type;
     private String spaceKey;
@@ -39,8 +39,8 @@ public class GetContentsRequest extends ConfluenceRequest {
     private Integer start;
     private Integer limit;
 
-    public GetContentsRequest(final HttpRequestFactory httpRequestFactory, final String appHome) {
-        super(httpRequestFactory, appHome);
+    public GetContentsRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
     public GetContentsRequest type(final String type) {
@@ -84,7 +84,7 @@ public class GetContentsRequest extends ConfluenceRequest {
     }
 
     public GetContentsResponse execute() {
-        return parseResponse(getHttpResponseAsString(GET));
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
     public static GetContentsResponse parseResponse(final String json) {
@@ -98,33 +98,38 @@ public class GetContentsRequest extends ConfluenceRequest {
     }
 
     @Override
-    public GenericUrl buildUrl() {
-        final GenericUrl url = new GenericUrl(appHome() + "/rest/api/latest/content");
+    public String getURL() {
+        return appHome + "/rest/api/latest/content";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (type != null) {
-            url.put("type", type);
+            queryParams.put("type", type);
         }
         if (spaceKey != null) {
-            url.put("spaceKey", spaceKey);
+            queryParams.put("spaceKey", spaceKey);
         }
         if (title != null) {
-            url.put("title", title);
+            queryParams.put("title", title);
         }
         if (status != null) {
-            url.put("status", status);
+            queryParams.put("status", status);
         }
         if (postingDay != null) {
-            url.put("postingDay", postingDay);
+            queryParams.put("postingDay", postingDay);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
-        return url;
+        return queryParams;
     }
 
 }

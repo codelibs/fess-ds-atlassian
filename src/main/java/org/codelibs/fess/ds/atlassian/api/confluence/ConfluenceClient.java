@@ -38,13 +38,18 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfluenceClient.class);
 
-    protected static final int CONTENT_LIMIT = 25;
+    protected static final String DEFAULT_CONTENT_LIMIT = "25";
+
+    // parameters for confluence
+    protected static final String CONTENT_LIMIT_PARAM = "content_limit";
 
     protected final String confluenceHome;
+    protected final Integer contentLimit;
 
     public ConfluenceClient(final Map<String, String> paramMap) {
         super(paramMap);
         confluenceHome = getHome(paramMap);
+        contentLimit = getContentLimit(paramMap);
     }
 
     @Override
@@ -56,57 +61,61 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return confluenceHome;
     }
 
+    public Integer getContentLimit(final Map<String, String> paramMap) {
+        return Integer.parseInt(paramMap.getOrDefault(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
+    }
+
     public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest(request(), getConfluenceHome());
+        return new GetSpacesRequest(authentication, getConfluenceHome());
     }
 
     public GetSpaceRequest getSpace(final String spaceKey) {
-        return new GetSpaceRequest(request(), getConfluenceHome(), spaceKey);
+        return new GetSpaceRequest(authentication, getConfluenceHome(), spaceKey);
     }
 
     public GetContentsRequest getContents() {
-        return new GetContentsRequest(request(), getConfluenceHome());
+        return new GetContentsRequest(authentication, getConfluenceHome());
     }
 
     public GetContentRequest getContent(final String contentId) {
-        return new GetContentRequest(request(), getConfluenceHome(), contentId);
+        return new GetContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
     public GetCommentsOfContentRequest getCommentsOfContent(final String contentId) {
-        return new GetCommentsOfContentRequest(request(), getConfluenceHome(), contentId);
+        return new GetCommentsOfContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
     public GetAttachmentsOfContentRequest getAttachmentsOfContent(final String contentId) {
-        return new GetAttachmentsOfContentRequest(request(), getConfluenceHome(), contentId);
+        return new GetAttachmentsOfContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
     public void getContents(final Consumer<Content> consumer) {
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).expand("space", "version", "body.view").execute();
+        for (int start = 0;; start += contentLimit) {
+            final GetContentsResponse response = getContents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
-            if (contents.size() < CONTENT_LIMIT)
+            if (contents.size() < contentLimit)
                 break;
         }
     }
 
     public void getBlogContents(final Consumer<Content> consumer) {
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            GetContentsResponse response = getContents().start(start).limit(CONTENT_LIMIT).type("blogpost")
+        for (int start = 0;; start += contentLimit) {
+            final GetContentsResponse response = getContents().start(start).limit(contentLimit).type("blogpost")
                     .expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
-            if (contents.size() < CONTENT_LIMIT)
+            if (contents.size() < contentLimit)
                 break;
         }
     }
 
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
-        for (int start = 0;; start += CONTENT_LIMIT) {
-            final GetCommentsOfContentResponse response = getCommentsOfContent(id).start(start).limit(CONTENT_LIMIT).expand("body.view").execute();
+        for (int start = 0;; start += contentLimit) {
+            final GetCommentsOfContentResponse response = getCommentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
             final List<Comment> comments = response.getComments();
             comments.forEach(consumer);
-            if (comments.size() < CONTENT_LIMIT)
+            if (comments.size() < contentLimit)
                 break;
         }
     }

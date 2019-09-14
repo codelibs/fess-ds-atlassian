@@ -17,10 +17,11 @@ package org.codelibs.fess.ds.atlassian.api;
 
 import java.util.Map;
 
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.apache.ApacheHttpTransport;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public abstract class AtlassianClient {
     protected static final String BASIC = "basic";
     protected static final String OAUTH = "oauth";
 
-    protected HttpRequestFactory httpRequestFactory;
+    protected Authentication authentication;
 
     public AtlassianClient(final Map<String, String> paramMap) {
 
@@ -57,8 +58,6 @@ public abstract class AtlassianClient {
         }
 
         final String authType = getAuthType(paramMap);
-        final HttpRequestFactoryBuilder builder = createBuilder();
-
         switch (authType) {
             case BASIC: {
                 final String username = getBasicUsername(paramMap);
@@ -66,25 +65,19 @@ public abstract class AtlassianClient {
                 if (username.isEmpty() || password.isEmpty()) {
                     throw new AtlassianDataStoreException("parameter \"" + BASIC_USERNAME_PARAM + "\" and \"" + BASIC_PASS_PARAM + " required for Basic authentication.");
                 }
-                builder.basicAuth(username, password);
+                authentication = new BasicAuthentication(username, password);
                 break;
             }
             case OAUTH: {
                 final String consumerKey = getConsumerKey(paramMap);
                 final String privateKey = getPrivateKey(paramMap);
                 final String verifier = getSecret(paramMap);
-                final String temporaryToken = getAccessToken(paramMap);
-                if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || temporaryToken.isEmpty()) {
+                final String accessToken = getAccessToken(paramMap);
+                if (consumerKey.isEmpty() || privateKey.isEmpty() || verifier.isEmpty() || accessToken.isEmpty()) {
                     throw new AtlassianDataStoreException("parameter \"" + CONSUMER_KEY_PARAM + "\", \""
                             + PRIVATE_KEY_PARAM + "\", \"" + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" required for OAuth authentication.");
                 }
-                builder.oAuthToken(home, accessToken -> {
-                    accessToken.consumerKey = consumerKey;
-                    accessToken.signer = HttpRequestFactoryBuilder.getOAuthRsaSigner(privateKey);
-                    accessToken.transport = new ApacheHttpTransport();
-                    accessToken.verifier = verifier;
-                    accessToken.temporaryToken = temporaryToken;
-                });
+                authentication = new OAuthAuthentication(consumerKey, privateKey, accessToken, verifier);
                 break;
             }
             default: {
@@ -92,25 +85,17 @@ public abstract class AtlassianClient {
             }
         }
 
-        final String proxyHost = getProxyHost(paramMap);
-        final String proxyPort = getProxyPort(paramMap);
-        if (!proxyHost.isEmpty() ) {
-            if (proxyPort.isEmpty()) {
+        final String httpProxyHost = getProxyHost(paramMap);
+        final String httpProxyPort = getProxyPort(paramMap);
+        if (!httpProxyHost.isEmpty() ) {
+            if (httpProxyHost.isEmpty()) {
                 throw new AtlassianDataStoreException(PROXY_PORT_PARAM + " required.");
             }
-            builder.proxy(proxyHost, Integer.parseInt(proxyPort));
+            authentication.setHttpProxy(httpProxyHost, Integer.parseInt(httpProxyPort));
         }
 
-        httpRequestFactory = builder.build();
     }
 
-    public static HttpRequestFactoryBuilder createBuilder() {
-        return new HttpRequestFactoryBuilder();
-    }
-
-    public HttpRequestFactory request() {
-        return httpRequestFactory;
-    }
 
     protected String getHome(final Map<String, String> paramMap) {
         if (paramMap.containsKey(HOME_PARAM)) {

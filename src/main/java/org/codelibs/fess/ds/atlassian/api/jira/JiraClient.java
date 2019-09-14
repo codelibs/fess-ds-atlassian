@@ -38,20 +38,22 @@ public class JiraClient extends AtlassianClient implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraClient.class);
 
-    protected static final int ISSUE_MAX_RESULTS = 50;
 
-    // parameters
+    protected static final String DEFAULT_ISSUE_MAX_RESULTS = "50";
+
+    // parameters for Jira
     protected static final String JQL_PARAM = "issue.jql";
+    protected static final String ISSUE_MAX_RESULTS_PARAM = "issue_max_results";
 
     protected final String jiraHome;
     protected final String jql;
+    protected final Integer issueMaxResults;
 
     public JiraClient(final Map<String, String> paramMap) {
         super(paramMap);
-
         jiraHome = getHome(paramMap);
         jql = getJql(paramMap);
-
+        issueMaxResults = (getIssueMaxResults(paramMap));
     }
 
     @Override
@@ -63,7 +65,11 @@ public class JiraClient extends AtlassianClient implements Closeable {
         if (paramMap.containsKey(JQL_PARAM)) {
             return paramMap.get(JQL_PARAM);
         }
-        return StringUtil.EMPTY;
+        return null;
+    }
+
+    protected Integer getIssueMaxResults(final Map<String, String> paramMap) {
+        return Integer.parseInt(paramMap.getOrDefault(ISSUE_MAX_RESULTS_PARAM, DEFAULT_ISSUE_MAX_RESULTS));
     }
 
     public String getJiraHome() {
@@ -71,42 +77,42 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public GetProjectsRequest getProjects() {
-        return new GetProjectsRequest(request(), jiraHome);
+        return new GetProjectsRequest(authentication, jiraHome);
     }
 
     public GetProjectRequest getProject(final String projectIdOrKey) {
-        return new GetProjectRequest(request(), jiraHome, projectIdOrKey);
+        return new GetProjectRequest(authentication, jiraHome, projectIdOrKey);
     }
 
     public SearchRequest search() {
-        return new SearchRequest(request(), jiraHome);
+        return new SearchRequest(authentication, jiraHome);
     }
 
     public GetIssueRequest getIssue(final String issueIdOrKey) {
-        return new GetIssueRequest(request(), jiraHome, issueIdOrKey);
+        return new GetIssueRequest(authentication, jiraHome, issueIdOrKey);
     }
 
     public GetCommentsRequest getComments(final String issueIdOrKey) {
-        return new GetCommentsRequest(request(), jiraHome, issueIdOrKey);
+        return new GetCommentsRequest(authentication, jiraHome, issueIdOrKey);
     }
 
     public void getIssues(final Consumer<Issue> consumer) {
-        for (int startAt = 0; ; startAt += ISSUE_MAX_RESULTS) {
-            final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(ISSUE_MAX_RESULTS)
+        for (int startAt = 0; ; startAt += issueMaxResults) {
+            final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(issueMaxResults)
                     .fields("summary", "description", "updated").execute();
             searchResponse.getIssues().forEach(consumer);
-            if (searchResponse.getTotal() < ISSUE_MAX_RESULTS) {
+            if (searchResponse.getTotal() < issueMaxResults) {
                 break;
             }
         }
     }
 
     public void getComments(String issueId, final Consumer<Comment> consumer) {
-        for (int startAt = 0;; startAt += ISSUE_MAX_RESULTS) {
-            final GetCommentsResponse getCommentsResponse = getComments(issueId).startAt(startAt).maxResults(ISSUE_MAX_RESULTS).execute();
+        for (int startAt = 0;; startAt += issueMaxResults) {
+            final GetCommentsResponse getCommentsResponse = getComments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
             final List<Comment> comments = getCommentsResponse.getComments();
             comments.forEach(consumer);
-            if (comments.size() < ISSUE_MAX_RESULTS)
+            if (comments.size() < issueMaxResults)
                 break;
         }
     }
