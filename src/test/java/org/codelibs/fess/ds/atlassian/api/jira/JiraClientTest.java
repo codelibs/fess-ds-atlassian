@@ -50,7 +50,7 @@ public class JiraClientTest extends AtlassianClientTest {
     }
 
     protected void doGetProjectsTest(final JiraClient jiraClient) {
-        final GetProjectsResponse response = jiraClient.getProjects().expand("description").execute();
+        final GetProjectsResponse response = jiraClient.projects().expand("description").execute();
         for (final Project project : response.getProjects()) {
             assertTrue("not contains \"name\"", project.getName() != null);
             assertTrue("not contains \"description\"", project.getDescription() != null);
@@ -147,7 +147,7 @@ public class JiraClientTest extends AtlassianClientTest {
         final List<Issue> issues = jiraClient.search().execute().getIssues();
         if (!issues.isEmpty()) {
             final String id = (String) issues.get(0).getId();
-            final GetCommentsResponse response = jiraClient.getComments(id).execute();
+            final GetCommentsResponse response = jiraClient.comments(id).execute();
             for (final Comment comment : response.getComments()) {
                 assertTrue("not contains \"body\"", comment.getBody() != null);
             }

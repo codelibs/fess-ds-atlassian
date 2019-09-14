@@ -65,33 +65,33 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return Integer.parseInt(paramMap.getOrDefault(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
     }
 
-    public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest(authentication, getConfluenceHome());
+    public GetSpacesRequest spaces() {
+        return new GetSpacesRequest(authentication, confluenceHome);
     }
 
-    public GetSpaceRequest getSpace(final String spaceKey) {
-        return new GetSpaceRequest(authentication, getConfluenceHome(), spaceKey);
+    public GetSpaceRequest space(final String spaceKey) {
+        return new GetSpaceRequest(authentication, confluenceHome, spaceKey);
     }
 
-    public GetContentsRequest getContents() {
-        return new GetContentsRequest(authentication, getConfluenceHome());
+    public GetContentsRequest contents() {
+        return new GetContentsRequest(authentication, confluenceHome);
     }
 
-    public GetContentRequest getContent(final String contentId) {
+    public GetContentRequest content(final String contentId) {
         return new GetContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
-    public GetCommentsOfContentRequest getCommentsOfContent(final String contentId) {
+    public GetCommentsOfContentRequest commentsOfContent(final String contentId) {
         return new GetCommentsOfContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
-    public GetAttachmentsOfContentRequest getAttachmentsOfContent(final String contentId) {
+    public GetAttachmentsOfContentRequest attachmentsOfContent(final String contentId) {
         return new GetAttachmentsOfContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
     public void getContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response = getContents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+            final GetContentsResponse response = contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
             if (contents.size() < contentLimit)
@@ -101,7 +101,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
 
     public void getBlogContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response = getContents().start(start).limit(contentLimit).type("blogpost")
+            final GetContentsResponse response = contents().start(start).limit(contentLimit).type("blogpost")
                     .expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
@@ -112,7 +112,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
 
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetCommentsOfContentResponse response = getCommentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
+            final GetCommentsOfContentResponse response = commentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
             final List<Comment> comments = response.getComments();
             comments.forEach(consumer);
             if (comments.size() < contentLimit)

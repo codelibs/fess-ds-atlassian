@@ -91,7 +91,12 @@ public abstract class AtlassianClient {
             if (httpProxyPort.isEmpty()) {
                 throw new AtlassianDataStoreException(PROXY_PORT_PARAM + " required.");
             }
-            authentication.setHttpProxy(httpProxyHost, Integer.parseInt(httpProxyPort));
+            try {
+                final int port = Integer.parseInt(httpProxyPort);
+                authentication.setHttpProxy(httpProxyHost, port);
+            } catch (final NumberFormatException e) {
+                throw new SalesforceDataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
+            }
         }
 
     }

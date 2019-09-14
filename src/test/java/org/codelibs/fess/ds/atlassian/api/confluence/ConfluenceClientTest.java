@@ -53,7 +53,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     protected void doGetContentsTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.getContents().expand("body.view", "version").execute().getContents();
+        final List<Content> contents = confluenceClient.contents().expand("body.view", "version").execute().getContents();
         if (!contents.isEmpty()) {
             final Content content = contents.get(0);
             assertTrue("not contains \"title\"", content.getTitle() != null);
@@ -95,11 +95,11 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     protected void doGetCommentsOfContentTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.getContents().execute().getContents();
+        final List<Content> contents = confluenceClient.contents().execute().getContents();
         if (!contents.isEmpty()) {
             final String id = contents.get(0).getId();
             final GetCommentsOfContentResponse response =
-                    confluenceClient.getCommentsOfContent(id).depth("all").expand("body.view").execute();
+                    confluenceClient.commentsOfContent(id).depth("all").expand("body.view").execute();
             for (final Comment comment : response.getComments()) {
                 assertTrue("not contains \"title\"", comment.getTitle() != null);
                 assertTrue("not contains \"value\" in \"body.view\"", comment.getBody() != null);
@@ -130,10 +130,10 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.getContents().execute().getContents();
+        final List<Content> contents = confluenceClient.contents().execute().getContents();
         if (!contents.isEmpty()) {
             final String id =  contents.get(0).getId();
-            final GetAttachmentsOfContentResponse response = confluenceClient.getAttachmentsOfContent(id).execute();
+            final GetAttachmentsOfContentResponse response = confluenceClient.attachmentsOfContent(id).execute();
             for (final Attachment attachment : response.getAttachments()) {
                 assertTrue("not contains \"title\"", attachment.getTitle() != null);
                 assertTrue("not contains \"mediaType\" in \"metadata\"", attachment.getMediaType() != null);
@@ -163,7 +163,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     protected void doGetSpacesTest(final ConfluenceClient confluenceClient) {
-        final GetSpacesResponse response = confluenceClient.getSpaces().expand("description").execute();
+        final GetSpacesResponse response = confluenceClient.spaces().expand("description").execute();
         for (final Space space : response.getSpaces()) {
             assertTrue("not contains \"name\"", space.getName() != null);
             assertTrue("not contains \"description\"", space.getDescription() != null);
@@ -171,7 +171,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     }
 
     public void test_getSpaces_parseResponse() {
-        String json = "{" + //
+        final String json = "{" + //
                 "  \"results\": [" + //
                 "    { \"name\": \"Space-0\" }," + //
                 "    { \"name\": \"Space-1\" }" + //

@@ -76,11 +76,11 @@ public class JiraClient extends AtlassianClient implements Closeable {
         return jiraHome;
     }
 
-    public GetProjectsRequest getProjects() {
+    public GetProjectsRequest projects() {
         return new GetProjectsRequest(authentication, jiraHome);
     }
 
-    public GetProjectRequest getProject(final String projectIdOrKey) {
+    public GetProjectRequest project(final String projectIdOrKey) {
         return new GetProjectRequest(authentication, jiraHome, projectIdOrKey);
     }
 
@@ -88,11 +88,11 @@ public class JiraClient extends AtlassianClient implements Closeable {
         return new SearchRequest(authentication, jiraHome);
     }
 
-    public GetIssueRequest getIssue(final String issueIdOrKey) {
+    public GetIssueRequest issue(final String issueIdOrKey) {
         return new GetIssueRequest(authentication, jiraHome, issueIdOrKey);
     }
 
-    public GetCommentsRequest getComments(final String issueIdOrKey) {
+    public GetCommentsRequest comments(final String issueIdOrKey) {
         return new GetCommentsRequest(authentication, jiraHome, issueIdOrKey);
     }
 
@@ -109,7 +109,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
 
     public void getComments(String issueId, final Consumer<Comment> consumer) {
         for (int startAt = 0;; startAt += issueMaxResults) {
-            final GetCommentsResponse getCommentsResponse = getComments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
+            final GetCommentsResponse getCommentsResponse = comments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
             final List<Comment> comments = getCommentsResponse.getComments();
             comments.forEach(consumer);
             if (comments.size() < issueMaxResults)
