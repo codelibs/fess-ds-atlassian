@@ -94,7 +94,10 @@ public abstract class AtlassianClient {
 
         final String proxyHost = getProxyHost(paramMap);
         final String proxyPort = getProxyPort(paramMap);
-        if(!proxyHost.isEmpty() && !proxyPort.isEmpty()) {
+        if (!proxyHost.isEmpty() ) {
+            if (proxyPort.isEmpty()) {
+                throw new AtlassianDataStoreException(PROXY_PORT_PARAM + " required.");
+            }
             builder.proxy(proxyHost, Integer.parseInt(proxyPort));
         }
 

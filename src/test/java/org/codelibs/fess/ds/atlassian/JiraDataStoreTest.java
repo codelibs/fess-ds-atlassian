@@ -24,6 +24,7 @@ import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
 public class JiraDataStoreTest extends LastaFluteTestCase {
+
     public JiraDataStore dataStore;
 
     @Override
