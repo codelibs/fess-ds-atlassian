@@ -88,7 +88,7 @@ public abstract class AtlassianClient {
         final String httpProxyHost = getProxyHost(paramMap);
         final String httpProxyPort = getProxyPort(paramMap);
         if (!httpProxyHost.isEmpty() ) {
-            if (httpProxyHost.isEmpty()) {
+            if (httpProxyPort.isEmpty()) {
                 throw new AtlassianDataStoreException(PROXY_PORT_PARAM + " required.");
             }
             authentication.setHttpProxy(httpProxyHost, Integer.parseInt(httpProxyPort));
