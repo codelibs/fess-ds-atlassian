@@ -74,9 +74,9 @@ public abstract class Request {
             case DELETE:
                 return getCurlResponse(CURL_DELETE, DELETE);
             case POST:
-                return getCurlResponse(CURL_DELETE, POST);
+                return getCurlResponse(CURL_POST, POST);
             case PUT:
-                return getCurlResponse(CURL_DELETE, PUT);
+                return getCurlResponse(CURL_PUT, PUT);
             default: {
                 throw new IllegalArgumentException("Invalid request method : " + requestMethod);
             }
