@@ -15,6 +15,8 @@
  */
 package org.codelibs.fess.ds.atlassian.api.util;
 
+import static java.util.Collections.EMPTY_MAP;
+
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -77,13 +79,16 @@ public class OAuthUtil {
     }
 
     public static void appendParameter(final StringBuilder buf, final String name, final String value) {
-        buf.append(' ').append(UrlUtil.escape(name)).append("=\"").append(UrlUtil.escape(value)).append("\",");
+        buf.append(' ').append(UrlUtil.encode(name)).append("=\"").append(UrlUtil.encode(value)).append("\",");
     }
 
 
     public static Map<String, String> getQueryMapFromUrl(final URL url) {
         final String query = url.getQuery();
-        return Arrays.stream(query.split("&")).collect(Collectors.toMap(p -> p.split("=")[0], p -> p.split("=")[1]));
+        if (query == null) {
+            return EMPTY_MAP;
+        }
+        return Arrays.stream(query.split("&")).collect(Collectors.toMap(p -> p.split("=")[0], p -> UrlUtil.decode(p.split("=")[1])));
     }
 
     public static String generateSignature(final String consumerKey, final PrivateKey privateKey,
@@ -98,17 +103,14 @@ public class OAuthUtil {
         parameters.put("oauth_token", token);
         parameters.put("oauth_verifier", verifier);
 
-        final Map<String, String> queryMap = getQueryMapFromUrl(url);
-        for (Map.Entry<String, String> fieldEntry : queryMap.entrySet()) {
-            parameters.put(fieldEntry.getKey(), fieldEntry.getValue());
-        }
+        parameters.putAll(getQueryMapFromUrl(url));
 
         final String normalizedParameters = UrlUtil.buildQueryParameters(parameters);
         final String normalizedPath = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
         final StringBuilder signatureBaseString = new StringBuilder();
-        signatureBaseString.append(UrlUtil.escape(requestMethod)).append('&');
-        signatureBaseString.append(UrlUtil.escape(normalizedPath)).append('&');
-        signatureBaseString.append(UrlUtil.escape(normalizedParameters));
+        signatureBaseString.append(UrlUtil.encode(requestMethod)).append('&');
+        signatureBaseString.append(UrlUtil.encode(normalizedPath)).append('&');
+        signatureBaseString.append(UrlUtil.encode(normalizedParameters));
 
         return computeSignature(privateKey, signatureBaseString.toString());
     }

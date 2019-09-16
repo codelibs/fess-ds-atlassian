@@ -29,12 +29,9 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 import org.json.simple.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class Request {
 
-    private static final Logger logger = LoggerFactory.getLogger(Request.class);
     protected static final ObjectMapper mapper = new ObjectMapper();
 
     protected static final String GET = "GET";
@@ -89,7 +86,7 @@ public abstract class Request {
             urlBuf.append(getURL());
 
             final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());
-            if (queryParams != null) {
+            if (!queryParams.isEmpty()) {
                 urlBuf.append('?').append(queryParams);
             }
 

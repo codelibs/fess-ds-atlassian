@@ -15,9 +15,11 @@
  */
 package org.codelibs.fess.ds.atlassian.api.util;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import com.google.common.net.PercentEscaper;
 import org.codelibs.core.lang.StringUtil;
 
 public class UrlUtil {
@@ -26,10 +28,18 @@ public class UrlUtil {
         // do nothing
     }
 
-    private static final PercentEscaper ESCAPER = new PercentEscaper("-_.~", false);
+    public static String encode(final CharSequence element) {
+        if (element == null) {
+            return null;
+        }
+        return URLEncoder.encode(element.toString(), StandardCharsets.UTF_8);
+    }
 
-    public static String escape(final String value) {
-        return ESCAPER.escape(value);
+    public static String decode(final CharSequence element) {
+        if (element == null) {
+            return null;
+        }
+        return URLDecoder.decode(element.toString(), StandardCharsets.UTF_8);
     }
 
     public static String buildQueryParameters(final Map<String, String> params) {
@@ -46,7 +56,7 @@ public class UrlUtil {
                 parametersBuf.append('&');
             }
             parametersBuf.append(entry.getKey());
-            final String value = escape(entry.getValue());
+            final String value = encode(entry.getValue());
             if (value != null) {
                 parametersBuf.append('=').append(value);
             }

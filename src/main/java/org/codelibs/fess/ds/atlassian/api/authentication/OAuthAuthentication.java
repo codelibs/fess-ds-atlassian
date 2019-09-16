@@ -21,12 +21,8 @@ import java.util.function.Function;
 
 import org.codelibs.curl.CurlRequest;
 import org.codelibs.fess.ds.atlassian.api.util.OAuthUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OAuthAuthentication extends Authentication {
-
-    private static Logger logger = LoggerFactory.getLogger(OAuthAuthentication.class);
 
     protected final String consumerKey;
     protected final PrivateKey privateKey;
