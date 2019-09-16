@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,16 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
-import java.util.Map;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
+public class GetIssueResponse {
+    protected final Issue issue;
 
-public class GetIssueResponse extends Response {
-    protected final Map<String, Object> issue;
-
-    public GetIssueResponse(Map<String, Object> issue) {
+    public GetIssueResponse(final Issue issue) {
         this.issue = issue;
     }
 
-    public Map<String, Object> getIssue() {
+    public Issue getIssue() {
         return issue;
     }
 

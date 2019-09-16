@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import java.util.Map;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
-import org.dbflute.utflute.lastadi.ContainerTestCase;
+import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 
-public class ConfluenceDataStoreTest extends ContainerTestCase {
+public class ConfluenceDataStoreTest extends LastaFluteTestCase {
     public ConfluenceDataStore dataStore;
 
     @Override

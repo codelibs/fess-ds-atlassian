@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,98 +16,74 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-public class GetContentRequest extends ConfluenceRequest {
+public class GetContentRequest extends Request {
 
-    private String id, status;
+    private String id;
+    private String status;
     private Integer version;
     private String[] expand;
 
-    public GetContentRequest(ConfluenceClient confluenceClient, String id) {
-        super(confluenceClient);
+    public GetContentRequest(final Authentication authentication, final String appHome, final String id) {
+        super(authentication,  appHome);
         this.id = id;
     }
 
-    @Override
-    public GetContentResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), id, status, version, expand);
-        try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "There is no content with the given id, or the calling user does not have permission to view the content: " + id,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
-    public GetContentRequest status(String status) {
+    public GetContentRequest status(final String status) {
         this.status = status;
         return this;
     }
 
-    public GetContentRequest version(int version) {
+    public GetContentRequest version(final int version) {
         this.version = version;
         return this;
     }
 
-    public GetContentRequest expand(String... expand) {
+    public GetContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public static GetContentResponse fromJson(String json) {
+    public GetContentResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
+    }
+
+    public static GetContentResponse parseResponse(final String json) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
-            final Map<String, Object> content = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            return new GetContentResponse(content);
+            return new GetContentResponse(mapper.readValue(json, Content.class));
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse content from: " + json, e);
         }
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String id, final String status, final Integer version,
-            final String[] expand) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content/" + id);
+    @Override
+    public String getURL() {
+        return appHome + "/rest/api/latest/content/" + id;
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (status != null) {
-            url.put("status", status);
+            queryParams.put("status", status);
         }
         if (version != null) {
-            url.put("version", version);
+            queryParams.put("version", version.toString());
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

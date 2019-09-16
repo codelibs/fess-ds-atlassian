@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,128 +17,103 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
-public class GetCommentsOfContentRequest extends ConfluenceRequest {
+public class GetCommentsOfContentRequest extends Request {
 
     private final String id;
-    private Integer parentVersion, start, limit;
-    private String location, depth;
+    private Integer parentVersion;
+    private Integer start;
+    private Integer limit;
+    private String location;
+    private String depth;
     private String[] expand;
 
-    public GetCommentsOfContentRequest(ConfluenceClient confluenceClient, String id) {
-        super(confluenceClient);
+    public GetCommentsOfContentRequest(final Authentication authentication, final String appHome, final String id) {
+        super(authentication, appHome);
         this.id = id;
     }
 
-    @Override
-    public GetCommentsOfContentResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), id, parentVersion, start, limit, location, depth, expand);
-        try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                throw new AtlassianDataStoreException(
-                        "There is no content with the given id, or the calling user does not have permission to view the content: " + id,
-                        e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
-    public GetCommentsOfContentRequest parentVersion(int parentVersion) {
+    public GetCommentsOfContentRequest parentVersion(final int parentVersion) {
         this.parentVersion = parentVersion;
         return this;
     }
 
-    public GetCommentsOfContentRequest start(int start) {
+    public GetCommentsOfContentRequest start(final int start) {
         this.start = start;
         return this;
     }
 
-    public GetCommentsOfContentRequest limit(int limit) {
+    public GetCommentsOfContentRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
-    public GetCommentsOfContentRequest location(String location) {
+    public GetCommentsOfContentRequest location(final String location) {
         this.location = location;
         return this;
     }
 
-    public GetCommentsOfContentRequest depth(String depth) {
+    public GetCommentsOfContentRequest depth(final String depth) {
         this.depth = depth;
         return this;
     }
 
-    public GetCommentsOfContentRequest expand(String... expand) {
+    public GetCommentsOfContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public static GetCommentsOfContentResponse fromJson(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> comments = new ArrayList<>();
+    public GetCommentsOfContentResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
+    }
+
+    public static GetCommentsOfContentResponse parseResponse(final String json) {
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
-            comments.addAll(results);
+            final String results = mapper.readTree(json).get("results").toString();
+            final List<Comment> comments = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Comment>>(){}));
+            return new GetCommentsOfContentResponse(comments);
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
         }
-        return new GetCommentsOfContentResponse(comments);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String id, final Integer parentVersion, final Integer start,
-            final Integer limit, final String location, final String depth, final String[] expand) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/content/" + id + "/child/comment");
+    @Override
+    public String getURL() {
+        return appHome + "/rest/api/latest/content/" + id + "/child/comment";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (parentVersion != null) {
-            url.put("parentVersion", parentVersion);
+            queryParams.put("parentVersion", parentVersion.toString());
         }
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
         if (location != null) {
-            url.put("location", location);
+            queryParams.put("location", location);
         }
         if (depth != null) {
-            url.put("depth", depth);
+            queryParams.put("depth", depth);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return url;
+        return queryParams;
     }
 
 }

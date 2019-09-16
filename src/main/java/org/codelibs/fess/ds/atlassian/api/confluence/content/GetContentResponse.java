@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
-import java.util.Map;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
+public class GetContentResponse {
 
-public class GetContentResponse extends Response {
+    protected final Content content;
 
-    protected final Map<String, Object> content;
-
-    public GetContentResponse(Map<String, Object> content) {
+    public GetContentResponse(final Content content) {
         this.content = content;
     }
 
-    public Map<String, Object> getContent() {
+    public Content getContent() {
         return content;
     }
 

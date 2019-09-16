@@ -13,23 +13,34 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira.search;
+package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
-import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchResponse {
+public class Comment {
 
-    protected Long total;
-    protected List<Issue> issues;
+    protected String title;
+    @JsonIgnore
+    protected String body;
 
-    public Long getTotal() { return total; }
+    public String getTitle() {
+        return title;
+    }
 
-    public List<Issue> getIssues() {
-        return issues;
+    public String getBody() {
+        return body;
+    }
+
+    @JsonProperty("body")
+    public void unpackBody(Map<String,Object> body) {
+        final Map<String, Object> view = (Map<String, Object>) body.get("view");
+        final String value = (String) view.get("value");
+        this.body = value;
     }
 
 }

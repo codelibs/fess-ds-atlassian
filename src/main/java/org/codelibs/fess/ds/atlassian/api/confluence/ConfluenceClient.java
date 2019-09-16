@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,54 +15,109 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
-import com.google.api.client.http.HttpRequestFactory;
-
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentResponse;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ConfluenceClient {
+import java.io.Closeable;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
-    private final AtlassianClient client;
+public class ConfluenceClient extends AtlassianClient implements Closeable {
 
-    public ConfluenceClient(final AtlassianClient client) {
-        this.client = client;
+    private static final Logger logger = LoggerFactory.getLogger(ConfluenceClient.class);
+
+    protected static final String DEFAULT_CONTENT_LIMIT = "25";
+
+    // parameters for confluence
+    protected static final String CONTENT_LIMIT_PARAM = "content_limit";
+
+    protected final String confluenceHome;
+    protected final Integer contentLimit;
+
+    public ConfluenceClient(final Map<String, String> paramMap) {
+        super(paramMap);
+        confluenceHome = getHome(paramMap);
+        contentLimit = getContentLimit(paramMap);
     }
 
-    public String confluenceHome() {
-        return client.appHome();
+    @Override
+    public void close() {
+        // TODO
     }
 
-    public HttpRequestFactory request() {
-        return client.request();
+    public String getConfluenceHome() {
+        return confluenceHome;
     }
 
-    public GetSpacesRequest getSpaces() {
-        return new GetSpacesRequest(this);
+    public Integer getContentLimit(final Map<String, String> paramMap) {
+        return Integer.parseInt(paramMap.getOrDefault(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
     }
 
-    public GetSpaceRequest getSpace(String spaceKey) {
-        return new GetSpaceRequest(this, spaceKey);
+    public GetSpacesRequest spaces() {
+        return new GetSpacesRequest(authentication, confluenceHome);
     }
 
-    public GetContentsRequest getContents() {
-        return new GetContentsRequest(this);
+    public GetSpaceRequest space(final String spaceKey) {
+        return new GetSpaceRequest(authentication, confluenceHome, spaceKey);
     }
 
-    public GetContentRequest getContent(String contentId) {
-        return new GetContentRequest(this, contentId);
+    public GetContentsRequest contents() {
+        return new GetContentsRequest(authentication, confluenceHome);
     }
 
-    public GetCommentsOfContentRequest getCommentsOfContent(String contentId) {
-        return new GetCommentsOfContentRequest(this, contentId);
+    public GetContentRequest content(final String contentId) {
+        return new GetContentRequest(authentication, getConfluenceHome(), contentId);
     }
 
-    public GetAttachmentsOfContentRequest getAttachmentsOfContent(String contentId) {
-        return new GetAttachmentsOfContentRequest(this, contentId);
+    public GetCommentsOfContentRequest commentsOfContent(final String contentId) {
+        return new GetCommentsOfContentRequest(authentication, getConfluenceHome(), contentId);
+    }
+
+    public GetAttachmentsOfContentRequest attachmentsOfContent(final String contentId) {
+        return new GetAttachmentsOfContentRequest(authentication, getConfluenceHome(), contentId);
+    }
+
+    public void getContents(final Consumer<Content> consumer) {
+        for (int start = 0;; start += contentLimit) {
+            final GetContentsResponse response = contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
+            if (contents.size() < contentLimit)
+                break;
+        }
+    }
+
+    public void getBlogContents(final Consumer<Content> consumer) {
+        for (int start = 0;; start += contentLimit) {
+            final GetContentsResponse response = contents().start(start).limit(contentLimit).type("blogpost")
+                    .expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
+            if (contents.size() < contentLimit)
+                break;
+        }
+    }
+
+    public void getContentComments(final String id, final Consumer<Comment> consumer) {
+        for (int start = 0;; start += contentLimit) {
+            final GetCommentsOfContentResponse response = commentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
+            final List<Comment> comments = response.getComments();
+            comments.forEach(consumer);
+            if (comments.size() < contentLimit)
+                break;
+        }
     }
 
 }

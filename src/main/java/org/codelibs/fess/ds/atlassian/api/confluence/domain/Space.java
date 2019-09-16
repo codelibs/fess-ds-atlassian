@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,27 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira;
+package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
-import org.codelibs.fess.ds.atlassian.api.Request;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-public abstract class JiraRequest extends Request {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Space {
 
-    protected final JiraClient jiraClient;
+    protected String key;
+    protected String name;
+    protected String description;
 
-    protected JiraRequest(final JiraClient jiraClient) {
-        this.jiraClient = jiraClient;
+    public String getKey() {
+        return key;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
 }

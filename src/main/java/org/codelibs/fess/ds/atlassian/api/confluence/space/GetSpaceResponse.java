@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,17 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
-import java.util.Map;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-import org.codelibs.fess.ds.atlassian.api.Response;
+public class GetSpaceResponse {
 
-public class GetSpaceResponse extends Response {
+    protected Space space;
 
-    protected final Map<String, Object> space;
-
-    public GetSpaceResponse(Map<String, Object> space) {
+    public GetSpaceResponse(final Space space) {
         this.space = space;
     }
 
-    public Map<String, Object> getSpace() {
+    public Space getSpace() {
         return space;
     }
 

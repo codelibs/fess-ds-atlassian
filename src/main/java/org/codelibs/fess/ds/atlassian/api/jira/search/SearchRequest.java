@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,136 +16,95 @@
 package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.GenericData;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 
-public class SearchRequest extends JiraRequest {
+public class SearchRequest extends Request {
 
     private String jql;
-    private Integer startAt, maxResults;
+    private Integer startAt;
+    private Integer maxResults;
     private Boolean validateQuery;
-    private String[] fields, expand;
-
-    public SearchRequest(JiraClient jiraClient) {
-        super(jiraClient);
+    private String[] fields;
+    private String[] expand;
+    public SearchRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
-    @Override
-    public SearchResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome());
-        final HttpContent content =
-                new JsonHttpContent(new JacksonFactory(), buildData(jql, startAt, maxResults, validateQuery, fields, expand));
-        try {
-            final HttpRequest request = jiraClient.request().buildPostRequest(url, content);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            if (e.getStatusCode() == 400) {
-                throw new AtlassianDataStoreException("There is a problem with the JQL query: " + jql, e);
-            } else {
-                throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-            }
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
-    public SearchRequest jql(String jql) {
+    public SearchRequest jql(final String jql) {
         this.jql = jql;
         return this;
     }
 
-    public SearchRequest startAt(int startAt) {
+    public SearchRequest startAt(final int startAt) {
         this.startAt = startAt;
         return this;
     }
 
-    public SearchRequest maxResults(int maxResults) {
+    public SearchRequest maxResults(final int maxResults) {
         this.maxResults = maxResults;
         return this;
     }
 
-    public SearchRequest validateQuery(boolean validateQuery) {
+    public SearchRequest validateQuery(final boolean validateQuery) {
         this.validateQuery = validateQuery;
         return this;
     }
 
-    public SearchRequest fields(String... fields) {
+    public SearchRequest fields(final String... fields) {
         this.fields = fields;
         return this;
     }
 
-    public SearchRequest expand(String... expand) {
+    public SearchRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public static SearchResponse fromJson(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> issues = new ArrayList<>();
+    public static SearchResponse parseResponse(final String json) {
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("issues");
-            issues.addAll(list);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("failed to parse issues from: \"" + json + "\"", e);
+            return mapper.readValue(json, SearchResponse.class);
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse: \"" + json + "\"", e);
         }
-        return new SearchResponse(issues);
     }
 
-    protected GenericUrl buildUrl(final String jiraHome) {
-        return new GenericUrl(jiraHome + "/rest/api/latest/search");
+
+    public SearchResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
-    protected GenericData buildData(final String jql, final Integer startAt, final Integer maxResults, final Boolean validateQuery,
-            final String[] fields, final String[] expand) {
-        GenericData data = new GenericData();
+    @Override
+    public String getURL() {
+        return appHome + "/rest/api/latest/search";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (jql != null && !jql.isEmpty()) {
-            data.put("jql", jql);
+            queryParams.put("jql", jql);
         }
         if (startAt != null) {
-            data.put("startAt", startAt);
+            queryParams.put("startAt", startAt.toString());
         }
         if (maxResults != null) {
-            data.put("maxResults", maxResults);
+            queryParams.put("maxResults", maxResults.toString());
         }
         if (validateQuery != null) {
-            data.put("validateQuery", validateQuery);
+            queryParams.put("validateQuery", validateQuery.toString());
         }
         if (fields != null) {
-            data.put("fields", fields);
+            queryParams.put("fields", String.join(",", fields));
         }
         if (expand != null) {
-            data.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
-        return data;
+        return queryParams;
     }
 
 }

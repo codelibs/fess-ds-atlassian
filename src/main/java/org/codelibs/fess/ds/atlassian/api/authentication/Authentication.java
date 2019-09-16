@@ -13,20 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira.project;
+package org.codelibs.fess.ds.atlassian.api.authentication;
 
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.function.Function;
 
-public class GetProjectResponse {
+import org.codelibs.curl.CurlRequest;
 
-    protected final Project project;
+public abstract class Authentication {
 
-    public GetProjectResponse(final Project project) {
-        this.project = project;
+    protected Proxy httpProxy;
+
+    public void setHttpProxy(final String httpProxyHost, final Integer httpProxyPort) {
+        this.httpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(httpProxyHost, httpProxyPort));
     }
 
-    public Project getProject() {
-        return project;
-    }
+    public abstract CurlRequest getCurlRequest(final Function<String, CurlRequest> request, final String requestMethod, final URL url);
 
 }

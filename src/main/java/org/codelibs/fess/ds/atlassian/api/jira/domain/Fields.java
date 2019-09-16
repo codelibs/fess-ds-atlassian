@@ -13,23 +13,37 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.fess.ds.atlassian.api.jira.search;
-
-import java.util.List;
+package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchResponse {
+public class Fields {
 
-    protected Long total;
-    protected List<Issue> issues;
+    protected String summary;
+    protected String updated;
+    protected String description;
+    protected Comments comment;
 
-    public Long getTotal() { return total; }
+    public String getSummary() {
+        return summary;
+    }
 
-    public List<Issue> getIssues() {
-        return issues;
+    public String getUpdated() {
+        return updated;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Comments getComment() {
+        return comment;
+    }
+
+    @Override
+    public String toString() {
+        return "Fields [summary=" + summary + ", updated=" + updated + ", description=" + description + "]";
     }
 
 }

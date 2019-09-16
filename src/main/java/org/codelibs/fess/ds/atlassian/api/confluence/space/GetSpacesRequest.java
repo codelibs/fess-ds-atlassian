@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,136 +17,119 @@ package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
-import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
-public class GetSpacesRequest extends ConfluenceRequest {
+public class GetSpacesRequest extends Request {
 
-    private String spaceKey, type, status, label, favourite;
+    private String spaceKey;
+    private String type;
+    private String status;
+    private String label;
+    private String favourite;
     private String[] expand;
-    private Integer start, limit;
+    private Integer start;
+    private Integer limit;
 
-    public GetSpacesRequest(ConfluenceClient confluenceClient) {
-        super(confluenceClient);
+    public GetSpacesRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
-    @Override
-    public GetSpacesResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(confluenceClient.confluenceHome(), spaceKey, type, status, label, favourite, expand, start, limit);
-        try {
-            final HttpRequest request = confluenceClient.request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
-    public GetSpacesRequest spaceKey(String spaceKey) {
+    public GetSpacesRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
     }
 
-    public GetSpacesRequest type(String type) {
+    public GetSpacesRequest type(final String type) {
         this.type = type;
         return this;
     }
 
-    public GetSpacesRequest status(String status) {
+    public GetSpacesRequest status(final String status) {
         this.status = status;
         return this;
     }
 
-    public GetSpacesRequest label(String label) {
+    public GetSpacesRequest label(final String label) {
         this.label = label;
         return this;
     }
 
-    public GetSpacesRequest favourite(String favourite) {
+    public GetSpacesRequest favourite(final String favourite) {
         this.favourite = favourite;
         return this;
     }
 
-    public GetSpacesRequest expand(String... expand) {
+    public GetSpacesRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetSpacesRequest start(int start) {
+    public GetSpacesRequest start(final int start) {
         this.start = start;
         return this;
     }
 
-    public GetSpacesRequest limit(int limit) {
+    public GetSpacesRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
-    public static GetSpacesResponse fromJson(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> spaces = new ArrayList<>();
+    public GetSpacesResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
+    }
+
+    public static GetSpacesResponse parseResponse(String json) {
         try {
-            final Map<String, Object> map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> results = (List<Map<String, Object>>) map.get("results");
-            spaces.addAll(results);
+            final String results = mapper.readTree(json).get("results").toString();
+            final List<Space> spaces = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Space>>(){}));
+            return new GetSpacesResponse(spaces);
         } catch (IOException e) {
             throw new AtlassianDataStoreException("Failed to parse spaces from: " + json, e);
         }
-        return new GetSpacesResponse(spaces);
     }
 
-    protected GenericUrl buildUrl(final String confluenceHome, final String spaceKey, final String type, final String status,
-            final String label, final String favourite, final String[] expand, final Integer start, final Integer limit) {
-        final GenericUrl url = new GenericUrl(confluenceHome + "/rest/api/latest/space");
+    @Override
+    public String getURL() {
+        return appHome + "/rest/api/latest/space";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (spaceKey != null) {
-            url.put("spaceKey", spaceKey);
+            queryParams.put("spaceKey", spaceKey);
         }
         if (type != null) {
-            url.put("type", type);
+            queryParams.put("type", type);
         }
         if (status != null) {
-            url.put("status", status);
+            queryParams.put("status", status);
         }
         if (label != null) {
-            url.put("label", label);
+            queryParams.put("label", label);
         }
         if (favourite != null) {
-            url.put("favourite", favourite);
+            queryParams.put("favourite", favourite);
         }
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (start != null) {
-            url.put("start", start);
+            queryParams.put("start", start.toString());
         }
         if (limit != null) {
-            url.put("limit", limit);
+            queryParams.put("limit", limit.toString());
         }
-        return url;
+        return queryParams;
     }
 
 }

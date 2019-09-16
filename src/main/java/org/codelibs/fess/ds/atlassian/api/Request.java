@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,98 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
+import java.util.function.Function;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.codelibs.curl.Curl;
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlRequest;
+import org.codelibs.curl.CurlResponse;
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
+import org.json.simple.JSONObject;
+
 public abstract class Request {
 
-    public abstract Response execute();
+    protected static final ObjectMapper mapper = new ObjectMapper();
+
+    protected static final String GET = "GET";
+    protected static final String POST = "POST";
+    protected static final String PUT = "PUT";
+    protected static final String DELETE = "DELETE";
+
+    protected static final Function<String, CurlRequest> CURL_GET = Curl::get;
+    protected static final Function<String, CurlRequest> CURL_POST = Curl::post;
+    protected static final Function<String, CurlRequest> CURL_PUT = Curl::put;
+    protected static final Function<String, CurlRequest> CURL_DELETE = Curl::delete;
+
+    protected final Authentication authentication;
+    protected final String appHome;
+
+    public Request(final Authentication authentication, final String appHome) {
+        this.authentication = authentication;
+        this.appHome = appHome;
+    }
+
+    public String appHome() {
+        return appHome;
+    }
+
+    public abstract String getURL();
+
+    public Map<String, String> getQueryParamMap() {
+        return null;
+    }
+
+    public Map<String, Object> getBodyMap() { return null; }
+
+    public CurlResponse getCurlResponse(final String requestMethod) {
+        switch (requestMethod) {
+            case GET:
+                return getCurlResponse(CURL_GET, GET);
+            case DELETE:
+                return getCurlResponse(CURL_DELETE, DELETE);
+            case POST:
+                return getCurlResponse(CURL_POST, POST);
+            case PUT:
+                return getCurlResponse(CURL_PUT, PUT);
+            default: {
+                throw new IllegalArgumentException("Invalid request method : " + requestMethod);
+            }
+        }
+    }
+
+    public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
+        try {
+            final StringBuilder urlBuf = new StringBuilder();
+            urlBuf.append(getURL());
+
+            final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());
+            if (!queryParams.isEmpty()) {
+                urlBuf.append('?').append(queryParams);
+            }
+
+            final CurlRequest request = authentication.getCurlRequest(method, requestMethod, new URL(urlBuf.toString()));
+
+            final Map<String, Object> bodyMap = getBodyMap();
+            if (bodyMap != null) {
+                String source = new JSONObject(bodyMap).toJSONString();
+                request.body(source);
+            }
+
+            final CurlResponse response = request.execute();
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+
+            return response;
+        } catch (final MalformedURLException e) {
+            throw new AtlassianDataStoreException("Invalid URL.", e);
+        }
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 CodeLibs Project and the Others.
+ * Copyright 2012-2019 CodeLibs Project and the Others.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,84 +16,63 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraRequest;
+import org.codelibs.fess.ds.atlassian.api.Request;
+import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
-public class GetProjectsRequest extends JiraRequest {
+public class GetProjectsRequest extends Request {
 
     private String[] expand;
     private Integer recent;
 
-    public GetProjectsRequest(JiraClient jiraClient) {
-        super(jiraClient);
+    public GetProjectsRequest(final Authentication authentication, final String appHome) {
+        super(authentication, appHome);
     }
 
-    @Override
-    public GetProjectsResponse execute() {
-        String result = "";
-        final GenericUrl url = buildUrl(jiraClient.jiraHome(), expand, recent);
-        try {
-            final HttpRequest request = jiraClient.request().buildGetRequest(url);
-            final HttpResponse response = request.execute();
-            if (response.getStatusCode() != 200) {
-                throw new HttpResponseException(response);
-            }
-            final Scanner s = new Scanner(response.getContent());
-            s.useDelimiter("\\A");
-            result = s.hasNext() ? s.next() : "";
-            s.close();
-        } catch (HttpResponseException e) {
-            throw new AtlassianDataStoreException("Content is not found: " + e.getStatusCode(), e);
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to request: " + url, e);
-        }
-        return fromJson(result);
-    }
-
-    public GetProjectsRequest expand(String... expand) {
+    public GetProjectsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
-    public GetProjectsRequest recent(int recent) {
+    public GetProjectsRequest recent(final int recent) {
         this.recent = recent;
         return this;
     }
 
-    public static GetProjectsResponse fromJson(String json) {
-        final ObjectMapper mapper = new ObjectMapper();
-        final List<Map<String, Object>> projects = new ArrayList<>();
-        try {
-            projects.addAll(mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {
-            }));
-        } catch (IOException e) {
-            throw new AtlassianDataStoreException("Failed to parse projects from: \"" + json + "\"", e);
-        }
-        return new GetProjectsResponse(projects);
+    public GetProjectsResponse execute() {
+        return parseResponse(getCurlResponse(GET).getContentAsString());
     }
 
-    protected GenericUrl buildUrl(final String jiraHome, final String[] expand, final Integer recent) {
-        final GenericUrl url = new GenericUrl(jiraHome + "/rest/api/latest/project");
+    public static GetProjectsResponse parseResponse(final String json) {
+        try {
+            return new GetProjectsResponse(mapper.readValue(json, new TypeReference<List<Project>>() {
+            }));
+        } catch (final IOException e) {
+            throw new AtlassianDataStoreException("Failed to parse projects from: \"" + json + "\"", e);
+        }
+    }
+
+    @Override
+    public String getURL() {
+        return  appHome() + "/rest/api/latest/project";
+    }
+
+    @Override
+    public Map<String, String> getQueryParamMap() {
+        final Map<String, String> queryParams = new HashMap<>();
         if (expand != null) {
-            url.put("expand", String.join(",", expand));
+            queryParams.put("expand", String.join(",", expand));
         }
         if (recent != null) {
-            url.put("recent", recent);
+            queryParams.put("recent", recent.toString());
         }
-        return url;
+        return queryParams;
     }
 
 }
