@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
@@ -97,23 +96,28 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public void getIssues(final Consumer<Issue> consumer) {
-        for (int startAt = 0; ; startAt += issueMaxResults) {
+        int startAt = 0;
+        while (true) {
             final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(issueMaxResults)
                     .fields("summary", "description", "updated").execute();
             searchResponse.getIssues().forEach(consumer);
             if (searchResponse.getTotal() < issueMaxResults) {
                 break;
             }
+            startAt += issueMaxResults;
         }
     }
 
     public void getComments(String issueId, final Consumer<Comment> consumer) {
-        for (int startAt = 0;; startAt += issueMaxResults) {
+        int startAt = 0;
+        while (true) {
             final GetCommentsResponse getCommentsResponse = comments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
             final List<Comment> comments = getCommentsResponse.getComments();
             comments.forEach(consumer);
-            if (comments.size() < issueMaxResults)
+            if (comments.size() < issueMaxResults) {
                 break;
+            }
+            startAt += issueMaxResults;
         }
     }
 

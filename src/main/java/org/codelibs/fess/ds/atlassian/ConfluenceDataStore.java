@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConfluenceDataStore extends AtlassianDataStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(JiraDataStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConfluenceDataStore.class);
 
     // scripts
     protected static final String CONTENT = "content";

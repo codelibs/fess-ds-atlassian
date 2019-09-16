@@ -18,18 +18,23 @@ package org.codelibs.fess.ds.atlassian.api.util;
 import java.util.Map;
 
 import com.google.common.net.PercentEscaper;
+import org.codelibs.core.lang.StringUtil;
 
 public class UrlUtil {
 
+    private UrlUtil() {
+        // do nothing
+    }
+
     private static final PercentEscaper ESCAPER = new PercentEscaper("-_.~", false);
 
-    public static String escape(String value) {
+    public static String escape(final String value) {
         return ESCAPER.escape(value);
     }
 
-    public static String buildQueryParameters(Map<String, String> params) {
+    public static String buildQueryParameters(final Map<String, String> params) {
         if (params == null) {
-            return null;
+            return StringUtil.EMPTY;
         }
 
         final StringBuilder parametersBuf = new StringBuilder();
@@ -41,7 +46,7 @@ public class UrlUtil {
                 parametersBuf.append('&');
             }
             parametersBuf.append(entry.getKey());
-            final String value = entry.getValue();
+            final String value = escape(entry.getValue());
             if (value != null) {
                 parametersBuf.append('=').append(value);
             }

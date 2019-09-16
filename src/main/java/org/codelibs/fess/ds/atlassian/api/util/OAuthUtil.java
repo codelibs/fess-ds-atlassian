@@ -42,7 +42,11 @@ public class OAuthUtil {
     private static Logger logger = LoggerFactory.getLogger(OAuthUtil.class);
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    protected static final String SIGNATURE_METHOD = "RSA-SHA1";
+    private static final String SIGNATURE_METHOD = "RSA-SHA1";
+
+    private OAuthUtil() {
+        // do nothing
+    }
 
     public static PrivateKey getPrivateKey(final String privateKey) {
         try {
@@ -87,21 +91,21 @@ public class OAuthUtil {
                                            final String timestamp, final String requestMethod, final URL url) {
 
         final Map<String, String> parameters = new TreeMap<>();
-        parameters.put( "oauth_consumer_key", consumerKey);
-        parameters.put( "oauth_nonce", nonce);
-        parameters.put( "oauth_signature_method", SIGNATURE_METHOD);
-        parameters.put( "oauth_timestamp", timestamp);
-        parameters.put( "oauth_token", token);
-        parameters.put( "oauth_verifier", verifier);
+        parameters.put("oauth_consumer_key", consumerKey);
+        parameters.put("oauth_nonce", nonce);
+        parameters.put("oauth_signature_method", SIGNATURE_METHOD);
+        parameters.put("oauth_timestamp", timestamp);
+        parameters.put("oauth_token", token);
+        parameters.put("oauth_verifier", verifier);
 
         final Map<String, String> queryMap = getQueryMapFromUrl(url);
         for (Map.Entry<String, String> fieldEntry : queryMap.entrySet()) {
-            parameters.put(fieldEntry.getKey(), UrlUtil.escape(fieldEntry.getValue()));
+            parameters.put(fieldEntry.getKey(), fieldEntry.getValue());
         }
 
         final String normalizedParameters = UrlUtil.buildQueryParameters(parameters);
         final String normalizedPath = url.getProtocol() + "://" + url.getAuthority() + url.getPath();
-        final StringBuffer signatureBaseString = new StringBuffer();
+        final StringBuilder signatureBaseString = new StringBuilder();
         signatureBaseString.append(UrlUtil.escape(requestMethod)).append('&');
         signatureBaseString.append(UrlUtil.escape(normalizedPath)).append('&');
         signatureBaseString.append(UrlUtil.escape(normalizedParameters));
@@ -110,6 +114,9 @@ public class OAuthUtil {
     }
 
     public static String generateNonce() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Using '{}:{}' as PRNG for generating nonce.", RANDOM.getProvider().getName(), RANDOM.getAlgorithm());
+        }
         return Long.toHexString(Math.abs(RANDOM.nextLong()));
     }
 

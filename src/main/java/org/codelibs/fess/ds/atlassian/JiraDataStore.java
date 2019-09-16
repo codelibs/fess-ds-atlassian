@@ -114,7 +114,7 @@ public class JiraDataStore extends AtlassianDataStore {
             issueMap.put(ISSUE_DESCRIPTION, issue.getFields().getDescription());
             issueMap.put(ISSUE_COMMENTS, getIssueComments(issue, client));
             issueMap.put(ISSUE_LAST_MODIFIED, getIssueLastModified(issue));
-            issueMap.put(ISSUE_VIEW_URL,url);
+            issueMap.put(ISSUE_VIEW_URL, url);
             resultMap.put(ISSUE, issueMap);
 
             if (logger.isDebugEnabled()) {

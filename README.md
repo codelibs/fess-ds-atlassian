@@ -39,6 +39,8 @@ issue.jql=...
 | basic.password | password of Atlassian account for Basic |
 | issue.jql | [JQL](https://confluence.atlassian.com/jirasoftwarecloud/advanced-searching-764478330.html) for advanced search (JIRA only) (Optional) |
 
+`oauth` or `basic` parameters are required.
+
 ### Scripts
 
 #### JiraDataStore

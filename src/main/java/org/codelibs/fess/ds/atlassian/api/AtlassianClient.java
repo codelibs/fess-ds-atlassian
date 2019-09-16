@@ -22,13 +22,12 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
-import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AtlassianClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(JiraClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(AtlassianClient.class);
 
     // parameters
     protected static final String HOME_PARAM = "home";
@@ -95,7 +94,7 @@ public abstract class AtlassianClient {
                 final int port = Integer.parseInt(httpProxyPort);
                 authentication.setHttpProxy(httpProxyHost, port);
             } catch (final NumberFormatException e) {
-                throw new SalesforceDataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
+                throw new AtlassianDataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
             }
         }
 
