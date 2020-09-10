@@ -15,6 +15,11 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
+import java.io.Closeable;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
@@ -28,11 +33,6 @@ import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 public class ConfluenceClient extends AtlassianClient implements Closeable {
 

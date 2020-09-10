@@ -15,14 +15,14 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.TimeZone;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Content {

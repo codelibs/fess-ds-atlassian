@@ -16,15 +16,18 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GetContentRequest extends Request {
 
@@ -54,7 +57,14 @@ public class GetContentRequest extends Request {
     }
 
     public GetContentResponse execute() {
-        return parseResponse(getCurlResponse(GET).getContentAsString());
+        try (CurlResponse response = getCurlResponse(GET)) {
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+            return parseResponse(response.getContentAsString());
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to access " + this, e);
+        }
     }
 
     public static GetContentResponse parseResponse(final String json) {
@@ -84,6 +94,11 @@ public class GetContentRequest extends Request {
             queryParams.put("expand", String.join(",", expand));
         }
         return queryParams;
+    }
+
+    @Override
+    public String toString() {
+        return "GetContentRequest [id=" + id + ", status=" + status + ", version=" + version + ", expand=" + Arrays.toString(expand) + "]";
     }
 
 }

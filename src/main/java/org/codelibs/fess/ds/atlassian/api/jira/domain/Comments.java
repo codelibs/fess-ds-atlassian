@@ -15,9 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comments {
