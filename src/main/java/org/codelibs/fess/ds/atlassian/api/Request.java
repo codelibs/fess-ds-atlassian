@@ -15,20 +15,19 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.codelibs.curl.Curl;
-import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlRequest;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 import org.json.simple.JSONObject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class Request {
 
@@ -98,14 +97,9 @@ public abstract class Request {
                 request.body(source);
             }
 
-            final CurlResponse response = request.execute();
-            if (response.getHttpStatusCode() != 200) {
-                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
-            }
-
-            return response;
-        } catch (final MalformedURLException e) {
-            throw new AtlassianDataStoreException("Invalid URL.", e);
+            return request.execute();
+        } catch (final Exception e) {
+            throw new AtlassianDataStoreException("Failed to access " + getURL(), e);
         }
     }
 

@@ -17,8 +17,9 @@ package org.codelibs.fess.ds.atlassian.api.jira.search;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchResponse {

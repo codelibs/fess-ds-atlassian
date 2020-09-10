@@ -16,9 +16,12 @@
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
@@ -58,7 +61,14 @@ public class GetCommentsRequest extends Request {
     }
 
     public GetCommentsResponse execute() {
-        return parseResponse(getCurlResponse(GET).getContentAsString());
+        try (CurlResponse response = getCurlResponse(GET)) {
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+            return parseResponse(response.getContentAsString());
+        } catch (IOException e) {
+            throw new AtlassianDataStoreException("Failed to access " + this, e);
+        }
     }
 
     public static GetCommentsResponse parseResponse(final String json) {
@@ -90,6 +100,12 @@ public class GetCommentsRequest extends Request {
             queryParams.put("expand", String.join(",", expand));
         }
         return queryParams;
+    }
+
+    @Override
+    public String toString() {
+        return "GetCommentsRequest [issueIdOrKey=" + issueIdOrKey + ", startAt=" + startAt + ", maxResults=" + maxResults + ", orderBy="
+                + orderBy + ", expand=" + Arrays.toString(expand) + "]";
     }
 
 }

@@ -15,11 +15,11 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Attachment {

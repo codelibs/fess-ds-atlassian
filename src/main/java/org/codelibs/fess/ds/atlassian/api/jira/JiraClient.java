@@ -22,12 +22,12 @@ import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
+import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
-import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.slf4j.Logger;
