@@ -18,6 +18,7 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
+import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -82,12 +84,15 @@ public class GetCommentsOfContentRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
 
     public static GetCommentsOfContentResponse parseResponse(final String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetCommentsOfContentResponse(Collections.emptyList());
+        }
         try {
             final String results = mapper.readTree(json).get("results").toString();
             final List<Comment> comments = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Comment>>(){}));

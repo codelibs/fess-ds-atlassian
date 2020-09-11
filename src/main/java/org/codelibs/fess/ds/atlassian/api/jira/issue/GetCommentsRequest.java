@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
+import org.jsoup.internal.StringUtil;
 
 public class GetCommentsRequest extends Request {
 
@@ -66,12 +68,15 @@ public class GetCommentsRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
 
     public static GetCommentsResponse parseResponse(final String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetCommentsResponse(Collections.emptyList());
+        }
         try {
             return new GetCommentsResponse(mapper.readValue(json, Comments.class).getComments());
         } catch (IOException e) {
