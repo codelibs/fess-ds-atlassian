@@ -19,10 +19,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
+import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -54,10 +57,20 @@ public class GetIssueRequest extends Request {
     }
 
     public GetIssueResponse execute() {
-        return parseResponse(getCurlResponse(GET).getContentAsString());
+        try (CurlResponse response = getCurlResponse(GET)) {
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+            return parseResponse(response.getContentAsString());
+        } catch (Exception e) {
+            throw new AtlassianDataStoreException("Failed to access " + this, e);
+        }
     }
 
     public static GetIssueResponse parseResponse(final String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetIssueResponse(null);
+        }
         try {
             return new GetIssueResponse(mapper.readValue(json, new TypeReference<Issue>() {}));
         } catch (IOException e) {

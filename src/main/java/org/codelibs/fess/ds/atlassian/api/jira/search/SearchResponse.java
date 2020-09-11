@@ -33,4 +33,11 @@ public class SearchResponse {
         return issues;
     }
 
+    public static SearchResponse create(List<Issue> issues) {
+        SearchResponse response = new SearchResponse();
+        response.issues = issues;
+        response.total = Long.valueOf(issues.size());
+        return response;
+    }
+
 }

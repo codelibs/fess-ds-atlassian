@@ -26,6 +26,7 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
+import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -62,12 +63,15 @@ public class GetContentRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
 
     public static GetContentResponse parseResponse(final String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetContentResponse(null);
+        }
         final ObjectMapper mapper = new ObjectMapper();
         try {
             return new GetContentResponse(mapper.readValue(json, Content.class));

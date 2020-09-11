@@ -16,14 +16,18 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
+import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -47,10 +51,20 @@ public class GetProjectsRequest extends Request {
     }
 
     public GetProjectsResponse execute() {
-        return parseResponse(getCurlResponse(GET).getContentAsString());
+        try (CurlResponse response = getCurlResponse(GET)) {
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+            return parseResponse(response.getContentAsString());
+        } catch (Exception e) {
+            throw new AtlassianDataStoreException("Failed to access " + this, e);
+        }
     }
 
     public static GetProjectsResponse parseResponse(final String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetProjectsResponse(Collections.emptyList());
+        }
         try {
             return new GetProjectsResponse(mapper.readValue(json, new TypeReference<List<Project>>() {
             }));

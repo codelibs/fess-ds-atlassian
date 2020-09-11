@@ -19,10 +19,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.Request;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
+import org.jsoup.internal.StringUtil;
 
 public class GetProjectRequest extends Request {
 
@@ -40,10 +43,20 @@ public class GetProjectRequest extends Request {
     }
 
     public GetProjectResponse execute() {
-        return parseResponse(getCurlResponse(GET).getContentAsString());
+        try (CurlResponse response = getCurlResponse(GET)) {
+            if (response.getHttpStatusCode() != 200) {
+                throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
+            }
+            return parseResponse(response.getContentAsString());
+        } catch (Exception e) {
+            throw new AtlassianDataStoreException("Failed to access " + this, e);
+        }
     }
 
     public static GetProjectResponse parseResponse(String json) {
+        if (StringUtil.isBlank(json)) {
+            return new GetProjectResponse(null);
+        }
         try {
             return new GetProjectResponse(mapper.readValue(json, Project.class));
         } catch (IOException e) {
