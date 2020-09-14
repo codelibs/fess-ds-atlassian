@@ -24,12 +24,11 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
 import org.jsoup.internal.StringUtil;
 
-public class GetCommentsRequest extends Request {
+public class GetCommentsRequest extends AtlassianRequest {
 
     private final String issueIdOrKey;
     private Long startAt;
@@ -37,27 +36,26 @@ public class GetCommentsRequest extends Request {
     private String orderBy;
     private String[] expand;
 
-    public GetCommentsRequest(final Authentication authentication, final String appHome, final String issueIdOrKey) {
-        super(authentication, appHome);
+    public GetCommentsRequest(final String issueIdOrKey) {
         this.issueIdOrKey = issueIdOrKey;
     }
 
-    public GetCommentsRequest startAt(long startAt) {
+    public GetCommentsRequest startAt(final long startAt) {
         this.startAt = startAt;
         return this;
     }
 
-    public GetCommentsRequest maxResults(int maxResults) {
+    public GetCommentsRequest maxResults(final int maxResults) {
         this.maxResults = maxResults;
         return this;
     }
 
-    public GetCommentsRequest orderBy(String orderBy) {
+    public GetCommentsRequest orderBy(final String orderBy) {
         this.orderBy = orderBy;
         return this;
     }
 
-    public GetCommentsRequest expand(String... expand) {
+    public GetCommentsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
@@ -68,7 +66,7 @@ public class GetCommentsRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -79,7 +77,7 @@ public class GetCommentsRequest extends Request {
         }
         try {
             return new GetCommentsResponse(mapper.readValue(json, Comments.class).getComments());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: \"" + json + "\"", e);
         }
     }
@@ -112,5 +110,4 @@ public class GetCommentsRequest extends Request {
         return "GetCommentsRequest [issueIdOrKey=" + issueIdOrKey + ", startAt=" + startAt + ", maxResults=" + maxResults + ", orderBy="
                 + orderBy + ", expand=" + Arrays.toString(expand) + "]";
     }
-
 }

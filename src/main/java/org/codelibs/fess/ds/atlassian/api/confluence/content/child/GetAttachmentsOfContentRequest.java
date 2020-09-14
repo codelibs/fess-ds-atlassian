@@ -25,14 +25,13 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetAttachmentsOfContentRequest extends Request {
+public class GetAttachmentsOfContentRequest extends AtlassianRequest {
 
     private final String id;
     private Integer start;
@@ -41,8 +40,7 @@ public class GetAttachmentsOfContentRequest extends Request {
     private String mediaType;
     private String[] expand;
 
-    public GetAttachmentsOfContentRequest(final Authentication authentication, final String appHome, final String id) {
-        super(authentication, appHome);
+    public GetAttachmentsOfContentRequest(final String id) {
         this.id = id;
     }
 
@@ -77,7 +75,7 @@ public class GetAttachmentsOfContentRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -88,8 +86,9 @@ public class GetAttachmentsOfContentRequest extends Request {
         }
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            return new GetAttachmentsOfContentResponse(mapper.readValue(results, new TypeReference<List<Attachment>>(){}));
-        } catch (IOException e) {
+            return new GetAttachmentsOfContentResponse(mapper.readValue(results, new TypeReference<List<Attachment>>() {
+            }));
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse attachments from: " + json, e);
         }
     }

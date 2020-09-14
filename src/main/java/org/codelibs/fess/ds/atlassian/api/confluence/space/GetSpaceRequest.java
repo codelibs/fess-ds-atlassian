@@ -22,18 +22,16 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.jsoup.internal.StringUtil;
 
-public class GetSpaceRequest extends Request {
+public class GetSpaceRequest extends AtlassianRequest {
 
     private final String spaceKey;
     private String[] expand;
 
-    public GetSpaceRequest(final Authentication authentication, final String appHome, final String spaceKey) {
-        super(authentication, appHome);
+    public GetSpaceRequest(final String spaceKey) {
         this.spaceKey = spaceKey;
     }
 
@@ -48,7 +46,7 @@ public class GetSpaceRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -59,7 +57,7 @@ public class GetSpaceRequest extends Request {
         }
         try {
             return new GetSpaceResponse(mapper.readValue(json, Space.class));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse space from: " + json, e);
         }
     }

@@ -29,7 +29,7 @@ import org.json.simple.JSONObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public abstract class Request {
+public abstract class AtlassianRequest {
 
     protected static final ObjectMapper mapper = new ObjectMapper();
 
@@ -43,13 +43,10 @@ public abstract class Request {
     protected static final Function<String, CurlRequest> CURL_PUT = Curl::put;
     protected static final Function<String, CurlRequest> CURL_DELETE = Curl::delete;
 
-    protected final Authentication authentication;
-    protected final String appHome;
-
-    public Request(final Authentication authentication, final String appHome) {
-        this.authentication = authentication;
-        this.appHome = appHome;
-    }
+    protected Authentication authentication;
+    protected String appHome;
+    protected Integer connectionTimeout;
+    protected Integer readTimeout;
 
     public String appHome() {
         return appHome;
@@ -61,21 +58,23 @@ public abstract class Request {
         return null;
     }
 
-    public Map<String, Object> getBodyMap() { return null; }
+    public Map<String, Object> getBodyMap() {
+        return null;
+    }
 
     public CurlResponse getCurlResponse(final String requestMethod) {
         switch (requestMethod) {
-            case GET:
-                return getCurlResponse(CURL_GET, GET);
-            case DELETE:
-                return getCurlResponse(CURL_DELETE, DELETE);
-            case POST:
-                return getCurlResponse(CURL_POST, POST);
-            case PUT:
-                return getCurlResponse(CURL_PUT, PUT);
-            default: {
-                throw new IllegalArgumentException("Invalid request method : " + requestMethod);
-            }
+        case GET:
+            return getCurlResponse(CURL_GET, GET);
+        case DELETE:
+            return getCurlResponse(CURL_DELETE, DELETE);
+        case POST:
+            return getCurlResponse(CURL_POST, POST);
+        case PUT:
+            return getCurlResponse(CURL_PUT, PUT);
+        default: {
+            throw new IllegalArgumentException("Invalid request method : " + requestMethod);
+        }
         }
     }
 
@@ -93,14 +92,39 @@ public abstract class Request {
 
             final Map<String, Object> bodyMap = getBodyMap();
             if (bodyMap != null) {
-                String source = new JSONObject(bodyMap).toJSONString();
+                final String source = new JSONObject(bodyMap).toJSONString();
                 request.body(source);
             }
+
+            request.onConnect((req, con) -> {
+                if (connectionTimeout != null) {
+                    con.setConnectTimeout(connectionTimeout);
+                }
+                if (readTimeout != null) {
+                    con.setReadTimeout(readTimeout);
+                }
+            });
 
             return request.execute();
         } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + getURL(), e);
         }
+    }
+
+    public void setAuthentication(final Authentication authentication) {
+        this.authentication = authentication;
+    }
+
+    public void setAppHome(final String appHome) {
+        this.appHome = appHome;
+    }
+
+    public void setConnectionTimeout(final Integer connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
+
+    public void setReadTimeout(final Integer readTimeout) {
+        this.readTimeout = readTimeout;
     }
 
 }

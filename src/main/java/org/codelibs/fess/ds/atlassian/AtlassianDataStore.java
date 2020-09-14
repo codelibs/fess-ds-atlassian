@@ -87,7 +87,7 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     }
 
     protected Map<String, Object> createConfigMap(final Map<String, String> paramMap) {
-        Map<String, Object> configMap = new HashMap<>();
+        final Map<String, Object> configMap = new HashMap<>();
         configMap.put(IGNORE_ERROR, isIgnoreError(paramMap));
         configMap.put(URL_FILTER, getUrlFilter(paramMap));
         configMap.put(READ_INTERVAL, getReadInterval(paramMap));

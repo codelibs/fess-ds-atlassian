@@ -22,18 +22,16 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 import org.jsoup.internal.StringUtil;
 
-public class GetProjectRequest extends Request {
+public class GetProjectRequest extends AtlassianRequest {
 
     private final String projectIdOrKey;
     private String[] expand;
 
-    public GetProjectRequest(final Authentication authentication, final String appHome, final String projectIdOrKey) {
-        super(authentication, appHome);
+    public GetProjectRequest(final String projectIdOrKey) {
         this.projectIdOrKey = projectIdOrKey;
     }
 
@@ -48,18 +46,18 @@ public class GetProjectRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
 
-    public static GetProjectResponse parseResponse(String json) {
+    public static GetProjectResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetProjectResponse(null);
         }
         try {
             return new GetProjectResponse(mapper.readValue(json, Project.class));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse project from: \"" + json + "\"", e);
         }
     }

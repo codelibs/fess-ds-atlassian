@@ -42,14 +42,13 @@ public class Attachment {
         return downloadLink;
     }
 
-
     @JsonProperty("metadata")
-    public void unpackMetadata(Map<String,Object> metadata) {
+    public void unpackMetadata(final Map<String, Object> metadata) {
         this.mediaType = (String) metadata.get("mediaType");
     }
 
     @JsonProperty("_links")
-    public void unpackLinks(Map<String,Object> links) {
+    public void unpackLinks(final Map<String, Object> links) {
         this.downloadLink = (String) links.get("download");
     }
 

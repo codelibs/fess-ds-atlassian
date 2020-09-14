@@ -23,22 +23,20 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class GetContentRequest extends Request {
+public class GetContentRequest extends AtlassianRequest {
 
-    private String id;
+    private final String id;
     private String status;
     private Integer version;
     private String[] expand;
 
-    public GetContentRequest(final Authentication authentication, final String appHome, final String id) {
-        super(authentication,  appHome);
+    public GetContentRequest(final String id) {
         this.id = id;
     }
 
@@ -63,7 +61,7 @@ public class GetContentRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -75,7 +73,7 @@ public class GetContentRequest extends Request {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             return new GetContentResponse(mapper.readValue(json, Content.class));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse content from: " + json, e);
         }
     }
