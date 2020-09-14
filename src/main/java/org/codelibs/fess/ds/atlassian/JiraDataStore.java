@@ -66,18 +66,15 @@ public class JiraDataStore extends AtlassianDataStore {
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
 
         try (final JiraClient client = createClient(paramMap)) {
-            client.getIssues(issue ->
-                executorService.execute(() ->
-                    processIssue(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, issue)
-                )
-            );
+            client.getIssues(issue -> executorService
+                    .execute(() -> processIssue(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, issue)));
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Shutting down thread executor.");
             }
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
-        } catch(final InterruptedException e) {
+        } catch (final InterruptedException e) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Interrupted.", e);
             }
@@ -91,10 +88,10 @@ public class JiraDataStore extends AtlassianDataStore {
     }
 
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
-                                final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
-                                final JiraClient client, final Issue issue) {
+            final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
+            final JiraClient client, final Issue issue) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
-        final String url =  getIssueViewUrl(issue, client);
+        final String url = getIssueViewUrl(issue, client);
         try {
 
             final UrlFilter urlFilter = (UrlFilter) configMap.get(URL_FILTER);
@@ -133,7 +130,7 @@ public class JiraDataStore extends AtlassianDataStore {
             }
 
             callback.store(paramMap, dataMap);
-        }  catch (final CrawlingAccessException e) {
+        } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
 
             Throwable target = e;

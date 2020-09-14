@@ -36,6 +36,7 @@ public class OAuthAuthentication extends Authentication {
         this.verifier = verifier;
     }
 
+    @Override
     public CurlRequest getCurlRequest(final Function<String, CurlRequest> method, final String requestMethod, final URL url) {
         final CurlRequest request = method.apply(url.toString());
 

@@ -26,14 +26,13 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetCommentsOfContentRequest extends Request {
+public class GetCommentsOfContentRequest extends AtlassianRequest {
 
     private final String id;
     private Integer parentVersion;
@@ -43,8 +42,7 @@ public class GetCommentsOfContentRequest extends Request {
     private String depth;
     private String[] expand;
 
-    public GetCommentsOfContentRequest(final Authentication authentication, final String appHome, final String id) {
-        super(authentication, appHome);
+    public GetCommentsOfContentRequest(final String id) {
         this.id = id;
     }
 
@@ -84,7 +82,7 @@ public class GetCommentsOfContentRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -95,9 +93,10 @@ public class GetCommentsOfContentRequest extends Request {
         }
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            final List<Comment> comments = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Comment>>(){}));
+            final List<Comment> comments = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Comment>>() {
+            }));
             return new GetCommentsOfContentResponse(comments);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
         }
     }

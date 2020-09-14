@@ -22,22 +22,20 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetIssueRequest extends Request {
+public class GetIssueRequest extends AtlassianRequest {
 
     private final String issueIdOrKey;
     private String[] fields;
     private String[] expand;
     private String[] properties;
 
-    public GetIssueRequest(final Authentication authentication, final String appHome, final String issueIdOrKey) {
-        super(authentication, appHome);
+    public GetIssueRequest(final String issueIdOrKey) {
         this.issueIdOrKey = issueIdOrKey;
     }
 
@@ -62,7 +60,7 @@ public class GetIssueRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -72,8 +70,9 @@ public class GetIssueRequest extends Request {
             return new GetIssueResponse(null);
         }
         try {
-            return new GetIssueResponse(mapper.readValue(json, new TypeReference<Issue>() {}));
-        } catch (IOException e) {
+            return new GetIssueResponse(mapper.readValue(json, new TypeReference<Issue>() {
+            }));
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse issue from: \"" + json + "\"", e);
         }
     }

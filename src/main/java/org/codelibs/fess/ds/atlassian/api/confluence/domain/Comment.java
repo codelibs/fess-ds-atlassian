@@ -37,7 +37,8 @@ public class Comment {
     }
 
     @JsonProperty("body")
-    public void unpackBody(Map<String,Object> body) {
+    public void unpackBody(final Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
         final Map<String, Object> view = (Map<String, Object>) body.get("view");
         final String value = (String) view.get("value");
         this.body = value;

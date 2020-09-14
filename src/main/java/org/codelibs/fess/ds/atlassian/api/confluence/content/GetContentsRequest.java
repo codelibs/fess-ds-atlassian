@@ -25,14 +25,13 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetContentsRequest extends Request {
+public class GetContentsRequest extends AtlassianRequest {
 
     private String type;
     private String spaceKey;
@@ -42,10 +41,6 @@ public class GetContentsRequest extends Request {
     private String[] expand;
     private Integer start;
     private Integer limit;
-
-    public GetContentsRequest(final Authentication authentication, final String appHome) {
-        super(authentication, appHome);
-    }
 
     public GetContentsRequest type(final String type) {
         this.type = type;
@@ -93,7 +88,7 @@ public class GetContentsRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -104,9 +99,10 @@ public class GetContentsRequest extends Request {
         }
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            final List<Content> contents = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Content>>(){}));
+            final List<Content> contents = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Content>>() {
+            }));
             return new GetContentsResponse(contents);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
         }
     }

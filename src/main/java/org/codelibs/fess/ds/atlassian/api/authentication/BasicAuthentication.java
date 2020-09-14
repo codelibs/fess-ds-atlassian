@@ -31,8 +31,9 @@ public class BasicAuthentication extends Authentication {
         this.password = password;
     }
 
+    @Override
     public CurlRequest getCurlRequest(final Function<String, CurlRequest> method, final String requestMethod, final URL url) {
-        final CurlRequest request =  method.apply(url.toString()).header("Authorization", "Basic " + encode(username + ":" + password));
+        final CurlRequest request = method.apply(url.toString()).header("Authorization", "Basic " + encode(username + ":" + password));
 
         if (httpProxy != null) {
             request.proxy(httpProxy);

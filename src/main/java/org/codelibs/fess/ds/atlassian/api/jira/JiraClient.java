@@ -30,13 +30,8 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JiraClient extends AtlassianClient implements Closeable {
-
-    private static final Logger logger = LoggerFactory.getLogger(JiraClient.class);
-
 
     protected static final String DEFAULT_ISSUE_MAX_RESULTS = "50";
 
@@ -52,7 +47,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
         super(paramMap);
         jiraHome = getHome(paramMap);
         jql = getJql(paramMap);
-        issueMaxResults = (getIssueMaxResults(paramMap));
+        issueMaxResults = getIssueMaxResults(paramMap);
     }
 
     @Override
@@ -76,30 +71,35 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public GetProjectsRequest projects() {
-        return new GetProjectsRequest(authentication, jiraHome);
+        return createRequest(new GetProjectsRequest());
     }
 
     public GetProjectRequest project(final String projectIdOrKey) {
-        return new GetProjectRequest(authentication, jiraHome, projectIdOrKey);
+        return createRequest(new GetProjectRequest(projectIdOrKey));
     }
 
     public SearchRequest search() {
-        return new SearchRequest(authentication, jiraHome);
+        return createRequest(new SearchRequest());
     }
 
     public GetIssueRequest issue(final String issueIdOrKey) {
-        return new GetIssueRequest(authentication, jiraHome, issueIdOrKey);
+        return createRequest(new GetIssueRequest(issueIdOrKey));
     }
 
     public GetCommentsRequest comments(final String issueIdOrKey) {
-        return new GetCommentsRequest(authentication, jiraHome, issueIdOrKey);
+        return createRequest(new GetCommentsRequest(issueIdOrKey));
+    }
+
+    @Override
+    protected String getAppHome() {
+        return jiraHome;
     }
 
     public void getIssues(final Consumer<Issue> consumer) {
         int startAt = 0;
         while (true) {
-            final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(issueMaxResults)
-                    .fields("summary", "description", "updated").execute();
+            final SearchResponse searchResponse =
+                    search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
             searchResponse.getIssues().forEach(consumer);
             if (searchResponse.getTotal() < issueMaxResults) {
                 break;
@@ -108,7 +108,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
         }
     }
 
-    public void getComments(String issueId, final Consumer<Comment> consumer) {
+    public void getComments(final String issueId, final Consumer<Comment> consumer) {
         int startAt = 0;
         while (true) {
             final GetCommentsResponse getCommentsResponse = comments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
@@ -120,5 +120,4 @@ public class JiraClient extends AtlassianClient implements Closeable {
             startAt += issueMaxResults;
         }
     }
-
 }

@@ -27,16 +27,18 @@ public class SearchResponse {
     protected Long total;
     protected List<Issue> issues;
 
-    public Long getTotal() { return total; }
+    public Long getTotal() {
+        return total;
+    }
 
     public List<Issue> getIssues() {
         return issues;
     }
 
-    public static SearchResponse create(List<Issue> issues) {
-        SearchResponse response = new SearchResponse();
+    public static SearchResponse create(final List<Issue> issues) {
+        final SearchResponse response = new SearchResponse();
         response.issues = issues;
-        response.total = Long.valueOf(issues.size());
+        response.total = (long) issues.size();
         return response;
     }
 

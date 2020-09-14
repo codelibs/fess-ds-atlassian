@@ -15,8 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.util;
 
-import static java.util.Collections.EMPTY_MAP;
-
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -30,6 +28,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -63,7 +62,7 @@ public class OAuthUtil {
     }
 
     public static String getAuthorizationHeader(final String consumerKey, final PrivateKey privateKey, final String token,
-                                            final String verifier, final String requestMethod, final URL url) {
+            final String verifier, final String requestMethod, final URL url) {
         final String nonce = generateNonce();
         final String timestamp = generateTimestamp();
         final String signature = generateSignature(consumerKey, privateKey, token, verifier, nonce, timestamp, requestMethod, url);
@@ -82,18 +81,16 @@ public class OAuthUtil {
         buf.append(' ').append(UrlUtil.encode(name)).append("=\"").append(UrlUtil.encode(value)).append("\",");
     }
 
-
     public static Map<String, String> getQueryMapFromUrl(final URL url) {
         final String query = url.getQuery();
         if (query == null) {
-            return EMPTY_MAP;
+            return Collections.emptyMap();
         }
         return Arrays.stream(query.split("&")).collect(Collectors.toMap(p -> p.split("=")[0], p -> UrlUtil.decode(p.split("=")[1])));
     }
 
-    public static String generateSignature(final String consumerKey, final PrivateKey privateKey,
-                                           final String token, final String verifier, final String nonce,
-                                           final String timestamp, final String requestMethod, final URL url) {
+    public static String generateSignature(final String consumerKey, final PrivateKey privateKey, final String token, final String verifier,
+            final String nonce, final String timestamp, final String requestMethod, final URL url) {
 
         final Map<String, String> parameters = new TreeMap<>();
         parameters.put("oauth_consumer_key", consumerKey);

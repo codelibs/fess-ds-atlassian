@@ -24,21 +24,16 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetProjectsRequest extends Request {
+public class GetProjectsRequest extends AtlassianRequest {
 
     private String[] expand;
     private Integer recent;
-
-    public GetProjectsRequest(final Authentication authentication, final String appHome) {
-        super(authentication, appHome);
-    }
 
     public GetProjectsRequest expand(final String... expand) {
         this.expand = expand;
@@ -56,7 +51,7 @@ public class GetProjectsRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
@@ -75,7 +70,7 @@ public class GetProjectsRequest extends Request {
 
     @Override
     public String getURL() {
-        return  appHome() + "/rest/api/latest/project";
+        return appHome() + "/rest/api/latest/project";
     }
 
     @Override

@@ -66,27 +66,32 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     }
 
     public GetSpacesRequest spaces() {
-        return new GetSpacesRequest(authentication, confluenceHome);
+        return createRequest(new GetSpacesRequest());
     }
 
     public GetSpaceRequest space(final String spaceKey) {
-        return new GetSpaceRequest(authentication, confluenceHome, spaceKey);
+        return createRequest(new GetSpaceRequest(spaceKey));
     }
 
     public GetContentsRequest contents() {
-        return new GetContentsRequest(authentication, confluenceHome);
+        return createRequest(new GetContentsRequest());
     }
 
     public GetContentRequest content(final String contentId) {
-        return new GetContentRequest(authentication, getConfluenceHome(), contentId);
+        return createRequest(new GetContentRequest(contentId));
     }
 
     public GetCommentsOfContentRequest commentsOfContent(final String contentId) {
-        return new GetCommentsOfContentRequest(authentication, getConfluenceHome(), contentId);
+        return createRequest(new GetCommentsOfContentRequest(contentId));
     }
 
     public GetAttachmentsOfContentRequest attachmentsOfContent(final String contentId) {
-        return new GetAttachmentsOfContentRequest(authentication, getConfluenceHome(), contentId);
+        return createRequest(new GetAttachmentsOfContentRequest(contentId));
+    }
+
+    @Override
+    protected String getAppHome() {
+        return confluenceHome;
     }
 
     public void getContents(final Consumer<Content> consumer) {

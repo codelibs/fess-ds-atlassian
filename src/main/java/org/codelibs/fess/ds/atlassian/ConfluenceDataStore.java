@@ -62,24 +62,18 @@ public class ConfluenceDataStore extends AtlassianDataStore {
 
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
         try (final ConfluenceClient client = createClient(paramMap)) {
-            client.getContents(content ->
-                    executorService.execute(() ->
-                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)
-                    )
-            );
+            client.getContents(content -> executorService
+                    .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
 
-            client.getBlogContents(content ->
-                    executorService.execute(() ->
-                            processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)
-                    )
-            );
+            client.getBlogContents(content -> executorService
+                    .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Shutting down thread executor.");
             }
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
-        } catch(final InterruptedException e) {
+        } catch (final InterruptedException e) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Interrupted.", e);
             }
@@ -92,9 +86,9 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         return new ConfluenceClient(paramMap);
     }
 
-    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap
-            , final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
-                                  final ConfluenceClient client, final Content content) {
+    protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
+            final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
+            final ConfluenceClient client, final Content content) {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final String confluenceHome = client.getConfluenceHome();
         final String url = getContentViewUrl(content, confluenceHome);
@@ -169,9 +163,9 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         final String id = content.getId();
 
         client.getContentComments(id, comment -> {
-                sb.append("\n\n");
-                sb.append(getExtractedTextFromHtml(comment.getBody()));
-            });
+            sb.append("\n\n");
+            sb.append(getExtractedTextFromHtml(comment.getBody()));
+        });
 
         return sb.toString();
     }

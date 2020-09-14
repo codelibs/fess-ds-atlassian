@@ -23,7 +23,7 @@ public class GetSpacesResponse {
 
     protected List<Space> spaces;
 
-    public GetSpacesResponse(List<Space> spaces) {
+    public GetSpacesResponse(final List<Space> spaces) {
         this.spaces = spaces;
     }
 

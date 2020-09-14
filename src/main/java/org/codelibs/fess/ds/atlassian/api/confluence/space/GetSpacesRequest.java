@@ -25,14 +25,13 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.jsoup.internal.StringUtil;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GetSpacesRequest extends Request {
+public class GetSpacesRequest extends AtlassianRequest {
 
     private String spaceKey;
     private String type;
@@ -42,10 +41,6 @@ public class GetSpacesRequest extends Request {
     private String[] expand;
     private Integer start;
     private Integer limit;
-
-    public GetSpacesRequest(final Authentication authentication, final String appHome) {
-        super(authentication, appHome);
-    }
 
     public GetSpacesRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
@@ -93,20 +88,21 @@ public class GetSpacesRequest extends Request {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
 
-    public static GetSpacesResponse parseResponse(String json) {
+    public static GetSpacesResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetSpacesResponse(Collections.emptyList());
         }
         try {
             final String results = mapper.readTree(json).get("results").toString();
-            final List<Space> spaces = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Space>>(){}));
+            final List<Space> spaces = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Space>>() {
+            }));
             return new GetSpacesResponse(spaces);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse spaces from: " + json, e);
         }
     }

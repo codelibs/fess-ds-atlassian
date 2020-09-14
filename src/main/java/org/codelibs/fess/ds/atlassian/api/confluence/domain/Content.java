@@ -45,20 +45,24 @@ public class Content {
         return type;
     }
 
-    public String getTitle() { return title; }
+    public String getTitle() {
+        return title;
+    }
 
     public Space getSpace() {
         return space;
     }
 
-    public String getBody() { return body; }
+    public String getBody() {
+        return body;
+    }
 
     public Long getLastModified() {
         return lastModified;
     }
 
     @JsonProperty("body")
-    public void unpackBody(Map<String, Object> body) {
+    public void unpackBody(final Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         final Map<String, Object> view = (Map<String, Object>) body.get("view");
         final String value = (String) view.get("value");
@@ -66,7 +70,7 @@ public class Content {
     }
 
     @JsonProperty("version")
-    public void unpackVersion(Map<String,Object> version) throws ParseException {
+    public void unpackVersion(final Map<String, Object> version) throws ParseException {
         final String when = (String) version.get("when");
         try {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");

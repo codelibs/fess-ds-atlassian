@@ -23,11 +23,10 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.codelibs.fess.ds.atlassian.api.Request;
-import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.jsoup.internal.StringUtil;
 
-public class SearchRequest extends Request {
+public class SearchRequest extends AtlassianRequest {
 
     private String jql;
     private Integer startAt;
@@ -35,9 +34,6 @@ public class SearchRequest extends Request {
     private Boolean validateQuery;
     private String[] fields;
     private String[] expand;
-    public SearchRequest(final Authentication authentication, final String appHome) {
-        super(authentication, appHome);
-    }
 
     public SearchRequest jql(final String jql) {
         this.jql = jql;
@@ -80,14 +76,13 @@ public class SearchRequest extends Request {
         }
     }
 
-
     public SearchResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
                 throw new CurlException("HTTP Status : " + response.getHttpStatusCode() + ", error : " + response.getContentAsString());
             }
             return parseResponse(response.getContentAsString());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + this, e);
         }
     }
