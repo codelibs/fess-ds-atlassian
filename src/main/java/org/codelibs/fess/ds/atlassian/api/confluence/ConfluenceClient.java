@@ -31,12 +31,8 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ConfluenceClient extends AtlassianClient implements Closeable {
-
-    private static final Logger logger = LoggerFactory.getLogger(ConfluenceClient.class);
 
     protected static final String DEFAULT_CONTENT_LIMIT = "25";
 
@@ -96,32 +92,37 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
 
     public void getContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response = contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+            final GetContentsResponse response =
+                    contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
-            if (contents.size() < contentLimit)
+            if (contents.size() < contentLimit) {
                 break;
+            }
         }
     }
 
     public void getBlogContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response = contents().start(start).limit(contentLimit).type("blogpost")
-                    .expand("space", "version", "body.view").execute();
+            final GetContentsResponse response =
+                    contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
-            if (contents.size() < contentLimit)
+            if (contents.size() < contentLimit) {
                 break;
+            }
         }
     }
 
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetCommentsOfContentResponse response = commentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
+            final GetCommentsOfContentResponse response =
+                    commentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
             final List<Comment> comments = response.getComments();
             comments.forEach(consumer);
-            if (comments.size() < contentLimit)
+            if (comments.size() < contentLimit) {
                 break;
+            }
         }
     }
 
