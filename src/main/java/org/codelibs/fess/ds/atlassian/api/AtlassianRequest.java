@@ -26,10 +26,14 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class AtlassianRequest {
+
+    private static final Logger logger = LoggerFactory.getLogger(AtlassianRequest.class);
 
     protected static final ObjectMapper mapper = new ObjectMapper();
 
@@ -97,6 +101,9 @@ public abstract class AtlassianRequest {
             }
 
             request.onConnect((req, con) -> {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("connectionTimeout: {}, readTimeout: {}", connectionTimeout, readTimeout);
+                }
                 if (connectionTimeout != null) {
                     con.setConnectTimeout(connectionTimeout);
                 }
