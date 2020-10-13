@@ -73,7 +73,7 @@
 
 		<!-- Testing -->
 		<utflute.version>0.9.1</utflute.version>
-		<junit.version>4.13</junit.version>
+		<junit.version>4.13.1</junit.version>
 	</properties>
 	<build>
 		<plugins>
