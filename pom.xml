@@ -5,7 +5,7 @@
 	<artifactId>fess-ds-atlassian</artifactId>
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
-	<version>13.10.1-SNAPSHOT</version>
+	<version>13.11.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -35,11 +35,11 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<fess.version>13.10.0</fess.version>
+		<fess.version>13.11.0</fess.version>
 
 		<!-- Main Framework -->
-		<dbflute.version>1.2.3</dbflute.version>
-		<lastaflute.version>1.1.8</lastaflute.version>
+		<dbflute.version>1.2.4</dbflute.version>
+		<lastaflute.version>1.2.0</lastaflute.version>
 		<lasta.di.version>0.8.3</lasta.di.version>
 		<lasta.taglib.version>0.7.3</lasta.taglib.version>
 		<lasta.job.version>0.5.4</lasta.job.version>
@@ -48,28 +48,28 @@
 		<!-- Partner Library -->
 		<slf4j.version>1.7.30</slf4j.version>
 		<log4j.version>2.14.0</log4j.version>
-		<jackson.version>2.11.3</jackson.version>
+		<jackson.version>2.11.4</jackson.version>
 		<commons.fileupload.version>1.4</commons.fileupload.version>
-		<asm.version>9.0</asm.version>
-		<tika.version>1.24.1</tika.version>
-		<groovy.version>3.0.6</groovy.version>
+		<asm.version>9.1</asm.version>
+		<tika.version>1.25</tika.version>
+		<groovy.version>3.0.7</groovy.version>
 		<minio.version>7.1.4</minio.version>
 		<okhttp.version>3.14.9</okhttp.version>
 
 		<!-- Crawler -->
-		<crawler.version>3.10.0</crawler.version>
+		<crawler.version>3.11.0</crawler.version>
 
 		<!-- Suggest -->
-		<suggest.version>7.10.0</suggest.version>
+		<suggest.version>7.11.0</suggest.version>
 
-		<!-- Elasticsearch -->
-		<elasticsearch.version>7.10.0</elasticsearch.version>
-		<elasticsearch.httpclient.version>7.10.0</elasticsearch.httpclient.version>
-		<cluster.runner.version>${elasticsearch.version}.0</cluster.runner.version>
+		<!-- Fesen -->
+		<fesen.version>0.11.0</fesen.version>
+		<fesen.httpclient.version>0.11.0</fesen.httpclient.version>
+		<fesen.runner.version>0.11.0</fesen.runner.version>
 
 		<!-- Tomcat -->
-		<tomcat.version>9.0.37</tomcat.version>
-		<tomcat.boot.version>0.7.5</tomcat.boot.version>
+		<tomcat.version>9.0.43</tomcat.version>
+		<tomcat.boot.version>0.7.6</tomcat.boot.version>
 
 		<!-- Testing -->
 		<utflute.version>0.9.1</utflute.version>
@@ -210,9 +210,9 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.elasticsearch</groupId>
-			<artifactId>elasticsearch</artifactId>
-			<version>${elasticsearch.version}</version>
+			<groupId>org.codelibs.fesen</groupId>
+			<artifactId>fesen-engine-server</artifactId>
+			<version>${fesen.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
