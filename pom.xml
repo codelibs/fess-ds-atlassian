@@ -5,7 +5,7 @@
 	<artifactId>fess-ds-atlassian</artifactId>
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
-	<version>13.11.1-SNAPSHOT</version>
+	<version>13.12.0-SNAPSHOT</version>
 	<url>https://fess.codelibs.org/</url>
 	<inceptionYear>2009</inceptionYear>
 	<licenses>
@@ -35,7 +35,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<fess.version>13.11.0</fess.version>
+		<fess.version>13.12.0</fess.version>
 
 		<!-- Main Framework -->
 		<dbflute.version>1.2.4</dbflute.version>
@@ -47,33 +47,33 @@
 
 		<!-- Partner Library -->
 		<slf4j.version>1.7.30</slf4j.version>
-		<log4j.version>2.14.0</log4j.version>
-		<jackson.version>2.11.4</jackson.version>
+		<log4j.version>2.14.1</log4j.version>
+		<jackson.version>2.12.2</jackson.version>
 		<commons.fileupload.version>1.4</commons.fileupload.version>
 		<asm.version>9.1</asm.version>
-		<tika.version>1.25</tika.version>
+		<tika.version>1.26</tika.version>
 		<groovy.version>3.0.7</groovy.version>
-		<minio.version>7.1.4</minio.version>
+		<minio.version>8.1.0</minio.version>
 		<okhttp.version>3.14.9</okhttp.version>
 
 		<!-- Crawler -->
-		<crawler.version>3.11.0</crawler.version>
+		<crawler.version>3.12.0</crawler.version>
 
 		<!-- Suggest -->
-		<suggest.version>7.11.0</suggest.version>
+		<suggest.version>7.12.0</suggest.version>
 
 		<!-- Fesen -->
-		<fesen.version>0.11.0</fesen.version>
-		<fesen.httpclient.version>0.11.0</fesen.httpclient.version>
-		<fesen.runner.version>0.11.0</fesen.runner.version>
+		<fesen.version>0.12.0</fesen.version>
+		<fesen.httpclient.version>0.12.0</fesen.httpclient.version>
+		<fesen.runner.version>0.12.0</fesen.runner.version>
 
 		<!-- Tomcat -->
-		<tomcat.version>9.0.43</tomcat.version>
-		<tomcat.boot.version>0.7.6</tomcat.boot.version>
+		<tomcat.version>9.0.44</tomcat.version>
+		<tomcat.boot.version>0.7.7</tomcat.boot.version>
 
 		<!-- Testing -->
 		<utflute.version>0.9.1</utflute.version>
-		<junit.version>4.13.1</junit.version>
+		<junit.version>4.13.2</junit.version>
 	</properties>
 	<build>
 		<plugins>
