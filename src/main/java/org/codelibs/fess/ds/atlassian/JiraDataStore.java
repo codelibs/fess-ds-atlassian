@@ -118,8 +118,9 @@ public class JiraDataStore extends AtlassianDataStore {
                 logger.debug("issueMap: {}", issueMap);
             }
 
+            final String scriptType = getScriptType(paramMap);
             for (final Map.Entry<String, String> entry : scriptMap.entrySet()) {
-                final Object convertValue = convertValue(getScriptType(paramMap), entry.getValue(), resultMap);
+                final Object convertValue = convertValue(scriptType, entry.getValue(), resultMap);
                 if (convertValue != null) {
                     dataMap.put(entry.getKey(), convertValue);
                 }
