@@ -87,7 +87,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             try {
-                assertEquals(content.getLastModified(), (Long)format.parse("2018-08-01T12:34:56.789Z").getTime());
+                assertEquals(content.getLastModified(), (Long) format.parse("2018-08-01T12:34:56.789Z").getTime());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -98,8 +98,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         final List<Content> contents = confluenceClient.contents().execute().getContents();
         if (!contents.isEmpty()) {
             final String id = contents.get(0).getId();
-            final GetCommentsOfContentResponse response =
-                    confluenceClient.commentsOfContent(id).depth("all").expand("body.view").execute();
+            final GetCommentsOfContentResponse response = confluenceClient.commentsOfContent(id).depth("all").expand("body.view").execute();
             for (final Comment comment : response.getComments()) {
                 assertTrue("not contains \"title\"", comment.getTitle() != null);
                 assertTrue("not contains \"value\" in \"body.view\"", comment.getBody() != null);
@@ -132,7 +131,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
         final List<Content> contents = confluenceClient.contents().execute().getContents();
         if (!contents.isEmpty()) {
-            final String id =  contents.get(0).getId();
+            final String id = contents.get(0).getId();
             final GetAttachmentsOfContentResponse response = confluenceClient.attachmentsOfContent(id).execute();
             for (final Attachment attachment : response.getAttachments()) {
                 assertTrue("not contains \"title\"", attachment.getTitle() != null);
@@ -188,6 +187,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
     protected void doGetSpaceTest(final ConfluenceClient confluenceClient) {
         // TODO
     }
+
     public void test_getSpace_parseResponse() {
         // TODO
     }

@@ -75,7 +75,7 @@ public class JiraClientTest extends AtlassianClientTest {
 
     protected void doSearchTest(final JiraClient jiraClient) {
         final SearchResponse response = jiraClient.search().fields("summary", "description", "comment", "updated").execute();
-        response.getIssues().forEach( issue -> {
+        response.getIssues().forEach(issue -> {
             assertTrue(issue.getKey() != null);
             assertTrue("not contains \"fields\"", issue.getFields() != null);
             final Fields fields = issue.getFields();
@@ -128,7 +128,7 @@ public class JiraClientTest extends AtlassianClientTest {
                 "}";
         final SearchResponse response = SearchRequest.parseResponse(json);
         final List<Issue> issues = response.getIssues();
-        for(int i = 0;i < issues.size();i++) {
+        for (int i = 0; i < issues.size(); i++) {
             final Issue issue = issues.get(i);
             assertTrue(issue.getKey().startsWith("Key-"));
             final Fields fields = issue.getFields();

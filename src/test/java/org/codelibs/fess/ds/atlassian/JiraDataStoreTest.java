@@ -88,8 +88,8 @@ public class JiraDataStoreTest extends LastaFluteTestCase {
 
         scriptMap.put("url", "issue.view_url");
         scriptMap.put("title", "issue.summary");
-        scriptMap.put("content", "issue.description + issue.comments");   
-        scriptMap.put("last_modified", "issue.last_modified");        
+        scriptMap.put("content", "issue.description + issue.comments");
+        scriptMap.put("last_modified", "issue.last_modified");
 
         dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
 
