@@ -33,6 +33,7 @@ import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
+import org.codelibs.fess.exception.DataStoreException;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,9 +76,7 @@ public class JiraDataStore extends AtlassianDataStore {
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Interrupted.", e);
-            }
+            throw new DataStoreException("Interrupted.", e);
         } finally {
             executorService.shutdownNow();
         }

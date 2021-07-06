@@ -30,6 +30,7 @@ import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.es.config.exentity.DataConfig;
+import org.codelibs.fess.exception.DataStoreException;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,9 +75,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             executorService.shutdown();
             executorService.awaitTermination(60, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Interrupted.", e);
-            }
+            throw new DataStoreException("Interrupted.", e);
         } finally {
             executorService.shutdownNow();
         }
