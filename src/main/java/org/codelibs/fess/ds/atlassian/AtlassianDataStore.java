@@ -83,7 +83,7 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     }
 
     protected boolean isIgnoreError(final Map<String, String> paramMap) {
-        return paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE).equalsIgnoreCase(Constants.TRUE);
+        return Constants.TRUE.equalsIgnoreCase(paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE));
     }
 
     protected Map<String, Object> createConfigMap(final Map<String, String> paramMap) {
