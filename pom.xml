@@ -4,7 +4,7 @@
 	<artifactId>fess-ds-atlassian</artifactId>
 	<packaging>jar</packaging>
 	<name>JIRA/Confluence Data Store</name>
-	<version>13.14.1-SNAPSHOT</version>
+	<version>13.15.0-SNAPSHOT</version>
 	<scm>
 		<connection>scm:git:git@github.com:codelibs/fess-ds-atlassian.git</connection>
 		<developerConnection>scm:git:git@github.com:codelibs/fess-ds-atlassian.git</developerConnection>
@@ -13,7 +13,7 @@
 	<parent>
 		<groupId>org.codelibs.fess</groupId>
 		<artifactId>fess-parent</artifactId>
-		<version>13.14.0</version>
+		<version>13.15.0-SNAPSHOT</version>
 		<relativePath />
 	</parent>
 	<build>
