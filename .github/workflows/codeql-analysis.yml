@@ -17,7 +17,7 @@ on:
     - master
     - "*.x"
   pull_request:
-    branches: [ master ]
+    branches:
     - master
     - "*.x"
   schedule:
