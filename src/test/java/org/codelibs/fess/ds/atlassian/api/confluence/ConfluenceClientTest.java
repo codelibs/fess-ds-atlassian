@@ -15,6 +15,10 @@
  */
 package org.codelibs.fess.ds.atlassian.api.confluence;
 
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.TimeZone;
+
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
@@ -28,18 +32,13 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
-
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import org.codelibs.fess.entity.DataStoreParams;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
     protected final String confluenceHome = "";
 
     protected void doProductionTest() {
-        final Map<String, String> paramMap = new HashMap<>();
+        final DataStoreParams paramMap = new DataStoreParams();
         paramMap.put(AUTH_TYPE_PARAM, "oauth");
         paramMap.put(CONSUMER_KEY_PARAM, "");
         paramMap.put(PRIVATE_KEY_PARAM, "");

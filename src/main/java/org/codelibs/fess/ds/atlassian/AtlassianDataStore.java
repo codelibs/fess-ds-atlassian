@@ -29,6 +29,7 @@ import org.codelibs.fess.Constants;
 import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.AbstractDataStore;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,17 +54,17 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
         this.extractorName = extractorName;
     }
 
-    protected UrlFilter getUrlFilter(final Map<String, String> paramMap) {
+    protected UrlFilter getUrlFilter(final DataStoreParams paramMap) {
         final UrlFilter urlFilter = ComponentUtil.getComponent(UrlFilter.class);
-        final String include = paramMap.get(INCLUDE_PATTERN);
+        final String include = paramMap.getAsString(INCLUDE_PATTERN);
         if (StringUtil.isNotBlank(include)) {
             urlFilter.addInclude(include);
         }
-        final String exclude = paramMap.get(EXCLUDE_PATTERN);
+        final String exclude = paramMap.getAsString(EXCLUDE_PATTERN);
         if (StringUtil.isNotBlank(exclude)) {
             urlFilter.addExclude(exclude);
         }
-        urlFilter.init(paramMap.get(Constants.CRAWLING_INFO_ID));
+        urlFilter.init(paramMap.getAsString(Constants.CRAWLING_INFO_ID));
         if (logger.isDebugEnabled()) {
             logger.debug("urlFilter: {}", urlFilter);
         }
@@ -78,15 +79,15 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    protected Integer getNumberOfThreads(final Map<String, String> paramMap) {
-        return Integer.parseInt(paramMap.getOrDefault(NUMBER_OF_THREADS, "1"));
+    protected Integer getNumberOfThreads(final DataStoreParams paramMap) {
+        return Integer.parseInt(paramMap.getAsString(NUMBER_OF_THREADS, "1"));
     }
 
-    protected boolean isIgnoreError(final Map<String, String> paramMap) {
-        return Constants.TRUE.equalsIgnoreCase(paramMap.getOrDefault(IGNORE_ERROR, Constants.TRUE));
+    protected boolean isIgnoreError(final DataStoreParams paramMap) {
+        return Constants.TRUE.equalsIgnoreCase(paramMap.getAsString(IGNORE_ERROR, Constants.TRUE));
     }
 
-    protected Map<String, Object> createConfigMap(final Map<String, String> paramMap) {
+    protected Map<String, Object> createConfigMap(final DataStoreParams paramMap) {
         final Map<String, Object> configMap = new HashMap<>();
         configMap.put(IGNORE_ERROR, isIgnoreError(paramMap));
         configMap.put(URL_FILTER, getUrlFilter(paramMap));

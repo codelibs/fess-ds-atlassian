@@ -15,6 +15,10 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
+
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Fields;
@@ -26,18 +30,13 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.codelibs.fess.entity.DataStoreParams;
 
 public class JiraClientTest extends AtlassianClientTest {
 
     protected void doProductionTest() {
 
-        final Map<String, String> paramMap = new HashMap<>();
+        final DataStoreParams paramMap = new DataStoreParams();
         paramMap.put(AUTH_TYPE_PARAM, "oauth");
         paramMap.put(CONSUMER_KEY_PARAM, "");
         paramMap.put(PRIVATE_KEY_PARAM, "");

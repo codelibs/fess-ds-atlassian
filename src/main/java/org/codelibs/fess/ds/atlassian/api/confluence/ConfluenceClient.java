@@ -17,7 +17,6 @@ package org.codelibs.fess.ds.atlassian.api.confluence;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
@@ -31,6 +30,11 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
+import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.helper.CrawlerStatsHelper;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
+import org.codelibs.fess.util.ComponentUtil;
 
 public class ConfluenceClient extends AtlassianClient implements Closeable {
 
@@ -42,7 +46,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     protected final String confluenceHome;
     protected final Integer contentLimit;
 
-    public ConfluenceClient(final Map<String, String> paramMap) {
+    public ConfluenceClient(final DataStoreParams paramMap) {
         super(paramMap);
         confluenceHome = getHome(paramMap);
         contentLimit = getContentLimit(paramMap);
@@ -57,8 +61,8 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return confluenceHome;
     }
 
-    public Integer getContentLimit(final Map<String, String> paramMap) {
-        return Integer.parseInt(paramMap.getOrDefault(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
+    public Integer getContentLimit(final DataStoreParams paramMap) {
+        return Integer.parseInt(paramMap.getAsString(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
     }
 
     public GetSpacesRequest spaces() {
@@ -91,25 +95,43 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     }
 
     public void getContents(final Consumer<Content> consumer) {
+        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response =
-                    contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
-            final List<Content> contents = response.getContents();
-            contents.forEach(consumer);
-            if (contents.size() < contentLimit) {
-                break;
+            final StatsKeyObject statsKey = new StatsKeyObject("confluence_content@" + start);
+            try {
+                crawlerStatsHelper.begin(statsKey);
+                final GetContentsResponse response =
+                        contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
+                final List<Content> contents = response.getContents();
+                contents.forEach(consumer);
+                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
+                if (contents.size() < contentLimit) {
+                    break;
+                }
+            } finally {
+                crawlerStatsHelper.done(statsKey);
             }
         }
     }
 
     public void getBlogContents(final Consumer<Content> consumer) {
+        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response =
-                    contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
-            final List<Content> contents = response.getContents();
-            contents.forEach(consumer);
-            if (contents.size() < contentLimit) {
-                break;
+            final StatsKeyObject statsKey = new StatsKeyObject("confluence_content@" + start);
+            try {
+                crawlerStatsHelper.begin(statsKey);
+                final GetContentsResponse response =
+                        contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
+                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
+                final List<Content> contents = response.getContents();
+                contents.forEach(consumer);
+                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
+                if (contents.size() < contentLimit) {
+                    break;
+                }
+            } finally {
+                crawlerStatsHelper.done(statsKey);
             }
         }
     }

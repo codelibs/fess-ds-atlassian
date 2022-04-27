@@ -15,13 +15,12 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.util.Map;
-
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +50,7 @@ public abstract class AtlassianClient {
     protected Integer connectionTimeout;
     protected Integer readTimeout;
 
-    public AtlassianClient(final Map<String, String> paramMap) {
+    protected AtlassianClient(final DataStoreParams paramMap) {
 
         final String home = getHome(paramMap);
 
@@ -104,10 +103,10 @@ public abstract class AtlassianClient {
         }
 
         if (paramMap.containsKey(HTTP_CONNECTION_TIMEOUT)) {
-            connectionTimeout = Integer.parseInt(paramMap.get(HTTP_CONNECTION_TIMEOUT));
+            connectionTimeout = Integer.parseInt(paramMap.getAsString(HTTP_CONNECTION_TIMEOUT));
         }
         if (paramMap.containsKey(HTTP_READ_TIMEOUT)) {
-            readTimeout = Integer.parseInt(paramMap.get(HTTP_READ_TIMEOUT));
+            readTimeout = Integer.parseInt(paramMap.getAsString(HTTP_READ_TIMEOUT));
         }
     }
 
@@ -121,74 +120,44 @@ public abstract class AtlassianClient {
 
     protected abstract String getAppHome();
 
-    protected String getHome(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(HOME_PARAM)) {
-            return paramMap.get(HOME_PARAM);
-        }
-        return StringUtil.EMPTY;
+    protected String getHome(final DataStoreParams paramMap) {
+        return paramMap.getAsString(HOME_PARAM, StringUtil.EMPTY);
     }
 
-    private String getBasicUsername(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(BASIC_USERNAME_PARAM)) {
-            return paramMap.get(BASIC_USERNAME_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getBasicUsername(final DataStoreParams paramMap) {
+        return paramMap.getAsString(BASIC_USERNAME_PARAM, StringUtil.EMPTY);
     }
 
-    private String getBasicPass(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(BASIC_PASS_PARAM)) {
-            return paramMap.get(BASIC_PASS_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getBasicPass(final DataStoreParams paramMap) {
+        return paramMap.getAsString(BASIC_PASS_PARAM, StringUtil.EMPTY);
     }
 
-    private String getConsumerKey(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(CONSUMER_KEY_PARAM)) {
-            return paramMap.get(CONSUMER_KEY_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getConsumerKey(final DataStoreParams paramMap) {
+        return paramMap.getAsString(CONSUMER_KEY_PARAM, StringUtil.EMPTY);
     }
 
-    private String getPrivateKey(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(PRIVATE_KEY_PARAM)) {
-            return paramMap.get(PRIVATE_KEY_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getPrivateKey(final DataStoreParams paramMap) {
+        return paramMap.getAsString(PRIVATE_KEY_PARAM, StringUtil.EMPTY);
     }
 
-    private String getSecret(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(SECRET_PARAM)) {
-            return paramMap.get(SECRET_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getSecret(final DataStoreParams paramMap) {
+        return paramMap.getAsString(SECRET_PARAM, StringUtil.EMPTY);
     }
 
-    private String getAccessToken(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(ACCESS_TOKEN_PARAM)) {
-            return paramMap.get(ACCESS_TOKEN_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getAccessToken(final DataStoreParams paramMap) {
+        return paramMap.getAsString(ACCESS_TOKEN_PARAM, StringUtil.EMPTY);
     }
 
-    private String getAuthType(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(AUTH_TYPE_PARAM)) {
-            return paramMap.get(AUTH_TYPE_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getAuthType(final DataStoreParams paramMap) {
+        return paramMap.getAsString(AUTH_TYPE_PARAM, StringUtil.EMPTY);
     }
 
-    private String getProxyHost(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(PROXY_HOST_PARAM)) {
-            return paramMap.get(PROXY_HOST_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getProxyHost(final DataStoreParams paramMap) {
+        return paramMap.getAsString(PROXY_HOST_PARAM, StringUtil.EMPTY);
     }
 
-    private String getProxyPort(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(PROXY_PORT_PARAM)) {
-            return paramMap.get(PROXY_PORT_PARAM);
-        }
-        return StringUtil.EMPTY;
+    private String getProxyPort(final DataStoreParams paramMap) {
+        return paramMap.getAsString(PROXY_PORT_PARAM, StringUtil.EMPTY);
     }
 
 }

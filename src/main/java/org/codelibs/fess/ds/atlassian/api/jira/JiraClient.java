@@ -17,7 +17,6 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
@@ -30,6 +29,11 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
+import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.helper.CrawlerStatsHelper;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
+import org.codelibs.fess.util.ComponentUtil;
 
 public class JiraClient extends AtlassianClient implements Closeable {
 
@@ -43,7 +47,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
     protected final String jql;
     protected final Integer issueMaxResults;
 
-    public JiraClient(final Map<String, String> paramMap) {
+    public JiraClient(final DataStoreParams paramMap) {
         super(paramMap);
         jiraHome = getHome(paramMap);
         jql = getJql(paramMap);
@@ -55,15 +59,12 @@ public class JiraClient extends AtlassianClient implements Closeable {
         // TODO
     }
 
-    protected String getJql(final Map<String, String> paramMap) {
-        if (paramMap.containsKey(JQL_PARAM)) {
-            return paramMap.get(JQL_PARAM);
-        }
-        return null;
+    protected String getJql(final DataStoreParams paramMap) {
+        return paramMap.getAsString(JQL_PARAM);
     }
 
-    protected Integer getIssueMaxResults(final Map<String, String> paramMap) {
-        return Integer.parseInt(paramMap.getOrDefault(ISSUE_MAX_RESULTS_PARAM, DEFAULT_ISSUE_MAX_RESULTS));
+    protected Integer getIssueMaxResults(final DataStoreParams paramMap) {
+        return Integer.parseInt(paramMap.getAsString(ISSUE_MAX_RESULTS_PARAM, DEFAULT_ISSUE_MAX_RESULTS));
     }
 
     public String getJiraHome() {
@@ -96,13 +97,22 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public void getIssues(final Consumer<Issue> consumer) {
+        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         int startAt = 0;
         while (true) {
-            final SearchResponse searchResponse =
-                    search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
-            searchResponse.getIssues().forEach(consumer);
-            if (searchResponse.getTotal() < issueMaxResults) {
-                break;
+            final StatsKeyObject statsKey = new StatsKeyObject(startAt + "@" + jql);
+            try {
+                crawlerStatsHelper.begin(statsKey);
+                final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(issueMaxResults)
+                        .fields("summary", "description", "updated").execute();
+                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
+                searchResponse.getIssues().forEach(consumer);
+                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
+                if (searchResponse.getTotal() < issueMaxResults) {
+                    break;
+                }
+            } finally {
+                crawlerStatsHelper.done(statsKey);
             }
             startAt += issueMaxResults;
         }

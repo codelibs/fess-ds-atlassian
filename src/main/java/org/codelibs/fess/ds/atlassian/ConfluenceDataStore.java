@@ -29,8 +29,12 @@ import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.exception.DataStoreException;
+import org.codelibs.fess.helper.CrawlerStatsHelper;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
+import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
 import org.codelibs.fess.util.ComponentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +57,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     }
 
     @Override
-    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, String> paramMap,
+    protected void storeData(final DataConfig dataConfig, final IndexUpdateCallback callback, final DataStoreParams paramMap,
             final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap) {
         final Map<String, Object> configMap = createConfigMap(paramMap);
 
@@ -81,16 +85,18 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
     }
 
-    protected ConfluenceClient createClient(final Map<String, String> paramMap) {
+    protected ConfluenceClient createClient(final DataStoreParams paramMap) {
         return new ConfluenceClient(paramMap);
     }
 
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
-            final Map<String, String> paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
+            final DataStoreParams paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
             final ConfluenceClient client, final Content content) {
+        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final String confluenceHome = client.getConfluenceHome();
         final String url = getContentViewUrl(content, confluenceHome);
+        final StatsKeyObject statsKey = new StatsKeyObject(url);
         try {
 
             final UrlFilter urlFilter = (UrlFilter) configMap.get(URL_FILTER);
@@ -101,6 +107,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
                 return;
             }
 
+            crawlerStatsHelper.begin(statsKey);
             logger.info("Crawling URL: {}", url);
 
             final Map<String, Object> resultMap = new LinkedHashMap<>(defaultDataMap);
@@ -112,6 +119,8 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             contentMap.put(CONTENT_LAST_MODIFIED, getLastModifiedAsDate(content.getLastModified()));
             contentMap.put(CONTENT_VIEW_URL, url);
             resultMap.put(CONTENT, contentMap);
+
+            crawlerStatsHelper.record(statsKey, StatsAction.PREPARED);
 
             if (logger.isDebugEnabled()) {
                 logger.debug("contentMap: {}", contentMap);
@@ -125,11 +134,14 @@ public class ConfluenceDataStore extends AtlassianDataStore {
                 }
             }
 
+            crawlerStatsHelper.record(statsKey, StatsAction.EVALUATED);
+
             if (logger.isDebugEnabled()) {
                 logger.debug("dataMap: {}", dataMap);
             }
 
             callback.store(paramMap, dataMap);
+            crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : " + dataMap, e);
 
@@ -151,10 +163,14 @@ public class ConfluenceDataStore extends AtlassianDataStore {
 
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
             failureUrlService.store(dataConfig, errorName, url, target);
+            crawlerStatsHelper.record(statsKey, StatsAction.ACCESS_EXCEPTION);
         } catch (final Throwable t) {
             logger.warn("Crawling Access Exception at : " + dataMap, t);
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
             failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
+            crawlerStatsHelper.record(statsKey, StatsAction.EXCEPTION);
+        } finally {
+            crawlerStatsHelper.done(statsKey);
         }
     }
 

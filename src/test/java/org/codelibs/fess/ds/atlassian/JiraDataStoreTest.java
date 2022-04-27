@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
+import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.es.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
@@ -58,7 +59,7 @@ public class JiraDataStoreTest extends LastaFluteTestCase {
         final DataConfig dataConfig = new DataConfig();
         final IndexUpdateCallback callback = new IndexUpdateCallback() {
             @Override
-            public void store(Map<String, String> paramMap, Map<String, Object> dataMap) {
+            public void store(DataStoreParams paramMap, Map<String, Object> dataMap) {
                 System.out.println(dataMap);
             }
 
@@ -76,7 +77,7 @@ public class JiraDataStoreTest extends LastaFluteTestCase {
             public void commit() {
             }
         };
-        final Map<String, String> paramMap = new HashMap<>();
+        final DataStoreParams paramMap = new DataStoreParams();
         paramMap.put("jira.home", "");
         paramMap.put("jira.oauth.consumer_key", "");
         paramMap.put("jira.oauth.private_key", "");
