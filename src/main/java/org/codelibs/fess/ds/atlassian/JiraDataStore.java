@@ -98,16 +98,17 @@ public class JiraDataStore extends AtlassianDataStore {
         final String url = getIssueViewUrl(issue, client);
         final StatsKeyObject statsKey = new StatsKeyObject(url);
         try {
+            crawlerStatsHelper.begin(statsKey);
 
             final UrlFilter urlFilter = (UrlFilter) configMap.get(URL_FILTER);
             if (urlFilter != null && !urlFilter.match(url)) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Not matched: {}", url);
                 }
+                crawlerStatsHelper.discard(statsKey);
                 return;
             }
 
-            crawlerStatsHelper.begin(statsKey);
             logger.info("Crawling URL: {}", url);
 
             final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap.asMap());
