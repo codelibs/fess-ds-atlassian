@@ -95,43 +95,25 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     }
 
     public void getContents(final Consumer<Content> consumer) {
-        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         for (int start = 0;; start += contentLimit) {
-            final StatsKeyObject statsKey = new StatsKeyObject("confluence_content@" + start);
-            try {
-                crawlerStatsHelper.begin(statsKey);
-                final GetContentsResponse response =
-                        contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
-                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
-                final List<Content> contents = response.getContents();
-                contents.forEach(consumer);
-                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
-                if (contents.size() < contentLimit) {
-                    break;
-                }
-            } finally {
-                crawlerStatsHelper.done(statsKey);
+            final GetContentsResponse response =
+                    contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
+            if (contents.size() < contentLimit) {
+                break;
             }
         }
     }
 
     public void getBlogContents(final Consumer<Content> consumer) {
-        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         for (int start = 0;; start += contentLimit) {
-            final StatsKeyObject statsKey = new StatsKeyObject("confluence_content@" + start);
-            try {
-                crawlerStatsHelper.begin(statsKey);
-                final GetContentsResponse response =
-                        contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
-                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
-                final List<Content> contents = response.getContents();
-                contents.forEach(consumer);
-                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
-                if (contents.size() < contentLimit) {
-                    break;
-                }
-            } finally {
-                crawlerStatsHelper.done(statsKey);
+            final GetContentsResponse response =
+                    contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
+            final List<Content> contents = response.getContents();
+            contents.forEach(consumer);
+            if (contents.size() < contentLimit) {
+                break;
             }
         }
     }

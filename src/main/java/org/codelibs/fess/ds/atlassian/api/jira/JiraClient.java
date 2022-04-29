@@ -97,22 +97,13 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     public void getIssues(final Consumer<Issue> consumer) {
-        final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         int startAt = 0;
         while (true) {
-            final StatsKeyObject statsKey = new StatsKeyObject(startAt + "@" + jql);
-            try {
-                crawlerStatsHelper.begin(statsKey);
-                final SearchResponse searchResponse = search().jql(jql).startAt(startAt).maxResults(issueMaxResults)
-                        .fields("summary", "description", "updated").execute();
-                crawlerStatsHelper.record(statsKey, StatsAction.ACCESSED);
-                searchResponse.getIssues().forEach(consumer);
-                crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
-                if (searchResponse.getTotal() < issueMaxResults) {
-                    break;
-                }
-            } finally {
-                crawlerStatsHelper.done(statsKey);
+            final SearchResponse searchResponse =
+                    search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
+            searchResponse.getIssues().forEach(consumer);
+            if (searchResponse.getTotal() < issueMaxResults) {
+                break;
             }
             startAt += issueMaxResults;
         }
