@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -100,15 +101,12 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     }
 
     public String getExtractedText(final String text, final String mimeType) {
-        Extractor extractor = ComponentUtil.getExtractorFactory().getExtractor(mimeType);
-        final InputStream in = new ByteArrayInputStream(text.getBytes());
-        if (extractor == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("use a default extractor as {} by {}", extractorName, mimeType);
-            }
-            extractor = ComponentUtil.getComponent(extractorName);
+        try (final InputStream in = new ByteArrayInputStream(text.getBytes())) {
+            return ComponentUtil.getExtractorFactory().builder(in, null).mimeType(mimeType).extractorName(extractorName).extract()
+                    .getContent();
+        } catch (IOException e) {
+            logger.warn("Cannot parse a text.", e);
+            return StringUtil.EMPTY;
         }
-        return extractor.getText(in, null).getContent();
     }
-
 }
