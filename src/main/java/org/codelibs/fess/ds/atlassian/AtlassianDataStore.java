@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.Constants;
+import org.codelibs.fess.crawler.exception.CrawlingAccessException;
 import org.codelibs.fess.crawler.extractor.Extractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.AbstractDataStore;
@@ -104,8 +105,15 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
         try (final InputStream in = new ByteArrayInputStream(text.getBytes())) {
             return ComponentUtil.getExtractorFactory().builder(in, null).mimeType(mimeType).extractorName(extractorName).extract()
                     .getContent();
-        } catch (IOException e) {
-            logger.warn("Cannot parse a text.", e);
+        } catch (final Exception e) {
+            if (!ComponentUtil.getFessConfig().isCrawlerIgnoreContentException()) {
+                throw new CrawlingAccessException(e);
+            }
+            if (logger.isDebugEnabled()) {
+                logger.warn("Could not get a text.", e);
+            } else {
+                logger.warn("Could not get a text. {}", e.getMessage());
+            }
             return StringUtil.EMPTY;
         }
     }
