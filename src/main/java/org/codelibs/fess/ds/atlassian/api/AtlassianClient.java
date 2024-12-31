@@ -15,18 +15,18 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
 import org.codelibs.fess.entity.DataStoreParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AtlassianClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(AtlassianClient.class);
+    private static final Logger logger = LogManager.getLogger(AtlassianClient.class);
 
     // parameters
     protected static final String HOME_PARAM = "home";

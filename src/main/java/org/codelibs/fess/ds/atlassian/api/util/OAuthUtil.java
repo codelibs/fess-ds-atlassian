@@ -33,14 +33,14 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OAuthUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(OAuthUtil.class);
+    private static Logger logger = LogManager.getLogger(OAuthUtil.class);
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String SIGNATURE_METHOD = "RSA-SHA1";

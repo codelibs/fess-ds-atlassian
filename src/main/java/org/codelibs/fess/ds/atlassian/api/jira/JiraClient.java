@@ -30,10 +30,6 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.helper.CrawlerStatsHelper;
-import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
-import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
-import org.codelibs.fess.util.ComponentUtil;
 
 public class JiraClient extends AtlassianClient implements Closeable {
 

@@ -19,14 +19,14 @@ import java.net.URL;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.curl.Curl;
 import org.codelibs.curl.CurlRequest;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,7 +34,7 @@ import net.minidev.json.JSONObject;
 
 public abstract class AtlassianRequest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AtlassianRequest.class);
+    private static final Logger logger = LogManager.getLogger(AtlassianRequest.class);
 
     protected static final ObjectMapper mapper = new ObjectMapper();
 

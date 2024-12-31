@@ -15,9 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.codelibs.fess.util.ComponentUtil;
 import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
 

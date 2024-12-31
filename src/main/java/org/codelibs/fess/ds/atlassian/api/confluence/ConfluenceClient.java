@@ -31,10 +31,6 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.helper.CrawlerStatsHelper;
-import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
-import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
-import org.codelibs.fess.util.ComponentUtil;
 
 public class ConfluenceClient extends AtlassianClient implements Closeable {
 
