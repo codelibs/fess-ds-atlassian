@@ -17,6 +17,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      PARENT_BRANCH: ${{ github.ref_name == 'master' && 'main' || github.ref_name }}
 
     steps:
     - uses: actions/checkout@v4
@@ -35,6 +37,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: codelibs/fess-parent
+        ref: ${{ env.PARENT_BRANCH }}
         path: fess-parent
     - name: Install fess-parent
       run: |
