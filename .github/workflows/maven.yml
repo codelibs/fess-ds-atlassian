@@ -31,7 +31,6 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-        retention-days: 30
     - name: Checkout fess-parent
       uses: actions/checkout@v4
       with:
