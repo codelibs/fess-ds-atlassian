@@ -17,14 +17,28 @@ package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
+/**
+ * Response containing Confluence content.
+ */
 public class GetContentResponse {
 
+    /** The content returned by the API. */
     protected final Content content;
 
+    /**
+     * Constructs a response with the given content.
+     *
+     * @param content the content
+     */
     public GetContentResponse(final Content content) {
         this.content = content;
     }
 
+    /**
+     * Returns the content.
+     *
+     * @return the content
+     */
     public Content getContent() {
         return content;
     }

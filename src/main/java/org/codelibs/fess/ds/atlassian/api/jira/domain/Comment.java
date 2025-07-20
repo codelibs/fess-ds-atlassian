@@ -17,11 +17,27 @@ package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents a comment on a JIRA issue.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comment {
 
+    /** The body content of the comment. */
     protected String body;
 
+    /**
+     * Default constructor for Comment.
+     */
+    public Comment() {
+        // Default constructor
+    }
+
+    /**
+     * Gets the comment body.
+     *
+     * @return the comment body
+     */
     public String getBody() {
         return body;
     }

@@ -43,17 +43,39 @@ import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 
+/**
+ * Data store implementation for crawling JIRA issues.
+ * Retrieves issues and their comments from JIRA instances and indexes them in Fess.
+ */
 public class JiraDataStore extends AtlassianDataStore {
 
+    /** Logger instance for this class. */
     private static final Logger logger = LogManager.getLogger(JiraDataStore.class);
 
     // scripts
+    /** Script variable name for issue data. */
     protected static final String ISSUE = "issue";
+
+    /** Script variable name for issue summary. */
     protected static final String ISSUE_SUMMARY = "summary";
+
+    /** Script variable name for issue description. */
     protected static final String ISSUE_DESCRIPTION = "description";
+
+    /** Script variable name for issue comments. */
     protected static final String ISSUE_COMMENTS = "comments";
+
+    /** Script variable name for issue last modified date. */
     protected static final String ISSUE_LAST_MODIFIED = "last_modified";
+
+    /** Script variable name for issue view URL. */
     protected static final String ISSUE_VIEW_URL = "view_url";
+
+    /**
+     * Default constructor.
+     */
+    public JiraDataStore() {
+    }
 
     @Override
     protected String getName() {
@@ -87,10 +109,28 @@ public class JiraDataStore extends AtlassianDataStore {
         }
     }
 
+    /**
+     * Creates a JIRA client with the given parameters.
+     *
+     * @param paramMap the data store parameters
+     * @return the configured JIRA client
+     */
     protected JiraClient createClient(final DataStoreParams paramMap) {
         return new JiraClient(paramMap);
     }
 
+    /**
+     * Processes a single JIRA issue and indexes it.
+     *
+     * @param dataConfig the data configuration
+     * @param callback the index update callback
+     * @param configMap the configuration map
+     * @param paramMap the parameter map
+     * @param scriptMap the script map
+     * @param defaultDataMap the default data map
+     * @param client the JIRA client
+     * @param issue the issue to process
+     */
     protected void processIssue(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
             final DataStoreParams paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
             final JiraClient client, final Issue issue) {
@@ -181,10 +221,24 @@ public class JiraDataStore extends AtlassianDataStore {
         }
     }
 
+    /**
+     * Gets the view URL for a JIRA issue.
+     *
+     * @param issue the JIRA issue
+     * @param client the JIRA client
+     * @return the issue view URL
+     */
     protected String getIssueViewUrl(final Issue issue, final JiraClient client) {
         return client.getJiraHome() + "/browse/" + issue.getKey();
     }
 
+    /**
+     * Gets all comments for a JIRA issue as concatenated text.
+     *
+     * @param issue the JIRA issue
+     * @param client the JIRA client
+     * @return the concatenated comments text
+     */
     protected String getIssueComments(final Issue issue, final JiraClient client) {
         final StringBuilder sb = new StringBuilder();
         final String id = issue.getId();
@@ -197,6 +251,12 @@ public class JiraDataStore extends AtlassianDataStore {
         return sb.toString();
     }
 
+    /**
+     * Gets the last modified date of a JIRA issue.
+     *
+     * @param issue the JIRA issue
+     * @return the last modified date, or null if parsing fails
+     */
     protected Date getIssueLastModified(final Issue issue) {
         final String updated = issue.getFields().getUpdated();
         try {

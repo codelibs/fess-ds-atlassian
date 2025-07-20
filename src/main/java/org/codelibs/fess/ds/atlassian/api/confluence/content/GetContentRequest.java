@@ -29,6 +29,10 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Request class for retrieving Confluence content.
+ * Allows specification of status, version, and fields to expand.
+ */
 public class GetContentRequest extends AtlassianRequest {
 
     private final String id;
@@ -36,25 +40,54 @@ public class GetContentRequest extends AtlassianRequest {
     private Integer version;
     private String[] expand;
 
+    /**
+     * Constructs a request to get Confluence content with the specified ID.
+     *
+     * @param id the content ID
+     */
     public GetContentRequest(final String id) {
         this.id = id;
     }
 
+    /**
+     * Sets the status filter for the content.
+     *
+     * @param status the status to filter by
+     * @return this request instance for method chaining
+     */
     public GetContentRequest status(final String status) {
         this.status = status;
         return this;
     }
 
+    /**
+     * Sets the specific version of the content to retrieve.
+     *
+     * @param version the version number
+     * @return this request instance for method chaining
+     */
     public GetContentRequest version(final int version) {
         this.version = version;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing the content
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetContentResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -66,6 +99,13 @@ public class GetContentRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetContentResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetContentResponse(null);

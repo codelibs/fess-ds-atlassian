@@ -17,31 +17,75 @@ package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents a JIRA project.
+ * Contains project metadata including ID, key, name, and description.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Project {
 
+    /** The self URL of the project. */
     protected String self;
+
+    /** The project key. */
     protected String key;
+
+    /** The unique identifier of the project. */
     protected Long id;
+
+    /** The project name. */
     protected String name;
+
+    /** The project description. */
     protected String description;
 
+    /**
+     * Default constructor.
+     */
+    public Project() {
+    }
+
+    /**
+     * Gets the self URL of the project.
+     *
+     * @return the self URL
+     */
     public String getSelf() {
         return self;
     }
 
+    /**
+     * Gets the project key.
+     *
+     * @return the project key
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     * Gets the project name.
+     *
+     * @return the project name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Gets the project ID.
+     *
+     * @return the project ID
+     */
     public Long getId() {
         return id;
     }
 
+    /**
+     * Gets the project description.
+     *
+     * @return the project description
+     */
     public String getDescription() {
         return description;
     }

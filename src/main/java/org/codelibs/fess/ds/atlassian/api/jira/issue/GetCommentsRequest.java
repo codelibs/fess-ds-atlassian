@@ -28,6 +28,10 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comments;
 
+/**
+ * Request class for retrieving comments from a JIRA issue.
+ * Supports pagination, ordering, and field expansion.
+ */
 public class GetCommentsRequest extends AtlassianRequest {
 
     private final String issueIdOrKey;
@@ -36,30 +40,65 @@ public class GetCommentsRequest extends AtlassianRequest {
     private String orderBy;
     private String[] expand;
 
+    /**
+     * Constructs a request to get comments for the specified JIRA issue.
+     *
+     * @param issueIdOrKey the issue ID or key
+     */
     public GetCommentsRequest(final String issueIdOrKey) {
         this.issueIdOrKey = issueIdOrKey;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param startAt the start index
+     * @return this request instance for method chaining
+     */
     public GetCommentsRequest startAt(final long startAt) {
         this.startAt = startAt;
         return this;
     }
 
+    /**
+     * Sets the maximum number of comments to return.
+     *
+     * @param maxResults the maximum number of results
+     * @return this request instance for method chaining
+     */
     public GetCommentsRequest maxResults(final int maxResults) {
         this.maxResults = maxResults;
         return this;
     }
 
+    /**
+     * Sets the ordering for the comments.
+     *
+     * @param orderBy the field to order by
+     * @return this request instance for method chaining
+     */
     public GetCommentsRequest orderBy(final String orderBy) {
         this.orderBy = orderBy;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetCommentsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing comments
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetCommentsResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -71,6 +110,13 @@ public class GetCommentsRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetCommentsResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetCommentsResponse(Collections.emptyList());

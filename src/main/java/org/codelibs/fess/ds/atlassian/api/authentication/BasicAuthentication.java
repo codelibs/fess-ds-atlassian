@@ -21,11 +21,22 @@ import java.util.function.Function;
 
 import org.codelibs.curl.CurlRequest;
 
+/**
+ * Basic authentication implementation using username and password.
+ */
 public class BasicAuthentication extends Authentication {
 
+    /** The username for authentication. */
     protected final String username;
+    /** The password for authentication. */
     protected final String password;
 
+    /**
+     * Constructs a new basic authentication with the given credentials.
+     *
+     * @param username the username
+     * @param password the password
+     */
     public BasicAuthentication(final String username, final String password) {
         this.username = username;
         this.password = password;
@@ -42,6 +53,12 @@ public class BasicAuthentication extends Authentication {
         return request;
     }
 
+    /**
+     * Base64 encodes the given string.
+     *
+     * @param s the string to encode
+     * @return the base64 encoded string
+     */
     protected static String encode(final String s) {
         return Base64.getEncoder().encodeToString(s.getBytes());
     }

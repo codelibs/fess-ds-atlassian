@@ -17,18 +17,37 @@ package org.codelibs.fess.ds.atlassian;
 
 import org.codelibs.fess.exception.DataStoreException;
 
+/**
+ * Exception thrown when errors occur during Atlassian data store operations.
+ */
 public class AtlassianDataStoreException extends DataStoreException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Constructs a new exception with the specified detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of this exception
+     */
     public AtlassianDataStoreException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new exception with the specified detail message.
+     *
+     * @param message the detail message
+     */
     public AtlassianDataStoreException(final String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new exception with the specified cause.
+     *
+     * @param cause the cause of this exception
+     */
     public AtlassianDataStoreException(final Throwable cause) {
         super(cause);
     }

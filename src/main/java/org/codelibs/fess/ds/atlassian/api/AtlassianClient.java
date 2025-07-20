@@ -24,32 +24,58 @@ import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
 import org.codelibs.fess.entity.DataStoreParams;
 
+/**
+ * Abstract base class for Atlassian API clients providing common authentication
+ * and HTTP configuration functionality.
+ */
 public abstract class AtlassianClient {
 
     private static final Logger logger = LogManager.getLogger(AtlassianClient.class);
 
     // parameters
+    /** Parameter key for the Atlassian instance home URL. */
     protected static final String HOME_PARAM = "home";
+    /** Parameter key for authentication type selection. */
     protected static final String AUTH_TYPE_PARAM = "auth_type";
+    /** Parameter key for OAuth consumer key. */
     protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
+    /** Parameter key for OAuth private key. */
     protected static final String PRIVATE_KEY_PARAM = "oauth.private_key";
+    /** Parameter key for OAuth secret/verifier. */
     protected static final String SECRET_PARAM = "oauth.secret";
+    /** Parameter key for OAuth access token. */
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
+    /** Parameter key for basic authentication username. */
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
+    /** Parameter key for basic authentication password. */
     protected static final String BASIC_PASS_PARAM = "basic.password";
+    /** Parameter key for HTTP proxy host. */
     protected static final String PROXY_HOST_PARAM = "proxy_host";
+    /** Parameter key for HTTP proxy port. */
     protected static final String PROXY_PORT_PARAM = "proxy_port";
+    /** Parameter key for HTTP connection timeout. */
     protected static final String HTTP_CONNECTION_TIMEOUT = "connection_timeout";
+    /** Parameter key for HTTP read timeout. */
     protected static final String HTTP_READ_TIMEOUT = "read_timeout";
 
     // values for parameters
+    /** Authentication type constant for basic authentication. */
     protected static final String BASIC = "basic";
+    /** Authentication type constant for OAuth authentication. */
     protected static final String OAUTH = "oauth";
 
+    /** The authentication instance used for API requests. */
     protected Authentication authentication;
+    /** HTTP connection timeout in milliseconds. */
     protected Integer connectionTimeout;
+    /** HTTP read timeout in milliseconds. */
     protected Integer readTimeout;
 
+    /**
+     * Constructs a new Atlassian client with the given parameters.
+     *
+     * @param paramMap the configuration parameters
+     */
     protected AtlassianClient(final DataStoreParams paramMap) {
 
         final String home = getHome(paramMap);
@@ -110,6 +136,13 @@ public abstract class AtlassianClient {
         }
     }
 
+    /**
+     * Configures a request with authentication and timeout settings.
+     *
+     * @param <T> the request type
+     * @param request the request to configure
+     * @return the configured request
+     */
     protected <T extends AtlassianRequest> T createRequest(final T request) {
         request.setAuthentication(authentication);
         request.setAppHome(getAppHome());
@@ -118,8 +151,19 @@ public abstract class AtlassianClient {
         return request;
     }
 
+    /**
+     * Gets the application home URL.
+     *
+     * @return the application home URL
+     */
     protected abstract String getAppHome();
 
+    /**
+     * Gets the home URL from the parameter map.
+     *
+     * @param paramMap the parameter map
+     * @return the home URL
+     */
     protected String getHome(final DataStoreParams paramMap) {
         return paramMap.getAsString(HOME_PARAM, StringUtil.EMPTY);
     }

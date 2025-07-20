@@ -19,14 +19,28 @@ import java.util.List;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
+/**
+ * Response for GetContentsRequest containing a list of Confluence content.
+ */
 public class GetContentsResponse {
 
+    /** The list of content items. */
     protected final List<Content> contents;
 
+    /**
+     * Constructs a response with the given content list.
+     *
+     * @param contents the list of content items
+     */
     public GetContentsResponse(final List<Content> contents) {
         this.contents = contents;
     }
 
+    /**
+     * Gets the list of content items.
+     *
+     * @return the list of content items
+     */
     public List<Content> getContents() {
         return contents;
     }

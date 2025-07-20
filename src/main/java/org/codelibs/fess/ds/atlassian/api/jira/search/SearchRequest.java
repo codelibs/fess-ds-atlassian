@@ -26,6 +26,10 @@ import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 
+/**
+ * Request class for searching JIRA issues using JQL (JIRA Query Language).
+ * Supports pagination, field selection, query validation, and result expansion.
+ */
 public class SearchRequest extends AtlassianRequest {
 
     private String jql;
@@ -35,36 +39,86 @@ public class SearchRequest extends AtlassianRequest {
     private String[] fields;
     private String[] expand;
 
+    /**
+     * Default constructor for SearchRequest.
+     */
+    public SearchRequest() {
+        // Default constructor
+    }
+
+    /**
+     * Sets the JQL query string.
+     *
+     * @param jql the JQL query
+     * @return this request instance for method chaining
+     */
     public SearchRequest jql(final String jql) {
         this.jql = jql;
         return this;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param startAt the start index
+     * @return this request instance for method chaining
+     */
     public SearchRequest startAt(final int startAt) {
         this.startAt = startAt;
         return this;
     }
 
+    /**
+     * Sets the maximum number of results to return.
+     *
+     * @param maxResults the maximum number of results
+     * @return this request instance for method chaining
+     */
     public SearchRequest maxResults(final int maxResults) {
         this.maxResults = maxResults;
         return this;
     }
 
+    /**
+     * Sets whether to validate the JQL query.
+     *
+     * @param validateQuery true to validate the query, false otherwise
+     * @return this request instance for method chaining
+     */
     public SearchRequest validateQuery(final boolean validateQuery) {
         this.validateQuery = validateQuery;
         return this;
     }
 
+    /**
+     * Specifies which fields to include in the response.
+     *
+     * @param fields the fields to include
+     * @return this request instance for method chaining
+     */
     public SearchRequest fields(final String... fields) {
         this.fields = fields;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public SearchRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static SearchResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return SearchResponse.create(Collections.emptyList());
@@ -76,6 +130,12 @@ public class SearchRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Executes the search request and returns the response.
+     *
+     * @return the response containing search results
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public SearchResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {

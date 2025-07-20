@@ -28,6 +28,10 @@ import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request class for retrieving a JIRA issue.
+ * Allows specification of fields, properties to expand, and custom properties.
+ */
 public class GetIssueRequest extends AtlassianRequest {
 
     private final String issueIdOrKey;
@@ -35,25 +39,54 @@ public class GetIssueRequest extends AtlassianRequest {
     private String[] expand;
     private String[] properties;
 
+    /**
+     * Constructs a request to get a specific JIRA issue.
+     *
+     * @param issueIdOrKey the issue ID or key
+     */
     public GetIssueRequest(final String issueIdOrKey) {
         this.issueIdOrKey = issueIdOrKey;
     }
 
+    /**
+     * Specifies which fields to include in the response.
+     *
+     * @param fields the fields to include
+     * @return this request instance for method chaining
+     */
     public GetIssueRequest fields(final String... fields) {
         this.fields = fields;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetIssueRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Specifies which custom properties to include in the response.
+     *
+     * @param properties the properties to include
+     * @return this request instance for method chaining
+     */
     public GetIssueRequest properties(final String... properties) {
         this.properties = properties;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing the issue
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetIssueResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -65,6 +98,13 @@ public class GetIssueRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetIssueResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetIssueResponse(null);

@@ -22,13 +22,31 @@ import java.util.function.Function;
 import org.codelibs.curl.CurlRequest;
 import org.codelibs.fess.ds.atlassian.api.util.OAuthUtil;
 
+/**
+ * OAuth authentication implementation using consumer key, private key, token, and verifier.
+ */
 public class OAuthAuthentication extends Authentication {
 
+    /** The OAuth consumer key. */
     protected final String consumerKey;
+
+    /** The OAuth private key for signing requests. */
     protected final PrivateKey privateKey;
+
+    /** The OAuth access token. */
     protected final String token;
+
+    /** The OAuth verifier. */
     protected final String verifier;
 
+    /**
+     * Constructs a new OAuth authentication with the given parameters.
+     *
+     * @param consumerKey the OAuth consumer key
+     * @param privateKey the OAuth private key (as string)
+     * @param token the OAuth access token
+     * @param verifier the OAuth verifier
+     */
     public OAuthAuthentication(final String consumerKey, final String privateKey, final String token, final String verifier) {
         this.consumerKey = consumerKey;
         this.privateKey = OAuthUtil.getPrivateKey(privateKey);

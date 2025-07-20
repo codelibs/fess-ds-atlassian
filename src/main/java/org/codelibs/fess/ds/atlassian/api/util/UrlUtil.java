@@ -22,12 +22,24 @@ import java.util.Map;
 
 import org.codelibs.core.lang.StringUtil;
 
+/**
+ * Utility class for URL encoding, decoding, and query parameter manipulation.
+ */
 public class UrlUtil {
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private UrlUtil() {
         // do nothing
     }
 
+    /**
+     * URL-encodes the given character sequence using UTF-8 encoding.
+     *
+     * @param element the character sequence to encode
+     * @return the URL-encoded string, or null if input is null
+     */
     public static String encode(final CharSequence element) {
         if (element == null) {
             return null;
@@ -35,6 +47,12 @@ public class UrlUtil {
         return URLEncoder.encode(element.toString(), StandardCharsets.UTF_8);
     }
 
+    /**
+     * URL-decodes the given character sequence using UTF-8 encoding.
+     *
+     * @param element the character sequence to decode
+     * @return the URL-decoded string, or null if input is null
+     */
     public static String decode(final CharSequence element) {
         if (element == null) {
             return null;
@@ -42,6 +60,12 @@ public class UrlUtil {
         return URLDecoder.decode(element.toString(), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Builds a query parameter string from a map of parameters.
+     *
+     * @param params the parameter map (key-value pairs)
+     * @return the query parameter string (without leading '?'), or empty string if params is null
+     */
     public static String buildQueryParameters(final Map<String, String> params) {
         if (params == null) {
             return StringUtil.EMPTY;

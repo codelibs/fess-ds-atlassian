@@ -32,6 +32,10 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request class for retrieving comments of Confluence content.
+ * Allows filtering, pagination, and depth control for comment results.
+ */
 public class GetCommentsOfContentRequest extends AtlassianRequest {
 
     private final String id;
@@ -42,40 +46,87 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
     private String depth;
     private String[] expand;
 
+    /**
+     * Constructs a request to get comments for the specified content ID.
+     *
+     * @param id the content ID
+     */
     public GetCommentsOfContentRequest(final String id) {
         this.id = id;
     }
 
+    /**
+     * Sets the parent version to retrieve comments from.
+     *
+     * @param parentVersion the parent version number
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest parentVersion(final int parentVersion) {
         this.parentVersion = parentVersion;
         return this;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param start the start index
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest start(final int start) {
         this.start = start;
         return this;
     }
 
+    /**
+     * Sets the maximum number of comments to return.
+     *
+     * @param limit the maximum number of results
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
+    /**
+     * Sets the location filter for comments.
+     *
+     * @param location the location to filter by
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest location(final String location) {
         this.location = location;
         return this;
     }
 
+    /**
+     * Sets the depth for retrieving nested comments.
+     *
+     * @param depth the depth level
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest depth(final String depth) {
         this.depth = depth;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetCommentsOfContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing comments
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetCommentsOfContentResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -87,6 +138,13 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetCommentsOfContentResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetCommentsOfContentResponse(Collections.emptyList());

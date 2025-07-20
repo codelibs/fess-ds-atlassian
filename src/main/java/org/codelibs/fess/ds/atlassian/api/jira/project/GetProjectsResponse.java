@@ -19,14 +19,28 @@ import java.util.List;
 
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
+/**
+ * Response containing a list of JIRA projects.
+ */
 public class GetProjectsResponse {
 
+    /** The list of projects returned by the API. */
     protected final List<Project> projects;
 
+    /**
+     * Constructs a response with the given list of projects.
+     *
+     * @param projects the list of projects
+     */
     public GetProjectsResponse(final List<Project> projects) {
         this.projects = projects;
     }
 
+    /**
+     * Returns the list of projects.
+     *
+     * @return the list of projects
+     */
     public List<Project> getProjects() {
         return projects;
     }

@@ -26,20 +26,41 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
+/**
+ * Request class for retrieving a specific JIRA project.
+ * Allows expansion of project properties.
+ */
 public class GetProjectRequest extends AtlassianRequest {
 
     private final String projectIdOrKey;
     private String[] expand;
 
+    /**
+     * Constructs a request to get a specific JIRA project.
+     *
+     * @param projectIdOrKey the project ID or key
+     */
     public GetProjectRequest(final String projectIdOrKey) {
         this.projectIdOrKey = projectIdOrKey;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetProjectRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing the project
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetProjectResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -51,6 +72,13 @@ public class GetProjectRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetProjectResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetProjectResponse(null);

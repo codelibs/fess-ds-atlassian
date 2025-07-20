@@ -40,17 +40,39 @@ import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 
+/**
+ * Data store implementation for crawling Confluence content.
+ * Retrieves pages, blog posts, and their comments from Confluence instances and indexes them in Fess.
+ */
 public class ConfluenceDataStore extends AtlassianDataStore {
 
+    /** Logger instance for this class. */
     private static final Logger logger = LogManager.getLogger(ConfluenceDataStore.class);
 
     // scripts
+    /** Script variable name for content data. */
     protected static final String CONTENT = "content";
+
+    /** Script variable name for content title. */
     protected static final String CONTENT_TITLE = "title";
+
+    /** Script variable name for content body. */
     protected static final String CONTENT_BODY = "body";
+
+    /** Script variable name for content comments. */
     protected static final String CONTENT_COMMENTS = "comments";
+
+    /** Script variable name for content last modified date. */
     protected static final String CONTENT_LAST_MODIFIED = "last_modified";
+
+    /** Script variable name for content view URL. */
     protected static final String CONTENT_VIEW_URL = "view_url";
+
+    /**
+     * Default constructor.
+     */
+    public ConfluenceDataStore() {
+    }
 
     @Override
     protected String getName() {
@@ -86,10 +108,28 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
     }
 
+    /**
+     * Creates a Confluence client with the given parameters.
+     *
+     * @param paramMap the data store parameters
+     * @return the configured Confluence client
+     */
     protected ConfluenceClient createClient(final DataStoreParams paramMap) {
         return new ConfluenceClient(paramMap);
     }
 
+    /**
+     * Processes a single Confluence content item and indexes it.
+     *
+     * @param dataConfig the data configuration
+     * @param callback the index update callback
+     * @param configMap the configuration map
+     * @param paramMap the parameter map
+     * @param scriptMap the script map
+     * @param defaultDataMap the default data map
+     * @param client the Confluence client
+     * @param content the content to process
+     */
     protected void processContent(final DataConfig dataConfig, final IndexUpdateCallback callback, final Map<String, Object> configMap,
             final DataStoreParams paramMap, final Map<String, String> scriptMap, final Map<String, Object> defaultDataMap,
             final ConfluenceClient client, final Content content) {
@@ -181,6 +221,13 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
     }
 
+    /**
+     * Gets all comments for a Confluence content item as concatenated text.
+     *
+     * @param content the Confluence content
+     * @param client the Confluence client
+     * @return the concatenated comments text
+     */
     protected String getContentComments(final Content content, final ConfluenceClient client) {
         final StringBuilder sb = new StringBuilder();
         final String id = content.getId();
@@ -193,10 +240,23 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         return sb.toString();
     }
 
+    /**
+     * Converts a timestamp to a Date object.
+     *
+     * @param date the timestamp in seconds
+     * @return the Date object
+     */
     protected Date getLastModifiedAsDate(final Long date) {
         return new Date(date * 1000L);
     }
 
+    /**
+     * Gets the view URL for a Confluence content item.
+     *
+     * @param content the Confluence content
+     * @param confluenceHome the Confluence home URL
+     * @return the content view URL
+     */
     protected String getContentViewUrl(final Content content, final String confluenceHome) {
         return confluenceHome + "/pages/viewpage.action?pageId=" + content.getId();
     }
