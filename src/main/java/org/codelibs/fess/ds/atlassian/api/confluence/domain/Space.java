@@ -17,21 +17,51 @@ package org.codelibs.fess.ds.atlassian.api.confluence.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents a Confluence space.
+ * Contains space metadata including key, name, and description.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Space {
 
+    /** The space key. */
     protected String key;
+
+    /** The space name. */
     protected String name;
+
+    /** The space description. */
     protected String description;
 
+    /**
+     * Default constructor.
+     */
+    public Space() {
+    }
+
+    /**
+     * Gets the space key.
+     *
+     * @return the space key
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     * Gets the space name.
+     *
+     * @return the space name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Gets the space description.
+     *
+     * @return the space description
+     */
     public String getDescription() {
         return description;
     }

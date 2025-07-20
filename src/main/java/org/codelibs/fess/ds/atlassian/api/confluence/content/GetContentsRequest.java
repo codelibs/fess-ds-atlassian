@@ -31,57 +31,135 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request for retrieving Confluence content using the REST API.
+ * Supports filtering by type, space, title, status, and pagination.
+ */
 public class GetContentsRequest extends AtlassianRequest {
 
+    /** The content type filter (e.g., page, blogpost). */
     private String type;
+
+    /** The space key filter. */
     private String spaceKey;
+
+    /** The title filter. */
     private String title;
+
+    /** The status filter. */
     private String status;
+
+    /** The posting day filter. */
     private String postingDay;
+
+    /** The expand parameters for additional data. */
     private String[] expand;
+
+    /** The start index for pagination. */
     private Integer start;
+
+    /** The limit for pagination. */
     private Integer limit;
 
+    /**
+     * Default constructor.
+     */
+    public GetContentsRequest() {
+    }
+
+    /**
+     * Sets the content type filter.
+     *
+     * @param type the content type
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest type(final String type) {
         this.type = type;
         return this;
     }
 
+    /**
+     * Sets the space key filter.
+     *
+     * @param spaceKey the space key
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
     }
 
+    /**
+     * Sets the title filter.
+     *
+     * @param title the title
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest title(final String title) {
         this.title = title;
         return this;
     }
 
+    /**
+     * Sets the status filter.
+     *
+     * @param status the status
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest status(final String status) {
         this.status = status;
         return this;
     }
 
+    /**
+     * Sets the posting day filter.
+     *
+     * @param postingDay the posting day
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest postingDay(final String postingDay) {
         this.postingDay = postingDay;
         return this;
     }
 
+    /**
+     * Sets the expand parameters for additional data.
+     *
+     * @param expand the expand parameters
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param start the start index
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest start(final int start) {
         this.start = start;
         return this;
     }
 
+    /**
+     * Sets the limit for pagination.
+     *
+     * @param limit the limit
+     * @return this request instance for method chaining
+     */
     public GetContentsRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing content list
+     */
     public GetContentsResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -93,6 +171,12 @@ public class GetContentsRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a GetContentsResponse object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     */
     public static GetContentsResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetContentsResponse(Collections.emptyList());

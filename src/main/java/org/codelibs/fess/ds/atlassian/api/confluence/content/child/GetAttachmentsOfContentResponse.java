@@ -19,14 +19,28 @@ import java.util.List;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 
+/**
+ * Response containing a list of attachments from Confluence content.
+ */
 public class GetAttachmentsOfContentResponse {
 
+    /** The list of attachments returned by the API. */
     protected List<Attachment> attachments;
 
+    /**
+     * Constructs a response with the given list of attachments.
+     *
+     * @param attachments the list of attachments
+     */
     public GetAttachmentsOfContentResponse(final List<Attachment> attachments) {
         this.attachments = attachments;
     }
 
+    /**
+     * Returns the list of attachments.
+     *
+     * @return the list of attachments
+     */
     public List<Attachment> getAttachments() {
         return attachments;
     }

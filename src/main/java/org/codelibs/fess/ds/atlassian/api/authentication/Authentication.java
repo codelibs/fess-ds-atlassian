@@ -22,14 +22,39 @@ import java.util.function.Function;
 
 import org.codelibs.curl.CurlRequest;
 
+/**
+ * Abstract base class for Atlassian API authentication methods.
+ */
 public abstract class Authentication {
 
+    /**
+     * Default constructor for authentication.
+     */
+    protected Authentication() {
+        // Default constructor
+    }
+
+    /** HTTP proxy configuration. */
     protected Proxy httpProxy;
 
+    /**
+     * Sets the HTTP proxy configuration.
+     *
+     * @param httpProxyHost the proxy host
+     * @param httpProxyPort the proxy port
+     */
     public void setHttpProxy(final String httpProxyHost, final Integer httpProxyPort) {
         this.httpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(httpProxyHost, httpProxyPort));
     }
 
+    /**
+     * Creates an authenticated curl request.
+     *
+     * @param request the curl request function
+     * @param requestMethod the HTTP method
+     * @param url the target URL
+     * @return the authenticated curl request
+     */
     public abstract CurlRequest getCurlRequest(final Function<String, CurlRequest> request, final String requestMethod, final URL url);
 
 }

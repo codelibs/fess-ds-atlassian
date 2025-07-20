@@ -17,26 +17,63 @@ package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents the fields of a JIRA issue.
+ * Contains essential information like summary, description, update time, and comments.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Fields {
 
+    /** The summary of the issue. */
     protected String summary;
+
+    /** The last updated timestamp of the issue. */
     protected String updated;
+
+    /** The description of the issue. */
     protected String description;
+
+    /** The comments associated with the issue. */
     protected Comments comment;
 
+    /**
+     * Default constructor.
+     */
+    public Fields() {
+    }
+
+    /**
+     * Gets the issue summary.
+     *
+     * @return the issue summary
+     */
     public String getSummary() {
         return summary;
     }
 
+    /**
+     * Gets the last updated timestamp.
+     *
+     * @return the last updated timestamp
+     */
     public String getUpdated() {
         return updated;
     }
 
+    /**
+     * Gets the issue description.
+     *
+     * @return the issue description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Gets the issue comments.
+     *
+     * @return the issue comments
+     */
     public Comments getComment() {
         return comment;
     }

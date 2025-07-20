@@ -17,14 +17,28 @@ package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
+/**
+ * Response containing a JIRA project.
+ */
 public class GetProjectResponse {
 
+    /** The project returned by the API. */
     protected final Project project;
 
+    /**
+     * Constructs a response with the given project.
+     *
+     * @param project the project
+     */
     public GetProjectResponse(final Project project) {
         this.project = project;
     }
 
+    /**
+     * Returns the project.
+     *
+     * @return the project
+     */
     public Project getProject() {
         return project;
     }

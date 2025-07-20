@@ -17,31 +17,75 @@ package org.codelibs.fess.ds.atlassian.api.jira.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents a JIRA issue.
+ * Contains metadata and fields information for a JIRA issue.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Issue {
 
+    /** The unique identifier of the issue. */
     protected String id;
+
+    /** The self URL of the issue. */
     protected String self;
+
+    /** The expand parameter for additional information. */
     protected String expand;
+
+    /** The issue key (e.g., PROJECT-123). */
     protected String key;
+
+    /** The fields data of the issue. */
     protected Fields fields;
 
+    /**
+     * Default constructor.
+     */
+    public Issue() {
+    }
+
+    /**
+     * Gets the issue ID.
+     *
+     * @return the issue ID
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Gets the self URL of the issue.
+     *
+     * @return the self URL
+     */
     public String getSelf() {
         return self;
     }
 
+    /**
+     * Gets the expand parameter.
+     *
+     * @return the expand parameter
+     */
     public String getExpand() {
         return expand;
     }
 
+    /**
+     * Gets the issue key.
+     *
+     * @return the issue key
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     * Gets the issue fields.
+     *
+     * @return the issue fields
+     */
     public Fields getFields() {
         return fields;
     }

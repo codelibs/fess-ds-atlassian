@@ -31,6 +31,10 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Attachment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request class for retrieving attachments of Confluence content.
+ * Allows filtering and pagination of attachment results.
+ */
 public class GetAttachmentsOfContentRequest extends AtlassianRequest {
 
     private final String id;
@@ -40,35 +44,76 @@ public class GetAttachmentsOfContentRequest extends AtlassianRequest {
     private String mediaType;
     private String[] expand;
 
+    /**
+     * Constructs a request to get attachments for the specified content ID.
+     *
+     * @param id the content ID
+     */
     public GetAttachmentsOfContentRequest(final String id) {
         this.id = id;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param start the start index
+     * @return this request instance for method chaining
+     */
     public GetAttachmentsOfContentRequest start(final int start) {
         this.start = start;
         return this;
     }
 
+    /**
+     * Sets the maximum number of attachments to return.
+     *
+     * @param limit the maximum number of results
+     * @return this request instance for method chaining
+     */
     public GetAttachmentsOfContentRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
+    /**
+     * Filters attachments by filename.
+     *
+     * @param filename the filename to filter by
+     * @return this request instance for method chaining
+     */
     public GetAttachmentsOfContentRequest filename(final String filename) {
         this.filename = filename;
         return this;
     }
 
+    /**
+     * Filters attachments by media type.
+     *
+     * @param mediaType the media type to filter by
+     * @return this request instance for method chaining
+     */
     public GetAttachmentsOfContentRequest mediaType(final String mediaType) {
         this.mediaType = mediaType;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetAttachmentsOfContentRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing attachments
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetAttachmentsOfContentResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -80,6 +125,13 @@ public class GetAttachmentsOfContentRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetAttachmentsOfContentResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetAttachmentsOfContentResponse(Collections.emptyList());

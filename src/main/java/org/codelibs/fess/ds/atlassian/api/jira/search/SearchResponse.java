@@ -21,20 +21,50 @@ import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Response containing search results from JIRA.
+ * Contains the total number of matching issues and the issues themselves.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchResponse {
 
+    /** The total number of issues matching the search criteria. */
     protected Long total;
+
+    /** The list of issues returned by the search. */
     protected List<Issue> issues;
 
+    /**
+     * Default constructor for SearchResponse.
+     */
+    public SearchResponse() {
+        // Default constructor
+    }
+
+    /**
+     * Returns the total number of issues matching the search.
+     *
+     * @return the total number of matching issues
+     */
     public Long getTotal() {
         return total;
     }
 
+    /**
+     * Returns the list of issues.
+     *
+     * @return the list of issues
+     */
     public List<Issue> getIssues() {
         return issues;
     }
 
+    /**
+     * Creates a SearchResponse with the given list of issues.
+     *
+     * @param issues the list of issues
+     * @return a new SearchResponse instance
+     */
     public static SearchResponse create(final List<Issue> issues) {
         final SearchResponse response = new SearchResponse();
         response.issues = issues;

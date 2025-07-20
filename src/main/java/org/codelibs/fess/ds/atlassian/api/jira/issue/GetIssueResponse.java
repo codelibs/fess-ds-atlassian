@@ -17,13 +17,27 @@ package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 
+/**
+ * Response containing a JIRA issue.
+ */
 public class GetIssueResponse {
+    /** The issue returned by the API. */
     protected final Issue issue;
 
+    /**
+     * Constructs a response with the given issue.
+     *
+     * @param issue the issue
+     */
     public GetIssueResponse(final Issue issue) {
         this.issue = issue;
     }
 
+    /**
+     * Returns the issue.
+     *
+     * @return the issue
+     */
     public Issue getIssue() {
         return issue;
     }

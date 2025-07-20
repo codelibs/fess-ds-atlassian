@@ -30,21 +30,50 @@ import org.codelibs.fess.ds.atlassian.api.jira.domain.Project;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request class for retrieving all JIRA projects.
+ * Supports expansion of project properties and filtering by recent projects.
+ */
 public class GetProjectsRequest extends AtlassianRequest {
 
     private String[] expand;
     private Integer recent;
 
+    /**
+     * Default constructor for GetProjectsRequest.
+     */
+    public GetProjectsRequest() {
+        // Default constructor
+    }
+
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetProjectsRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Sets the number of recent projects to return.
+     *
+     * @param recent the number of recent projects
+     * @return this request instance for method chaining
+     */
     public GetProjectsRequest recent(final int recent) {
         this.recent = recent;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing projects
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetProjectsResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -56,6 +85,13 @@ public class GetProjectsRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetProjectsResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetProjectsResponse(Collections.emptyList());

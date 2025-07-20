@@ -21,32 +21,72 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents a file attachment in Confluence content.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Attachment {
 
+    /** The title of the attachment. */
     protected String title;
+
+    /** The media type of the attachment. */
     @JsonIgnore
     protected String mediaType;
+
+    /** The download link for the attachment. */
     @JsonIgnore
     protected String downloadLink;
 
+    /**
+     * Default constructor for Attachment.
+     */
+    public Attachment() {
+        // Default constructor
+    }
+
+    /**
+     * Gets the attachment title.
+     *
+     * @return the attachment title
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Gets the media type of the attachment.
+     *
+     * @return the media type
+     */
     public String getMediaType() {
         return mediaType;
     }
 
+    /**
+     * Gets the download link for the attachment.
+     *
+     * @return the download link
+     */
     public String getDownloadLink() {
         return downloadLink;
     }
 
+    /**
+     * Unpacks metadata from the API response.
+     *
+     * @param metadata the metadata from API response
+     */
     @JsonProperty("metadata")
     public void unpackMetadata(final Map<String, Object> metadata) {
         this.mediaType = (String) metadata.get("mediaType");
     }
 
+    /**
+     * Unpacks links from the API response.
+     *
+     * @param links the links from API response
+     */
     @JsonProperty("_links")
     public void unpackLinks(final Map<String, Object> links) {
         this.downloadLink = (String) links.get("download");

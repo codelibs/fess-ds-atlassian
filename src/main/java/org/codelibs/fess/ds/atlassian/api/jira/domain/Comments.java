@@ -19,16 +19,39 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Represents a collection of comments in JIRA.
+ * This class contains the total count and list of comments.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comments {
 
+    /** The total number of comments. */
     protected Long total;
+
+    /** The list of comment objects. */
     protected List<Comment> comments;
 
+    /**
+     * Default constructor.
+     */
+    public Comments() {
+    }
+
+    /**
+     * Gets the total number of comments.
+     *
+     * @return the total number of comments
+     */
     public Long getTotal() {
         return total;
     }
 
+    /**
+     * Gets the list of comments.
+     *
+     * @return the list of comments
+     */
     public List<Comment> getComments() {
         return comments;
     }

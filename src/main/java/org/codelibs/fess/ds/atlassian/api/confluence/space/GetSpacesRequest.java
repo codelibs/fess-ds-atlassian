@@ -31,6 +31,11 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * Request class for retrieving multiple Confluence spaces.
+ * Supports filtering by space key, type, status, label, and favorite status.
+ * Also supports pagination and field expansion.
+ */
 public class GetSpacesRequest extends AtlassianRequest {
 
     private String spaceKey;
@@ -42,46 +47,107 @@ public class GetSpacesRequest extends AtlassianRequest {
     private Integer start;
     private Integer limit;
 
+    /**
+     * Default constructor for GetSpacesRequest.
+     */
+    public GetSpacesRequest() {
+        // Default constructor
+    }
+
+    /**
+     * Sets the space key filter.
+     *
+     * @param spaceKey the space key to filter by
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest spaceKey(final String spaceKey) {
         this.spaceKey = spaceKey;
         return this;
     }
 
+    /**
+     * Sets the space type filter.
+     *
+     * @param type the space type to filter by
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest type(final String type) {
         this.type = type;
         return this;
     }
 
+    /**
+     * Sets the space status filter.
+     *
+     * @param status the space status to filter by
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest status(final String status) {
         this.status = status;
         return this;
     }
 
+    /**
+     * Sets the label filter.
+     *
+     * @param label the label to filter by
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest label(final String label) {
         this.label = label;
         return this;
     }
 
+    /**
+     * Sets the favourite filter.
+     *
+     * @param favourite the favourite status to filter by
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest favourite(final String favourite) {
         this.favourite = favourite;
         return this;
     }
 
+    /**
+     * Specifies which properties to expand in the response.
+     *
+     * @param expand the properties to expand
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest expand(final String... expand) {
         this.expand = expand;
         return this;
     }
 
+    /**
+     * Sets the start index for pagination.
+     *
+     * @param start the start index
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest start(final int start) {
         this.start = start;
         return this;
     }
 
+    /**
+     * Sets the maximum number of spaces to return.
+     *
+     * @param limit the maximum number of results
+     * @return this request instance for method chaining
+     */
     public GetSpacesRequest limit(final int limit) {
         this.limit = limit;
         return this;
     }
 
+    /**
+     * Executes the request and returns the response.
+     *
+     * @return the response containing spaces
+     * @throws AtlassianDataStoreException if the request fails
+     */
     public GetSpacesResponse execute() {
         try (CurlResponse response = getCurlResponse(GET)) {
             if (response.getHttpStatusCode() != 200) {
@@ -93,6 +159,13 @@ public class GetSpacesRequest extends AtlassianRequest {
         }
     }
 
+    /**
+     * Parses the JSON response into a response object.
+     *
+     * @param json the JSON response string
+     * @return the parsed response
+     * @throws AtlassianDataStoreException if parsing fails
+     */
     public static GetSpacesResponse parseResponse(final String json) {
         if (StringUtil.isBlank(json)) {
             return new GetSpacesResponse(Collections.emptyList());

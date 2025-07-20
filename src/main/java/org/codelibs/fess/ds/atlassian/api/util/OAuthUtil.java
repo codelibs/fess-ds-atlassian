@@ -38,17 +38,35 @@ import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 
+/**
+ * Utility class for OAuth 1.0a authentication operations.
+ * Provides methods for generating OAuth signatures and authorization headers.
+ */
 public class OAuthUtil {
 
+    /** Logger instance for this class. */
     private static Logger logger = LogManager.getLogger(OAuthUtil.class);
 
+    /** Secure random instance for generating nonces. */
     private static final SecureRandom RANDOM = new SecureRandom();
+
+    /** OAuth signature method used for RSA-SHA1 signing. */
     private static final String SIGNATURE_METHOD = "RSA-SHA1";
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private OAuthUtil() {
         // do nothing
     }
 
+    /**
+     * Converts a private key string to a PrivateKey object.
+     *
+     * @param privateKey the private key string (PEM format without headers)
+     * @return the PrivateKey object
+     * @throws AtlassianDataStoreException if the key cannot be parsed
+     */
     public static PrivateKey getPrivateKey(final String privateKey) {
         try {
             final String key = privateKey.replaceAll("\\\\n|-----[A-Z ]+-----", "");
@@ -61,6 +79,17 @@ public class OAuthUtil {
         }
     }
 
+    /**
+     * Generates the OAuth Authorization header for a request.
+     *
+     * @param consumerKey the OAuth consumer key
+     * @param privateKey the OAuth private key
+     * @param token the OAuth access token
+     * @param verifier the OAuth verifier
+     * @param requestMethod the HTTP request method
+     * @param url the request URL
+     * @return the OAuth Authorization header value
+     */
     public static String getAuthorizationHeader(final String consumerKey, final PrivateKey privateKey, final String token,
             final String verifier, final String requestMethod, final URL url) {
         final String nonce = generateNonce();
@@ -77,10 +106,23 @@ public class OAuthUtil {
         return buf.substring(0, buf.length() - 1);
     }
 
+    /**
+     * Appends an OAuth parameter to the authorization header buffer.
+     *
+     * @param buf the string buffer to append to
+     * @param name the parameter name
+     * @param value the parameter value
+     */
     public static void appendParameter(final StringBuilder buf, final String name, final String value) {
         buf.append(' ').append(UrlUtil.encode(name)).append("=\"").append(UrlUtil.encode(value)).append("\",");
     }
 
+    /**
+     * Extracts query parameters from a URL into a map.
+     *
+     * @param url the URL to extract parameters from
+     * @return map of query parameter names to values
+     */
     public static Map<String, String> getQueryMapFromUrl(final URL url) {
         final String query = url.getQuery();
         if (query == null) {
@@ -89,6 +131,19 @@ public class OAuthUtil {
         return Arrays.stream(query.split("&")).collect(Collectors.toMap(p -> p.split("=")[0], p -> UrlUtil.decode(p.split("=")[1])));
     }
 
+    /**
+     * Generates an OAuth signature for the given request parameters.
+     *
+     * @param consumerKey the OAuth consumer key
+     * @param privateKey the OAuth private key
+     * @param token the OAuth access token
+     * @param verifier the OAuth verifier
+     * @param nonce the OAuth nonce
+     * @param timestamp the OAuth timestamp
+     * @param requestMethod the HTTP request method
+     * @param url the request URL
+     * @return the generated OAuth signature
+     */
     public static String generateSignature(final String consumerKey, final PrivateKey privateKey, final String token, final String verifier,
             final String nonce, final String timestamp, final String requestMethod, final URL url) {
 
@@ -112,6 +167,11 @@ public class OAuthUtil {
         return computeSignature(privateKey, signatureBaseString.toString());
     }
 
+    /**
+     * Generates a random nonce for OAuth requests.
+     *
+     * @return a hexadecimal nonce string
+     */
     public static String generateNonce() {
         if (logger.isDebugEnabled()) {
             logger.debug("Using '{}:{}' as PRNG for generating nonce.", RANDOM.getProvider().getName(), RANDOM.getAlgorithm());
@@ -119,10 +179,22 @@ public class OAuthUtil {
         return Long.toHexString(Math.abs(RANDOM.nextLong()));
     }
 
+    /**
+     * Generates a timestamp for OAuth requests.
+     *
+     * @return the current timestamp in seconds since epoch
+     */
     public static String generateTimestamp() {
         return Long.toString(System.currentTimeMillis() / 1000);
     }
 
+    /**
+     * Computes the RSA-SHA1 signature for the given signature base string.
+     *
+     * @param privateKey the private key for signing
+     * @param signatureBaseString the signature base string
+     * @return the base64-encoded signature
+     */
     public static String computeSignature(final PrivateKey privateKey, final String signatureBaseString) {
         try {
             final Signature signature = Signature.getInstance("SHA1withRSA");

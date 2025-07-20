@@ -19,14 +19,28 @@ import java.util.List;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
+/**
+ * Response containing a list of comments from Confluence content.
+ */
 public class GetCommentsOfContentResponse {
 
+    /** The list of comments returned by the API. */
     protected final List<Comment> comments;
 
+    /**
+     * Constructs a response with the given list of comments.
+     *
+     * @param comments the list of comments
+     */
     public GetCommentsOfContentResponse(final List<Comment> comments) {
         this.comments = comments;
     }
 
+    /**
+     * Returns the list of comments.
+     *
+     * @return the list of comments
+     */
     public List<Comment> getComments() {
         return comments;
     }

@@ -24,43 +24,98 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents content in Confluence (e.g., pages, blog posts).
+ * Contains metadata and body content with version information.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Content {
 
+    /** The unique identifier of the content. */
     protected String id;
+
+    /** The type of content (e.g., page, blogpost). */
     protected String type;
+
+    /** The title of the content. */
     protected String title;
+
+    /** The space containing this content. */
     protected Space space;
 
+    /** The body content in HTML format. */
     @JsonIgnore
     protected String body;
+
+    /** The last modified timestamp. */
     @JsonIgnore
     protected Long lastModified;
 
+    /**
+     * Default constructor.
+     */
+    public Content() {
+    }
+
+    /**
+     * Gets the content ID.
+     *
+     * @return the content ID
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Gets the content type.
+     *
+     * @return the content type
+     */
     public String getType() {
         return type;
     }
 
+    /**
+     * Gets the content title.
+     *
+     * @return the content title
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Gets the space containing this content.
+     *
+     * @return the space
+     */
     public Space getSpace() {
         return space;
     }
 
+    /**
+     * Gets the content body.
+     *
+     * @return the content body in HTML format
+     */
     public String getBody() {
         return body;
     }
 
+    /**
+     * Gets the last modified timestamp.
+     *
+     * @return the last modified timestamp in milliseconds
+     */
     public Long getLastModified() {
         return lastModified;
     }
 
+    /**
+     * Unpacks the body content from the API response.
+     *
+     * @param body the body data from API response
+     */
     @JsonProperty("body")
     public void unpackBody(final Map<String, Object> body) {
         @SuppressWarnings("unchecked")
@@ -69,6 +124,12 @@ public class Content {
         this.body = value;
     }
 
+    /**
+     * Unpacks version information from the API response.
+     *
+     * @param version the version data from API response
+     * @throws ParseException if the date format cannot be parsed
+     */
     @JsonProperty("version")
     public void unpackVersion(final Map<String, Object> version) throws ParseException {
         final String when = (String) version.get("when");

@@ -32,41 +32,90 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.minidev.json.JSONObject;
 
+/**
+ * Abstract base class for Atlassian API requests providing common HTTP functionality.
+ */
 public abstract class AtlassianRequest {
+
+    /**
+     * Default constructor for Atlassian request.
+     */
+    protected AtlassianRequest() {
+        // Default constructor
+    }
 
     private static final Logger logger = LogManager.getLogger(AtlassianRequest.class);
 
+    /** JSON object mapper for request/response serialization. */
     protected static final ObjectMapper mapper = new ObjectMapper();
 
+    /** HTTP GET method constant. */
     protected static final String GET = "GET";
+    /** HTTP POST method constant. */
     protected static final String POST = "POST";
+    /** HTTP PUT method constant. */
     protected static final String PUT = "PUT";
+    /** HTTP DELETE method constant. */
     protected static final String DELETE = "DELETE";
 
+    /** Function to create GET curl requests. */
     protected static final Function<String, CurlRequest> CURL_GET = Curl::get;
+    /** Function to create POST curl requests. */
     protected static final Function<String, CurlRequest> CURL_POST = Curl::post;
+    /** Function to create PUT curl requests. */
     protected static final Function<String, CurlRequest> CURL_PUT = Curl::put;
+    /** Function to create DELETE curl requests. */
     protected static final Function<String, CurlRequest> CURL_DELETE = Curl::delete;
 
+    /** Authentication instance for API requests. */
     protected Authentication authentication;
+    /** Application home URL. */
     protected String appHome;
+    /** HTTP connection timeout in milliseconds. */
     protected Integer connectionTimeout;
+    /** HTTP read timeout in milliseconds. */
     protected Integer readTimeout;
 
+    /**
+     * Gets the application home URL.
+     *
+     * @return the application home URL
+     */
     public String appHome() {
         return appHome;
     }
 
+    /**
+     * Gets the complete URL for this request.
+     *
+     * @return the request URL
+     */
     public abstract String getURL();
 
+    /**
+     * Gets the query parameters for this request.
+     *
+     * @return the query parameter map, or null if no parameters
+     */
     public Map<String, String> getQueryParamMap() {
         return null;
     }
 
+    /**
+     * Gets the request body parameters.
+     *
+     * @return the body parameter map, or null if no body
+     */
     public Map<String, Object> getBodyMap() {
         return null;
     }
 
+    /**
+     * Executes the HTTP request using the specified method.
+     *
+     * @param requestMethod the HTTP method to use
+     * @return the HTTP response
+     */
     public CurlResponse getCurlResponse(final String requestMethod) {
         switch (requestMethod) {
         case GET:
@@ -83,6 +132,13 @@ public abstract class AtlassianRequest {
         }
     }
 
+    /**
+     * Executes the HTTP request using the specified curl method function.
+     *
+     * @param method the curl method function
+     * @param requestMethod the HTTP method name
+     * @return the HTTP response
+     */
     public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
         try {
             final StringBuilder urlBuf = new StringBuilder();
@@ -119,18 +175,38 @@ public abstract class AtlassianRequest {
         }
     }
 
+    /**
+     * Sets the authentication for this request.
+     *
+     * @param authentication the authentication instance
+     */
     public void setAuthentication(final Authentication authentication) {
         this.authentication = authentication;
     }
 
+    /**
+     * Sets the application home URL.
+     *
+     * @param appHome the application home URL
+     */
     public void setAppHome(final String appHome) {
         this.appHome = appHome;
     }
 
+    /**
+     * Sets the HTTP connection timeout.
+     *
+     * @param connectionTimeout the connection timeout in milliseconds
+     */
     public void setConnectionTimeout(final Integer connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
     }
 
+    /**
+     * Sets the HTTP read timeout.
+     *
+     * @param readTimeout the read timeout in milliseconds
+     */
     public void setReadTimeout(final Integer readTimeout) {
         this.readTimeout = readTimeout;
     }

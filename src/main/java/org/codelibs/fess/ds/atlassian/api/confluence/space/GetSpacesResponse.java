@@ -19,14 +19,28 @@ import java.util.List;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
+/**
+ * Response containing a list of Confluence spaces.
+ */
 public class GetSpacesResponse {
 
+    /** The list of spaces returned by the API. */
     protected List<Space> spaces;
 
+    /**
+     * Constructs a response with the given list of spaces.
+     *
+     * @param spaces the list of spaces
+     */
     public GetSpacesResponse(final List<Space> spaces) {
         this.spaces = spaces;
     }
 
+    /**
+     * Returns the list of spaces.
+     *
+     * @return the list of spaces
+     */
     public List<Space> getSpaces() {
         return spaces;
     }

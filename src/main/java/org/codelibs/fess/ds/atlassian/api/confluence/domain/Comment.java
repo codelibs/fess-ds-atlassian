@@ -21,21 +21,49 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents a comment on Confluence content.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Comment {
 
+    /** The title of the comment. */
     protected String title;
+
+    /** The body content of the comment. */
     @JsonIgnore
     protected String body;
 
+    /**
+     * Default constructor for Comment.
+     */
+    public Comment() {
+        // Default constructor
+    }
+
+    /**
+     * Gets the comment title.
+     *
+     * @return the comment title
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Gets the comment body.
+     *
+     * @return the comment body
+     */
     public String getBody() {
         return body;
     }
 
+    /**
+     * Unpacks the body content from the API response.
+     *
+     * @param body the body data from API response
+     */
     @JsonProperty("body")
     public void unpackBody(final Map<String, Object> body) {
         @SuppressWarnings("unchecked")

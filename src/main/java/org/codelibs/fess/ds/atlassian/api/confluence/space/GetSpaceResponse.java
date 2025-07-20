@@ -17,14 +17,28 @@ package org.codelibs.fess.ds.atlassian.api.confluence.space;
 
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 
+/**
+ * Response containing a Confluence space.
+ */
 public class GetSpaceResponse {
 
+    /** The space returned by the API. */
     protected Space space;
 
+    /**
+     * Constructs a response with the given space.
+     *
+     * @param space the space
+     */
     public GetSpaceResponse(final Space space) {
         this.space = space;
     }
 
+    /**
+     * Returns the space.
+     *
+     * @return the space
+     */
     public Space getSpace() {
         return space;
     }
