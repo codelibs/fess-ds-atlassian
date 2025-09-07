@@ -168,7 +168,11 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
      */
     public String getExtractedText(final String text, final String mimeType) {
         try (final InputStream in = new ByteArrayInputStream(text.getBytes())) {
-            return ComponentUtil.getExtractorFactory().builder(in, null).mimeType(mimeType).extractorName(extractorName).extract()
+            return ComponentUtil.getExtractorFactory()
+                    .builder(in, null)
+                    .mimeType(mimeType)
+                    .extractorName(extractorName)
+                    .extract()
                     .getContent();
         } catch (final Exception e) {
             if (!ComponentUtil.getFessConfig().isCrawlerIgnoreContentException()) {
