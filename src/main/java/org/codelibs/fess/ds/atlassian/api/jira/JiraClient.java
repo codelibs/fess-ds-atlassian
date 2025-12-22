@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
@@ -80,7 +81,12 @@ public class JiraClient extends AtlassianClient implements Closeable {
      * @return the JQL query
      */
     protected String getJql(final DataStoreParams paramMap) {
-        return paramMap.getAsString(JQL_PARAM);
+        final String jql = paramMap.getAsString(JQL_PARAM);
+        if (StringUtil.isBlank(jql)) {
+            return "created is not empty"; // All match
+        } else {
+            return jql;
+        }
     }
 
     /**
@@ -167,7 +173,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
             final SearchResponse searchResponse =
                     search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
             searchResponse.getIssues().forEach(consumer);
-            if (searchResponse.getTotal() < issueMaxResults) {
+            if (searchResponse.getIssues().size() < issueMaxResults) {
                 break;
             }
             startAt += issueMaxResults;
