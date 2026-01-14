@@ -119,7 +119,7 @@ public class GetIssueRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/3/issue/" + issueIdOrKey;
+        return apiUrl + "/rest/api/3/issue/" + issueIdOrKey;
     }
 
     @Override

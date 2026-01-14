@@ -21,8 +21,17 @@ import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
+import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.endpoint.DefaultEndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.codelibs.fess.util.ComponentUtil;
+
+import java.util.stream.Collectors;
 
 /**
  * Abstract base class for Atlassian API clients providing common authentication
@@ -35,6 +44,8 @@ public abstract class AtlassianClient {
     // parameters
     /** Parameter key for the Atlassian instance home URL. */
     protected static final String HOME_PARAM = "home";
+    /** Parameter key for Cloud. */
+    protected static final String IS_CLOUD = "is_cloud";
     /** Parameter key for authentication type selection. */
     protected static final String AUTH_TYPE_PARAM = "auth_type";
     /** Parameter key for OAuth consumer key. */
@@ -45,6 +56,13 @@ public abstract class AtlassianClient {
     protected static final String SECRET_PARAM = "oauth.secret";
     /** Parameter key for OAuth access token. */
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
+
+    protected static final String OAUTH2_ACCESS_TOKEN = "oauth2.access_token";
+    protected static final String OAUTH2_REFRESH_TOKEN = "oauth2.refresh_token";
+    protected static final String OAUTH2_CLIENT_ID = "oauth2.client_id";
+    protected static final String OAUTH2_CLIENT_SECRET = "oauth2.client_secret";
+    protected static final String OAUTH2_TOKEN_URL = "oauth2.token_url";
+
     /** Parameter key for basic authentication username. */
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
     /** Parameter key for basic authentication password. */
@@ -64,8 +82,12 @@ public abstract class AtlassianClient {
     /** Authentication type constant for OAuth authentication. */
     protected static final String OAUTH = "oauth";
 
+    protected static final String OAUTH2 = "oauth2";
+
     /** The authentication instance used for API requests. */
     protected Authentication authentication;
+    /** Endpoint Strategy **/
+    protected EndpointStrategy endpointStrategy;
     /** HTTP connection timeout in milliseconds. */
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
@@ -76,9 +98,9 @@ public abstract class AtlassianClient {
      *
      * @param paramMap the configuration parameters
      */
-    protected AtlassianClient(final DataStoreParams paramMap) {
+    protected AtlassianClient(final DataConfig dataConfig, final DataStoreParams paramMap, final AtlassianProduct product) {
 
-        final String home = getHome(paramMap);
+        final String home = paramMap.getAsString(HOME_PARAM, StringUtil.EMPTY);
 
         if (home.isEmpty()) {
             logger.warn("parameter \"{}\" required", HOME_PARAM);
@@ -88,6 +110,7 @@ public abstract class AtlassianClient {
         final String authType = getAuthType(paramMap);
         switch (authType) {
         case BASIC: {
+            logger.info("Setup basic authentication");
             final String username = getBasicUsername(paramMap);
             final String password = getBasicPass(paramMap);
             if (username.isEmpty() || password.isEmpty()) {
@@ -95,9 +118,11 @@ public abstract class AtlassianClient {
                         "parameter \"" + BASIC_USERNAME_PARAM + "\" and \"" + BASIC_PASS_PARAM + " required for Basic authentication.");
             }
             authentication = new BasicAuthentication(username, password);
+            endpointStrategy = new DefaultEndpointStrategy(home);
             break;
         }
         case OAUTH: {
+            logger.info("Setup oauth1 authentication");
             final String consumerKey = getConsumerKey(paramMap);
             final String privateKey = getPrivateKey(paramMap);
             final String verifier = getSecret(paramMap);
@@ -107,12 +132,49 @@ public abstract class AtlassianClient {
                         + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" required for OAuth authentication.");
             }
             authentication = new OAuthAuthentication(consumerKey, privateKey, accessToken, verifier);
+            endpointStrategy = new DefaultEndpointStrategy(home);
+            break;
+        }
+        case OAUTH2: {
+            logger.info("Setup oauth2 authentication");
+            final String accessToken = paramMap.getAsString(OAUTH2_ACCESS_TOKEN, StringUtil.EMPTY);
+            final String refreshToken = paramMap.getAsString(OAUTH2_REFRESH_TOKEN, StringUtil.EMPTY);
+            final String clientId = paramMap.getAsString(OAUTH2_CLIENT_ID, StringUtil.EMPTY);
+            final String clientSecret = paramMap.getAsString(OAUTH2_CLIENT_SECRET, StringUtil.EMPTY);
+            final String tokenUrl = paramMap.getAsString(OAUTH2_TOKEN_URL, OAuth2Authentication.DEFAULT_TOKEN_URL);
+
+            if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
+                throw new AtlassianDataStoreException("Parameters required for OAuth2 are missing.");
+            }
+            authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
+                // Process for updating DataConfig by refresh token.
+                final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
+                    if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
+                        return e.getKey() + "=" + tokenUpdateResult.getAccessToken();
+                    } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
+                        return e.getKey() + "=" + tokenUpdateResult.getRefreshToken();
+                    }
+                    return e.getKey() + "=" + e.getValue();
+                }).collect(Collectors.joining("\n"));
+                dataConfig.setHandlerParameter(paramStr);
+                ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
+                logger.info("Updated DataConfig: {}", dataConfig.getId());
+            });
+
+            final boolean isCloud = Boolean.parseBoolean(paramMap.getAsString(IS_CLOUD, "true"));
+            if (isCloud) {
+                endpointStrategy = new CloudOAuth2EndpointStrategy(home, product, authentication);
+            } else {
+                endpointStrategy = new DefaultEndpointStrategy(home);
+            }
             break;
         }
         default: {
             throw new AtlassianDataStoreException(AUTH_TYPE_PARAM + " is empty or invalid.");
         }
         }
+
+        logger.info("EndpointStrategy: {}", endpointStrategy.getClass().getName());
 
         final String httpProxyHost = getProxyHost(paramMap);
         final String httpProxyPort = getProxyPort(paramMap);
@@ -145,7 +207,7 @@ public abstract class AtlassianClient {
      */
     protected <T extends AtlassianRequest> T createRequest(final T request) {
         request.setAuthentication(authentication);
-        request.setAppHome(getAppHome());
+        request.setApiUrl(getApiUrl());
         request.setConnectionTimeout(connectionTimeout);
         request.setReadTimeout(readTimeout);
         return request;
@@ -158,14 +220,19 @@ public abstract class AtlassianClient {
      */
     protected abstract String getAppHome();
 
+    protected abstract String getAppApiUrl();
+
     /**
      * Gets the home URL from the parameter map.
      *
-     * @param paramMap the parameter map
      * @return the home URL
      */
-    protected String getHome(final DataStoreParams paramMap) {
-        return paramMap.getAsString(HOME_PARAM, StringUtil.EMPTY);
+    protected String getHome() {
+        return endpointStrategy.getHomeUrl();
+    }
+
+    protected String getApiUrl() {
+        return endpointStrategy.getApiUrl();
     }
 
     private String getBasicUsername(final DataStoreParams paramMap) {

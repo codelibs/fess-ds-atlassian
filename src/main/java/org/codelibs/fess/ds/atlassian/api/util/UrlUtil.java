@@ -15,17 +15,21 @@
  */
 package org.codelibs.fess.ds.atlassian.api.util;
 
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 
 /**
  * Utility class for URL encoding, decoding, and query parameter manipulation.
  */
 public class UrlUtil {
+    private static final Logger logger = LogManager.getLogger(UrlUtil.class);
 
     /**
      * Private constructor to prevent instantiation.
@@ -88,4 +92,14 @@ public class UrlUtil {
         return parametersBuf.toString();
     }
 
+    public static String normalizeUrl(final String urlString) {
+        try {
+            final URI uri = URI.create(urlString).normalize();
+            final String normalized = uri.toString();
+            return normalized.endsWith("/") ? normalized.substring(0, normalized.length() - 1) : normalized;
+        } catch (IllegalArgumentException e) {
+            logger.warn("Failed to normalize URL.", e);
+            return urlString.endsWith("/") ? urlString.substring(0, urlString.length() - 1) : urlString;
+        }
+    }
 }

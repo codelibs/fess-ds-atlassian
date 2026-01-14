@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
@@ -31,6 +32,7 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
 /**
  * JIRA API client for accessing JIRA projects, issues, and comments.
@@ -51,6 +53,9 @@ public class JiraClient extends AtlassianClient implements Closeable {
     /** The JIRA instance home URL. */
     protected final String jiraHome;
 
+    /** The JIRA api URL **/
+    protected final String jiraApiUrl;
+
     /** The JQL query for filtering issues. */
     protected final String jql;
 
@@ -62,9 +67,10 @@ public class JiraClient extends AtlassianClient implements Closeable {
      *
      * @param paramMap the configuration parameters
      */
-    public JiraClient(final DataStoreParams paramMap) {
-        super(paramMap);
-        jiraHome = getHome(paramMap);
+    public JiraClient(final DataConfig dataConfig, final DataStoreParams paramMap) {
+        super(dataConfig, paramMap, AtlassianProduct.JIRA);
+        jiraHome = getHome();
+        jiraApiUrl = getApiUrl();
         jql = getJql(paramMap);
         issueMaxResults = getIssueMaxResults(paramMap);
     }
@@ -159,6 +165,11 @@ public class JiraClient extends AtlassianClient implements Closeable {
     @Override
     protected String getAppHome() {
         return jiraHome;
+    }
+
+    @Override
+    protected String getAppApiUrl() {
+        return jiraApiUrl;
     }
 
     /**

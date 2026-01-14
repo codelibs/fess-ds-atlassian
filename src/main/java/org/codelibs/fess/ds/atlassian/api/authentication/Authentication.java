@@ -57,4 +57,5 @@ public abstract class Authentication {
      */
     public abstract CurlRequest getCurlRequest(final Function<String, CurlRequest> request, final String requestMethod, final URL url);
 
+    public abstract AuthType getAuthType();
 }

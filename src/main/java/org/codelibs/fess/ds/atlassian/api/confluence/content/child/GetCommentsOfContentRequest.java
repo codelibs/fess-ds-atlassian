@@ -16,21 +16,15 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Request class for retrieving comments of Confluence content.
@@ -150,9 +144,22 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
             return new GetCommentsOfContentResponse(Collections.emptyList());
         }
         try {
-            final String results = mapper.readTree(json).get("results").toString();
-            final List<Comment> comments = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Comment>>() {
-            }));
+            // Parse search api response.
+            final JsonNode rootNode = mapper.readTree(json);
+            final JsonNode resultsNode = rootNode.get("results");
+            final List<Comment> comments = new ArrayList<>();
+
+            if (resultsNode != null && resultsNode.isArray()) {
+                final Iterator<JsonNode> elements = resultsNode.elements();
+                while (elements.hasNext()) {
+                    final JsonNode item = elements.next();
+                    if (item.has("content")) {
+                        comments.add(mapper.treeToValue(item.get("content"), Comment.class));
+                    } else {
+                        comments.add(mapper.treeToValue(item, Comment.class));
+                    }
+                }
+            }
             return new GetCommentsOfContentResponse(comments);
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
@@ -161,30 +168,26 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/content/" + id + "/child/comment";
+        return apiUrl + "/rest/api/search";
     }
 
     @Override
     public Map<String, String> getQueryParamMap() {
         final Map<String, String> queryParams = new HashMap<>();
-        if (parentVersion != null) {
-            queryParams.put("parentVersion", parentVersion.toString());
-        }
+
+        String cql = "container=" + id + " AND type=\"comment\"";
+        queryParams.put("cql", cql);
+
         if (start != null) {
             queryParams.put("start", start.toString());
         }
         if (limit != null) {
             queryParams.put("limit", limit.toString());
         }
-        if (location != null) {
-            queryParams.put("location", location);
-        }
-        if (depth != null) {
-            queryParams.put("depth", depth);
-        }
         if (expand != null) {
             queryParams.put("expand", String.join(",", expand));
         }
+
         return queryParams;
     }
 

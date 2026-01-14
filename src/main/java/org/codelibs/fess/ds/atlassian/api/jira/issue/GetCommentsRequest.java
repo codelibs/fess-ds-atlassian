@@ -130,7 +130,7 @@ public class GetCommentsRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/3/issue/" + issueIdOrKey + "/comment";
+        return apiUrl + "/rest/api/3/issue/" + issueIdOrKey + "/comment";
     }
 
     @Override

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
@@ -31,6 +32,7 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
 /**
  * Confluence API client for accessing Confluence content, spaces, and comments.
@@ -48,6 +50,9 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     /** The Confluence instance home URL. */
     protected final String confluenceHome;
 
+    /** The Confluence api URL **/
+    protected final String confluenceApiUrl;
+
     /** The maximum number of content items to retrieve per request. */
     protected final Integer contentLimit;
 
@@ -56,9 +61,10 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      *
      * @param paramMap the configuration parameters
      */
-    public ConfluenceClient(final DataStoreParams paramMap) {
-        super(paramMap);
-        confluenceHome = getHome(paramMap);
+    public ConfluenceClient(final DataConfig dataConfig, final DataStoreParams paramMap) {
+        super(dataConfig, paramMap, AtlassianProduct.CONFLUENCE);
+        confluenceHome = getHome();
+        confluenceApiUrl = getApiUrl();
         contentLimit = getContentLimit(paramMap);
     }
 
@@ -149,6 +155,11 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
         return confluenceHome;
     }
 
+    @Override
+    protected String getAppApiUrl() {
+        return confluenceApiUrl;
+    }
+
     /**
      * Retrieves all content pages using pagination and passes them to the consumer.
      *
@@ -157,7 +168,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     public void getContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
             final GetContentsResponse response =
-                    contents().start(start).limit(contentLimit).expand("space", "version", "body.view").execute();
+                    contents().start(start).limit(contentLimit).expand("content.space", "content.version", "content.body.view").execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
             if (contents.size() < contentLimit) {
@@ -173,8 +184,11 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      */
     public void getBlogContents(final Consumer<Content> consumer) {
         for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response =
-                    contents().start(start).limit(contentLimit).type("blogpost").expand("space", "version", "body.view").execute();
+            final GetContentsResponse response = contents().start(start)
+                    .limit(contentLimit)
+                    .type("blogpost")
+                    .expand("content.space", "content.version", "content.body.view")
+                    .execute();
             final List<Content> contents = response.getContents();
             contents.forEach(consumer);
             if (contents.size() < contentLimit) {
@@ -192,7 +206,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
         for (int start = 0;; start += contentLimit) {
             final GetCommentsOfContentResponse response =
-                    commentsOfContent(id).start(start).limit(contentLimit).expand("body.view").execute();
+                    commentsOfContent(id).start(start).limit(contentLimit).expand("content.body.view").execute();
             final List<Comment> comments = response.getComments();
             comments.forEach(consumer);
             if (comments.size() < contentLimit) {
