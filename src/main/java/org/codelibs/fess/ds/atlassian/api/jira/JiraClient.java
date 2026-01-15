@@ -82,6 +82,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
 
     /**
      * Gets the JQL query from parameters.
+     * If the JQL parameter is empty, returns the default query "created is not empty" to match all issues.
      *
      * @param paramMap the parameter map
      * @return the JQL query
@@ -183,9 +184,18 @@ public class JiraClient extends AtlassianClient implements Closeable {
         while (true) {
             final SearchResponse searchResponse =
                     search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
-            searchResponse.getIssues().forEach(consumer);
-            if (searchResponse.getIssues().size() < issueMaxResults) {
-                break;
+            final List<Issue> issues = searchResponse.getIssues();
+            issues.forEach(consumer);
+
+            final Long total = searchResponse.getTotal();
+            if (total != null) {
+                if (startAt + issues.size() >= total) {
+                    break;
+                }
+            } else {
+                if (issues.size() < issueMaxResults) {
+                    break;
+                }
             }
             startAt += issueMaxResults;
         }

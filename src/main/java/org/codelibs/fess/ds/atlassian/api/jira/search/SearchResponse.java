@@ -28,6 +28,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchResponse {
 
+    /** Number of total hits. **/
+    protected Long total;
+
     /** The list of issues returned by the search. */
     protected List<Issue> issues;
 
@@ -36,6 +39,15 @@ public class SearchResponse {
      */
     public SearchResponse() {
         // Default constructor
+    }
+
+    /**
+     * Return number of total hits.
+     *
+     * @return number of total hits
+     */
+    public Long getTotal() {
+        return total;
     }
 
     /**

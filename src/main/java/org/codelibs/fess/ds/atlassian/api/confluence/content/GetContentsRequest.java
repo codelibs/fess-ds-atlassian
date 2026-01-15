@@ -16,7 +16,12 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.codelibs.core.lang.StringUtil;
@@ -25,8 +30,6 @@ import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Request for retrieving Confluence content using the REST API.
@@ -214,19 +217,19 @@ public class GetContentsRequest extends AtlassianRequest {
         final List<String> cqlParts = new ArrayList<>();
 
         if (StringUtil.isNotBlank(type)) {
-            cqlParts.add("type=\"" + type + "\"");
+            cqlParts.add("type=\"" + escapeQuery(type) + "\"");
         }
         if (StringUtil.isNotBlank(spaceKey)) {
-            cqlParts.add("space=\"" + spaceKey + "\"");
+            cqlParts.add("space=\"" + escapeQuery(spaceKey) + "\"");
         }
         if (StringUtil.isNotBlank(title)) {
-            cqlParts.add("title~\"" + title + "\"");
+            cqlParts.add("title~\"" + escapeQuery(title) + "\"");
         }
         if (StringUtil.isNotBlank(status)) {
-            cqlParts.add("status=\"" + status + "\"");
+            cqlParts.add("status=\"" + escapeQuery(status) + "\"");
         }
         if (StringUtil.isNotBlank(postingDay)) {
-            cqlParts.add("created=\"" + postingDay + "\"");
+            cqlParts.add("created=\"" + escapeQuery(postingDay) + "\"");
         }
 
         if (cqlParts.isEmpty()) {
@@ -247,4 +250,7 @@ public class GetContentsRequest extends AtlassianRequest {
         return queryParams;
     }
 
+    private String escapeQuery(final String value) {
+        return value.replace("\"", "\\\"");
+    }
 }

@@ -149,13 +149,23 @@ public abstract class AtlassianClient {
             authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
                 // Process for updating DataConfig by refresh token.
                 final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
+                    String value;
                     if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
-                        return e.getKey() + "=" + tokenUpdateResult.getAccessToken();
+                        value = tokenUpdateResult.getAccessToken();
                     } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
-                        return e.getKey() + "=" + tokenUpdateResult.getRefreshToken();
+                        value = tokenUpdateResult.getRefreshToken();
+                    } else {
+                        value = e.getValue();
                     }
-                    return e.getKey() + "=" + e.getValue();
+                    if (value != null) {
+                        // Escape value.
+                        value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
+                    } else {
+                        value = StringUtil.EMPTY;
+                    }
+                    return e.getKey() + "=" + value;
                 }).collect(Collectors.joining("\n"));
+
                 dataConfig.setHandlerParameter(paramStr);
                 ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
                 logger.info("Updated DataConfig: {}", dataConfig.getId());

@@ -38,6 +38,7 @@ public class OAuth2Authentication extends Authentication {
     private static final Logger logger = LogManager.getLogger(OAuth2Authentication.class);
 
     public static final String DEFAULT_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
+    private static final long MIN_REFRESH_INTERVAL = 3000;
 
     protected String accessToken;
     protected String refreshToken;
@@ -45,6 +46,7 @@ public class OAuth2Authentication extends Authentication {
     protected final String clientSecret;
     protected final String tokenUrl;
     protected final Consumer<TokenUpdateResult> tokenUpdateCallback;
+    private volatile long lastRefreshTime = 0;
 
     public OAuth2Authentication(final String accessToken, final String refreshToken, final String clientId, final String clientSecret,
             final String tokenUrl, final Consumer<TokenUpdateResult> tokenUpdateCallback) {
@@ -60,8 +62,6 @@ public class OAuth2Authentication extends Authentication {
     public CurlRequest getCurlRequest(final Function<String, CurlRequest> method, final String requestMethod, final URL url) {
         final CurlRequest request = method.apply(url.toString());
 
-        // セキュリティのためトークンそのもののログ出力は削除
-        // 必要であればデバッグレベルでマスクしたものを出力してください
         if (logger.isDebugEnabled()) {
             logger.debug("Setting OAuth2 Authorization header.");
         }
@@ -82,6 +82,14 @@ public class OAuth2Authentication extends Authentication {
     }
 
     public synchronized void refreshAccessToken() {
+        final long currentTime = System.currentTimeMillis();
+
+        // Skip refreshing token if token was refreshed recently.
+        if (currentTime - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+            logger.debug("Access token was refreshed recently. Skipping.");
+            return;
+        }
+
         if (StringUtil.isBlank(refreshToken)) {
             throw new AtlassianDataStoreException("Refresh token is not available.");
         }
@@ -92,7 +100,6 @@ public class OAuth2Authentication extends Authentication {
         params.put("client_id", clientId);
         params.put("client_secret", clientSecret);
 
-        // AtlassianのトークンエンドポイントはPOSTでJSONボディを受け取ります
         final CurlRequest request = Curl.post(tokenUrl).header("Content-Type", "application/json");
 
         if (httpProxy != null) {
@@ -124,6 +131,7 @@ public class OAuth2Authentication extends Authentication {
 
                 logger.info("Refreshed access token successfully.");
 
+                this.lastRefreshTime = System.currentTimeMillis();
                 tokenUpdateCallback.accept(new TokenUpdateResult(this.accessToken, this.refreshToken));
             } else {
                 throw new AtlassianDataStoreException("Failed to refresh access token. Status: " + response.getHttpStatusCode() + " Body: "
@@ -144,7 +152,6 @@ public class OAuth2Authentication extends Authentication {
         }
     }
 
-    // アクセストークンを外部(Client側)から更新の確認などで取得したい場合用
     public String getAccessToken() {
         return accessToken;
     }

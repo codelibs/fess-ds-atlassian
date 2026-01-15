@@ -145,9 +145,33 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class AccessibleResource {
-        public String id;
-        public String url;
-        public String name;
+        private String id;
+        private String url;
+        private String name;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
 
         @Override
         public String toString() {
@@ -155,15 +179,6 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
         }
     }
 
-    private static class ResolveCloudIdResponse {
-        public final int statusCode;
-        public final String cloudId;
-        public final String responseContent;
-
-        public ResolveCloudIdResponse(int statusCode, String cloudId, String responseContent) {
-            this.statusCode = statusCode;
-            this.cloudId = cloudId;
-            this.responseContent = responseContent;
-        }
+    private record ResolveCloudIdResponse(int statusCode, String cloudId, String responseContent) {
     }
 }

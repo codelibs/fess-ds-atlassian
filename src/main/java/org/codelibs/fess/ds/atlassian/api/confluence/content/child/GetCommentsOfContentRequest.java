@@ -16,7 +16,13 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content.child;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.codelibs.core.lang.StringUtil;
@@ -175,7 +181,7 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
     public Map<String, String> getQueryParamMap() {
         final Map<String, String> queryParams = new HashMap<>();
 
-        String cql = "container=" + id + " AND type=\"comment\"";
+        String cql = "container=\"" + escapeQuery(id) + "\" AND type=\"comment\"";
         queryParams.put("cql", cql);
 
         if (start != null) {
@@ -189,6 +195,10 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
         }
 
         return queryParams;
+    }
+
+    private String escapeQuery(final String value) {
+        return value.replace("\"", "\\\"");
     }
 
     @Override
