@@ -63,4 +63,8 @@ public class BasicAuthentication extends Authentication {
         return Base64.getEncoder().encodeToString(s.getBytes());
     }
 
+    @Override
+    public AuthType getAuthType() {
+        return AuthType.BASIC;
+    }
 }

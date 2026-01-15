@@ -182,7 +182,7 @@ public class GetSpacesRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/space";
+        return apiUrl + "/rest/api/space";
     }
 
     @Override

@@ -19,7 +19,9 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
+import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
@@ -30,6 +32,7 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
 /**
  * JIRA API client for accessing JIRA projects, issues, and comments.
@@ -50,6 +53,9 @@ public class JiraClient extends AtlassianClient implements Closeable {
     /** The JIRA instance home URL. */
     protected final String jiraHome;
 
+    /** The JIRA api URL **/
+    protected final String jiraApiUrl;
+
     /** The JQL query for filtering issues. */
     protected final String jql;
 
@@ -61,9 +67,10 @@ public class JiraClient extends AtlassianClient implements Closeable {
      *
      * @param paramMap the configuration parameters
      */
-    public JiraClient(final DataStoreParams paramMap) {
-        super(paramMap);
-        jiraHome = getHome(paramMap);
+    public JiraClient(final DataConfig dataConfig, final DataStoreParams paramMap) {
+        super(dataConfig, paramMap, AtlassianProduct.JIRA);
+        jiraHome = getHome();
+        jiraApiUrl = getApiUrl();
         jql = getJql(paramMap);
         issueMaxResults = getIssueMaxResults(paramMap);
     }
@@ -75,12 +82,18 @@ public class JiraClient extends AtlassianClient implements Closeable {
 
     /**
      * Gets the JQL query from parameters.
+     * If the JQL parameter is empty, returns the default query "created is not empty" to match all issues.
      *
      * @param paramMap the parameter map
      * @return the JQL query
      */
     protected String getJql(final DataStoreParams paramMap) {
-        return paramMap.getAsString(JQL_PARAM);
+        final String jql = paramMap.getAsString(JQL_PARAM);
+        if (StringUtil.isBlank(jql)) {
+            return "created is not empty"; // All match
+        } else {
+            return jql;
+        }
     }
 
     /**
@@ -155,6 +168,11 @@ public class JiraClient extends AtlassianClient implements Closeable {
         return jiraHome;
     }
 
+    @Override
+    protected String getAppApiUrl() {
+        return jiraApiUrl;
+    }
+
     /**
      * Retrieves all issues using pagination and passes them to the consumer.
      * Uses the configured JQL query to filter issues.
@@ -166,9 +184,18 @@ public class JiraClient extends AtlassianClient implements Closeable {
         while (true) {
             final SearchResponse searchResponse =
                     search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
-            searchResponse.getIssues().forEach(consumer);
-            if (searchResponse.getTotal() < issueMaxResults) {
-                break;
+            final List<Issue> issues = searchResponse.getIssues();
+            issues.forEach(consumer);
+
+            final Long total = searchResponse.getTotal();
+            if (total != null) {
+                if (startAt + issues.size() >= total) {
+                    break;
+                }
+            } else {
+                if (issues.size() < issueMaxResults) {
+                    break;
+                }
             }
             startAt += issueMaxResults;
         }

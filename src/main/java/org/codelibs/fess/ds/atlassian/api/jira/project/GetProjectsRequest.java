@@ -106,7 +106,7 @@ public class GetProjectsRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome() + "/rest/api/latest/project";
+        return apiUrl + "/rest/api/3/project";
     }
 
     @Override

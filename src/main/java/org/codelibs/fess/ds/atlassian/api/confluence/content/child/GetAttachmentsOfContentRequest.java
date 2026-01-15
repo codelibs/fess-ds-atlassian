@@ -147,7 +147,7 @@ public class GetAttachmentsOfContentRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/content/" + id + "/child/attachment";
+        return apiUrl + "/rest/api/content/" + id + "/child/attachment";
     }
 
     @Override

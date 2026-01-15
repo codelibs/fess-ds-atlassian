@@ -120,7 +120,7 @@ public class GetContentRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/content/" + id;
+        return apiUrl + "/rest/api/content/" + id;
     }
 
     @Override

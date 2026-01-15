@@ -20,27 +20,33 @@ See [Plugin](https://fess.codelibs.org/13.3/admin/plugin-guide.html) of Administ
 
 ```
 home=...
+is_cloud=true
 auth_type=...
-oauth.consumer_key=OauthKey
-oauth.private_key=...
-oauth.secret=...
-oauth.access_token=...
-issue.jql=...
+oauth2.client_id=...
+oauth2.client_secret=...
+oauth2.access_token=...
+oauth2.refresh_token=...
 ```
 
 | Key | Value |
 | --- | --- |
 | home | URL of the Atlassian application(JIRA/Confluence) |
-| auth_type | `oauth`(OAuth authentication) or `basic`(Basic authentication) |
-| oauth.consumer\_key | Consumer key for OAuth (Usually `OauthKey`) |
-| oauth.private\_key | Private key for OAuth |
-| oauth.secret | Verification code for OAuth |
-| oauth.access\_token | Access token for OAuth |
-| basic.username | username of Atlassian account for Basic |
-| basic.password | password of Atlassian account for Basic |
+| is\_cloud | Whether the Atlassian instance is cloud-based (`true` or `false`)|
+| auth_type | `oauth`(OAuth 1.0a authentication), `oauth2`(OAuth 2.0 authentication), or `basic`(Basic authentication) |
+| oauth.consumer\_key | Consumer key for OAuth 1.0a (Usually `OauthKey`) |
+| oauth.private\_key | Private key for OAuth 1.0a |
+| oauth.secret | Verification code for OAuth 1.0a |
+| oauth.access\_token | Access token for OAuth 1.0a |
+| oauth2.client\_id | Client ID for OAuth 2.0 |
+| oauth2.client\_secret | Client secret for OAuth 2.0 |
+| oauth2.access\_token | Access token for OAuth 2.0 |
+| oauth2.refresh\_token | Refresh token for OAuth 2.0 (Optional) |
+| oauth2.token\_url | Token URL for OAuth 2.0 (Optional, has default) |
+| basic.username | Username of Atlassian account for Basic authentication |
+| basic.password | Password of Atlassian account for Basic authentication |
 | issue.jql | [JQL](https://confluence.atlassian.com/jirasoftwarecloud/advanced-searching-764478330.html) for advanced search (JIRA only) (Optional) |
 
-`oauth` or `basic` parameters are required.
+`oauth`, `oauth2`, or `basic` parameters are required.
 
 ### Scripts
 

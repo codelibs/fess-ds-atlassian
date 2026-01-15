@@ -93,7 +93,7 @@ public class JiraDataStore extends AtlassianDataStore {
 
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
 
-        try (final JiraClient client = createClient(paramMap)) {
+        try (final JiraClient client = createClient(dataConfig, paramMap)) {
             client.getIssues(issue -> executorService
                     .execute(() -> processIssue(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, issue)));
 
@@ -115,8 +115,8 @@ public class JiraDataStore extends AtlassianDataStore {
      * @param paramMap the data store parameters
      * @return the configured JIRA client
      */
-    protected JiraClient createClient(final DataStoreParams paramMap) {
-        return new JiraClient(paramMap);
+    protected JiraClient createClient(final DataConfig dataConfig, final DataStoreParams paramMap) {
+        return new JiraClient(dataConfig, paramMap);
     }
 
     /**

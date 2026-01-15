@@ -19,17 +19,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Request for retrieving Confluence content using the REST API.
@@ -182,9 +182,23 @@ public class GetContentsRequest extends AtlassianRequest {
             return new GetContentsResponse(Collections.emptyList());
         }
         try {
-            final String results = mapper.readTree(json).get("results").toString();
-            final List<Content> contents = new ArrayList<>(mapper.readValue(results, new TypeReference<List<Content>>() {
-            }));
+            final JsonNode rootNode = mapper.readTree(json);
+            final JsonNode resultsNode = rootNode.get("results");
+            final List<Content> contents = new ArrayList<>();
+
+            if (resultsNode != null && resultsNode.isArray()) {
+                final Iterator<JsonNode> elements = resultsNode.elements();
+                while (elements.hasNext()) {
+                    final JsonNode item = elements.next();
+                    if (item.has("content")) {
+                        final JsonNode contentNode = item.get("content");
+                        contents.add(mapper.treeToValue(contentNode, Content.class));
+                    } else {
+                        contents.add(mapper.treeToValue(item, Content.class));
+                    }
+                }
+            }
+
             return new GetContentsResponse(contents);
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
@@ -193,27 +207,37 @@ public class GetContentsRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/content";
+        return apiUrl + "/rest/api/search";
     }
 
     @Override
     public Map<String, String> getQueryParamMap() {
         final Map<String, String> queryParams = new HashMap<>();
-        if (type != null) {
-            queryParams.put("type", type);
+
+        final List<String> cqlParts = new ArrayList<>();
+
+        if (StringUtil.isNotBlank(type)) {
+            cqlParts.add("type=\"" + escapeQuery(type) + "\"");
         }
-        if (spaceKey != null) {
-            queryParams.put("spaceKey", spaceKey);
+        if (StringUtil.isNotBlank(spaceKey)) {
+            cqlParts.add("space=\"" + escapeQuery(spaceKey) + "\"");
         }
-        if (title != null) {
-            queryParams.put("title", title);
+        if (StringUtil.isNotBlank(title)) {
+            cqlParts.add("title~\"" + escapeQuery(title) + "\"");
         }
-        if (status != null) {
-            queryParams.put("status", status);
+        if (StringUtil.isNotBlank(status)) {
+            cqlParts.add("status=\"" + escapeQuery(status) + "\"");
         }
-        if (postingDay != null) {
-            queryParams.put("postingDay", postingDay);
+        if (StringUtil.isNotBlank(postingDay)) {
+            cqlParts.add("created=\"" + escapeQuery(postingDay) + "\"");
         }
+
+        if (cqlParts.isEmpty()) {
+            cqlParts.add("type in (page,blogpost)");
+        }
+
+        queryParams.put("cql", String.join(" AND ", cqlParts));
+
         if (expand != null) {
             queryParams.put("expand", String.join(",", expand));
         }
@@ -226,4 +250,7 @@ public class GetContentsRequest extends AtlassianRequest {
         return queryParams;
     }
 
+    private String escapeQuery(final String value) {
+        return value.replace("\"", "\\\"");
+    }
 }

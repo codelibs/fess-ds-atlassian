@@ -67,4 +67,8 @@ public class OAuthAuthentication extends Authentication {
         return request;
     }
 
+    @Override
+    public AuthType getAuthType() {
+        return AuthType.OAUTH;
+    }
 }

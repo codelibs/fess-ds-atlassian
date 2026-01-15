@@ -149,7 +149,7 @@ public class SearchRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return appHome + "/rest/api/latest/search";
+        return apiUrl + "/rest/api/3/search/jql";
     }
 
     @Override

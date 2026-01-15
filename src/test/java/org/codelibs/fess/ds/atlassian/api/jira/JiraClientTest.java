@@ -31,6 +31,7 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
 public class JiraClientTest extends AtlassianClientTest {
 
@@ -42,7 +43,7 @@ public class JiraClientTest extends AtlassianClientTest {
         paramMap.put(PRIVATE_KEY_PARAM, "");
         paramMap.put(SECRET_PARAM, "");
         paramMap.put(ACCESS_TOKEN_PARAM, "");
-        final JiraClient jiraClient = new JiraClient(paramMap);
+        final JiraClient jiraClient = new JiraClient(new DataConfig(), paramMap);
         doGetProjectsTest(jiraClient);
         doSearchTest(jiraClient);
         doGetCommentsTest(jiraClient);

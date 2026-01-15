@@ -89,7 +89,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
 
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
-        try (final ConfluenceClient client = createClient(paramMap)) {
+        try (final ConfluenceClient client = createClient(dataConfig, paramMap)) {
             client.getContents(content -> executorService
                     .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
 
@@ -114,8 +114,8 @@ public class ConfluenceDataStore extends AtlassianDataStore {
      * @param paramMap the data store parameters
      * @return the configured Confluence client
      */
-    protected ConfluenceClient createClient(final DataStoreParams paramMap) {
-        return new ConfluenceClient(paramMap);
+    protected ConfluenceClient createClient(final DataConfig dataConfig, final DataStoreParams paramMap) {
+        return new ConfluenceClient(dataConfig, paramMap);
     }
 
     /**
@@ -247,7 +247,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
      * @return the Date object
      */
     protected Date getLastModifiedAsDate(final Long date) {
-        return new Date(date * 1000L);
+        return new Date(date);
     }
 
     /**

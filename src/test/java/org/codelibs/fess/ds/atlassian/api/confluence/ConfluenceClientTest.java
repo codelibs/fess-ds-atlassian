@@ -33,6 +33,7 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
     protected final String confluenceHome = "";
@@ -44,7 +45,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         paramMap.put(PRIVATE_KEY_PARAM, "");
         paramMap.put(SECRET_PARAM, "");
         paramMap.put(ACCESS_TOKEN_PARAM, "");
-        final ConfluenceClient confluenceClient = new ConfluenceClient(paramMap);
+        final ConfluenceClient confluenceClient = new ConfluenceClient(new DataConfig(), paramMap);
         doGetContentsTest(confluenceClient);
         doGetCommentsOfContentTest(confluenceClient);
         doGetAttachmentsOfContentTest(confluenceClient);
@@ -97,7 +98,8 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         final List<Content> contents = confluenceClient.contents().execute().getContents();
         if (!contents.isEmpty()) {
             final String id = contents.get(0).getId();
-            final GetCommentsOfContentResponse response = confluenceClient.commentsOfContent(id).depth("all").expand("body.view").execute();
+            final GetCommentsOfContentResponse response =
+                    confluenceClient.commentsOfContent(id).depth("all").expand("content.body.view").execute();
             for (final Comment comment : response.getComments()) {
                 assertTrue("not contains \"title\"", comment.getTitle() != null);
                 assertTrue("not contains \"value\" in \"body.view\"", comment.getBody() != null);

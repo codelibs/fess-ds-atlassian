@@ -15,7 +15,7 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -25,7 +25,9 @@ import org.codelibs.curl.Curl;
 import org.codelibs.curl.CurlRequest;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.authentication.AuthType;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,8 +71,8 @@ public abstract class AtlassianRequest {
 
     /** Authentication instance for API requests. */
     protected Authentication authentication;
-    /** Application home URL. */
-    protected String appHome;
+    /** Application API URL. */
+    protected String apiUrl;
     /** HTTP connection timeout in milliseconds. */
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
@@ -81,8 +83,8 @@ public abstract class AtlassianRequest {
      *
      * @return the application home URL
      */
-    public String appHome() {
-        return appHome;
+    public String apiUrl() {
+        return apiUrl;
     }
 
     /**
@@ -141,38 +143,54 @@ public abstract class AtlassianRequest {
      */
     public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
         try {
-            final StringBuilder urlBuf = new StringBuilder();
-            urlBuf.append(getURL());
+            CurlResponse response = doExecute(method, requestMethod);
+            if (response.getHttpStatusCode() == 401 && authentication.getAuthType() == AuthType.OAUTH2) {
+                try {
+                    response.close();
+                } catch (Exception e) {
+                    logger.warn("Failed to close response.", e);
+                }
 
-            final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());
-            if (!queryParams.isEmpty()) {
-                urlBuf.append('?').append(queryParams);
+                // Refresh token
+                ((OAuth2Authentication) authentication).refreshAccessToken();
+                response = doExecute(method, requestMethod);
             }
-
-            final CurlRequest request = authentication.getCurlRequest(method, requestMethod, new URL(urlBuf.toString()));
-
-            final Map<String, Object> bodyMap = getBodyMap();
-            if (bodyMap != null) {
-                final String source = new JSONObject(bodyMap).toJSONString();
-                request.body(source);
-            }
-
-            request.onConnect((req, con) -> {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("connectionTimeout: {}, readTimeout: {}", connectionTimeout, readTimeout);
-                }
-                if (connectionTimeout != null) {
-                    con.setConnectTimeout(connectionTimeout);
-                }
-                if (readTimeout != null) {
-                    con.setReadTimeout(readTimeout);
-                }
-            });
-
-            return request.execute();
+            return response;
         } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + getURL(), e);
         }
+    }
+
+    private CurlResponse doExecute(final Function<String, CurlRequest> method, final String requestMethod) throws Exception {
+        final StringBuilder urlBuf = new StringBuilder();
+        urlBuf.append(getURL());
+
+        final String queryParams = UrlUtil.buildQueryParameters(getQueryParamMap());
+        if (!queryParams.isEmpty()) {
+            urlBuf.append('?').append(queryParams);
+        }
+
+        final CurlRequest request = authentication.getCurlRequest(method, requestMethod, new URI(urlBuf.toString()).toURL());
+
+        final Map<String, Object> bodyMap = getBodyMap();
+        if (bodyMap != null) {
+            final String source = new JSONObject(bodyMap).toJSONString();
+            request.body(source);
+        }
+
+        request.onConnect((req, con) -> {
+            if (logger.isDebugEnabled()) {
+                logger.debug("connectionTimeout: {}, readTimeout: {}", connectionTimeout, readTimeout);
+            }
+            if (connectionTimeout != null) {
+                con.setConnectTimeout(connectionTimeout);
+            }
+            if (readTimeout != null) {
+                con.setReadTimeout(readTimeout);
+            }
+        });
+
+        return request.execute();
     }
 
     /**
@@ -185,12 +203,12 @@ public abstract class AtlassianRequest {
     }
 
     /**
-     * Sets the application home URL.
+     * Sets the application API URL.
      *
-     * @param appHome the application home URL
+     * @param apiUrl the application home URL
      */
-    public void setAppHome(final String appHome) {
-        this.appHome = appHome;
+    public void setApiUrl(final String apiUrl) {
+        this.apiUrl = apiUrl;
     }
 
     /**
