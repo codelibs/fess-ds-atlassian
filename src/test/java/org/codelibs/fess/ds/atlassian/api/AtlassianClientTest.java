@@ -15,10 +15,12 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
-import org.codelibs.fess.util.ComponentUtil;
-import org.dbflute.utflute.lastaflute.LastaFluteTestCase;
+import org.junit.jupiter.api.TestInfo;
 
-public class AtlassianClientTest extends LastaFluteTestCase {
+import org.codelibs.fess.util.ComponentUtil;
+import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
+
+public class AtlassianClientTest extends UnitDsTestCase {
 
     protected static final String AUTH_TYPE_PARAM = "auth_type";
     protected static final String CONSUMER_KEY_PARAM = "oauth.consumer_key";
@@ -37,14 +39,14 @@ public class AtlassianClientTest extends LastaFluteTestCase {
     }
 
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    public void setUp(TestInfo testInfo) throws Exception {
+        super.setUp(testInfo);
     }
 
     @Override
-    public void tearDown() throws Exception {
+    public void tearDown(TestInfo testInfo) throws Exception {
         ComponentUtil.setFessConfig(null);
-        super.tearDown();
+        super.tearDown(testInfo);
     }
 
     public void test_production() {
