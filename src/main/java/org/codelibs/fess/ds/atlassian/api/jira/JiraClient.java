@@ -65,6 +65,7 @@ public class JiraClient extends AtlassianClient implements Closeable {
     /**
      * Constructs a new JIRA client with the specified parameters.
      *
+     * @param dataConfig the data configuration
      * @param paramMap the configuration parameters
      */
     public JiraClient(final DataConfig dataConfig, final DataStoreParams paramMap) {

@@ -15,8 +15,21 @@
  */
 package org.codelibs.fess.ds.atlassian.api.endpoint;
 
+/**
+ * Strategy interface for resolving Atlassian API endpoints.
+ */
 public interface EndpointStrategy {
+    /**
+     * Returns the home URL.
+     *
+     * @return the home URL
+     */
     String getHomeUrl();
 
+    /**
+     * Returns the API URL.
+     *
+     * @return the API URL
+     */
     String getApiUrl();
 }

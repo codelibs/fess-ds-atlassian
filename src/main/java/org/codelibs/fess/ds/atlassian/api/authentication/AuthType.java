@@ -15,8 +15,16 @@
  */
 package org.codelibs.fess.ds.atlassian.api.authentication;
 
+/**
+ * Represents the authentication types for Atlassian API.
+ */
 public enum AuthType {
-    BASIC("basic"), OAUTH("oauth"), OAUTH2("oauth2");
+    /** Basic authentication. */
+    BASIC("basic"),
+    /** OAuth authentication. */
+    OAUTH("oauth"),
+    /** OAuth2 authentication. */
+    OAUTH2("oauth2");
 
     private final String authType;
 
@@ -24,6 +32,11 @@ public enum AuthType {
         this.authType = authType;
     }
 
+    /**
+     * Returns the authentication type string.
+     *
+     * @return the authentication type string
+     */
     public String getAuthType() {
         return authType;
     }

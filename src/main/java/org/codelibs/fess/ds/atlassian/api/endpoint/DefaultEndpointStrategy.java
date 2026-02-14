@@ -17,9 +17,17 @@ package org.codelibs.fess.ds.atlassian.api.endpoint;
 
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
+/**
+ * Default endpoint strategy using the home URL directly.
+ */
 public class DefaultEndpointStrategy implements EndpointStrategy {
     private final String home;
 
+    /**
+     * Constructs a new default endpoint strategy.
+     *
+     * @param home the Atlassian instance home URL
+     */
     public DefaultEndpointStrategy(final String home) {
         this.home = UrlUtil.normalizeUrl(home);
     }

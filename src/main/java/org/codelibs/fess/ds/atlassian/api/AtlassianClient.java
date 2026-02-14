@@ -57,10 +57,15 @@ public abstract class AtlassianClient {
     /** Parameter key for OAuth access token. */
     protected static final String ACCESS_TOKEN_PARAM = "oauth.access_token";
 
+    /** Parameter key for OAuth2 access token. */
     protected static final String OAUTH2_ACCESS_TOKEN = "oauth2.access_token";
+    /** Parameter key for OAuth2 refresh token. */
     protected static final String OAUTH2_REFRESH_TOKEN = "oauth2.refresh_token";
+    /** Parameter key for OAuth2 client ID. */
     protected static final String OAUTH2_CLIENT_ID = "oauth2.client_id";
+    /** Parameter key for OAuth2 client secret. */
     protected static final String OAUTH2_CLIENT_SECRET = "oauth2.client_secret";
+    /** Parameter key for OAuth2 token URL. */
     protected static final String OAUTH2_TOKEN_URL = "oauth2.token_url";
 
     /** Parameter key for basic authentication username. */
@@ -82,6 +87,7 @@ public abstract class AtlassianClient {
     /** Authentication type constant for OAuth authentication. */
     protected static final String OAUTH = "oauth";
 
+    /** Authentication type constant for OAuth2 authentication. */
     protected static final String OAUTH2 = "oauth2";
 
     /** The authentication instance used for API requests. */
@@ -96,7 +102,9 @@ public abstract class AtlassianClient {
     /**
      * Constructs a new Atlassian client with the given parameters.
      *
+     * @param dataConfig the data configuration
      * @param paramMap the configuration parameters
+     * @param product the Atlassian product type
      */
     protected AtlassianClient(final DataConfig dataConfig, final DataStoreParams paramMap, final AtlassianProduct product) {
 
@@ -230,6 +238,11 @@ public abstract class AtlassianClient {
      */
     protected abstract String getAppHome();
 
+    /**
+     * Gets the application API URL.
+     *
+     * @return the application API URL
+     */
     protected abstract String getAppApiUrl();
 
     /**
@@ -241,6 +254,11 @@ public abstract class AtlassianClient {
         return endpointStrategy.getHomeUrl();
     }
 
+    /**
+     * Gets the API URL.
+     *
+     * @return the API URL
+     */
     protected String getApiUrl() {
         return endpointStrategy.getApiUrl();
     }

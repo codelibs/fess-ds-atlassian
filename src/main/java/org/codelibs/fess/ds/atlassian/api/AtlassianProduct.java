@@ -15,8 +15,14 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+/**
+ * Represents the Atlassian product types.
+ */
 public enum AtlassianProduct {
-    JIRA("jira"), CONFLUENCE("confluence");
+    /** JIRA product. */
+    JIRA("jira"),
+    /** Confluence product. */
+    CONFLUENCE("confluence");
 
     private final String segment;
 
@@ -24,6 +30,11 @@ public enum AtlassianProduct {
         this.segment = segment;
     }
 
+    /**
+     * Returns the URL segment for this product.
+     *
+     * @return the URL segment
+     */
     public String segment() {
         return segment;
     }

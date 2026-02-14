@@ -34,20 +34,40 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * OAuth2 authentication implementation for Atlassian API.
+ */
 public class OAuth2Authentication extends Authentication {
     private static final Logger logger = LogManager.getLogger(OAuth2Authentication.class);
 
+    /** The default token URL for Atlassian OAuth2. */
     public static final String DEFAULT_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
     private static final long MIN_REFRESH_INTERVAL = 3000;
 
+    /** The access token. */
     protected String accessToken;
+    /** The refresh token. */
     protected String refreshToken;
+    /** The client ID. */
     protected final String clientId;
+    /** The client secret. */
     protected final String clientSecret;
+    /** The token URL. */
     protected final String tokenUrl;
+    /** The callback for token updates. */
     protected final Consumer<TokenUpdateResult> tokenUpdateCallback;
     private volatile long lastRefreshTime = 0;
 
+    /**
+     * Constructs a new OAuth2 authentication.
+     *
+     * @param accessToken the access token
+     * @param refreshToken the refresh token
+     * @param clientId the client ID
+     * @param clientSecret the client secret
+     * @param tokenUrl the token URL
+     * @param tokenUpdateCallback the callback for token updates
+     */
     public OAuth2Authentication(final String accessToken, final String refreshToken, final String clientId, final String clientSecret,
             final String tokenUrl, final Consumer<TokenUpdateResult> tokenUpdateCallback) {
         this.accessToken = accessToken;
@@ -81,6 +101,9 @@ public class OAuth2Authentication extends Authentication {
         return AuthType.OAUTH2;
     }
 
+    /**
+     * Refreshes the access token using the refresh token.
+     */
     public synchronized void refreshAccessToken() {
         final long currentTime = System.currentTimeMillis();
 
@@ -142,6 +165,12 @@ public class OAuth2Authentication extends Authentication {
         }
     }
 
+    /**
+     * Parses a JSON response string into a map.
+     *
+     * @param jsonString the JSON string to parse
+     * @return the parsed map
+     */
     protected Map<String, String> parseJsonResponse(final String jsonString) {
         final ObjectMapper mapper = new ObjectMapper();
         try {
@@ -152,23 +181,47 @@ public class OAuth2Authentication extends Authentication {
         }
     }
 
+    /**
+     * Returns the access token.
+     *
+     * @return the access token
+     */
     public String getAccessToken() {
         return accessToken;
     }
 
+    /**
+     * Holds the result of a token update operation.
+     */
     public static class TokenUpdateResult {
         private final String accessToken;
         private final String refreshToken;
 
+        /**
+         * Constructs a new token update result.
+         *
+         * @param accessToken the new access token
+         * @param refreshToken the new refresh token
+         */
         public TokenUpdateResult(String accessToken, String refreshToken) {
             this.accessToken = accessToken;
             this.refreshToken = refreshToken;
         }
 
+        /**
+         * Returns the access token.
+         *
+         * @return the access token
+         */
         public String getAccessToken() {
             return accessToken;
         }
 
+        /**
+         * Returns the refresh token.
+         *
+         * @return the refresh token
+         */
         public String getRefreshToken() {
             return refreshToken;
         }

@@ -92,6 +92,12 @@ public class UrlUtil {
         return parametersBuf.toString();
     }
 
+    /**
+     * Normalizes the given URL by removing trailing slashes.
+     *
+     * @param urlString the URL string to normalize
+     * @return the normalized URL string
+     */
     public static String normalizeUrl(final String urlString) {
         try {
             final URI uri = URI.create(urlString).normalize();

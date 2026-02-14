@@ -33,6 +33,9 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
+/**
+ * Endpoint strategy for Atlassian Cloud using OAuth2 authentication.
+ */
 public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
     private static final Logger logger = LogManager.getLogger(CloudOAuth2EndpointStrategy.class);
 
@@ -48,6 +51,13 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
 
     private String cachedApiUrl = null;
 
+    /**
+     * Constructs a new Cloud OAuth2 endpoint strategy.
+     *
+     * @param home the Atlassian instance home URL
+     * @param product the Atlassian product type
+     * @param authentication the authentication instance
+     */
     public CloudOAuth2EndpointStrategy(String home, AtlassianProduct product, Authentication authentication) {
         this.home = UrlUtil.normalizeUrl(home);
         this.product = product;

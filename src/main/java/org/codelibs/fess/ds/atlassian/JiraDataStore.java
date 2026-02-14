@@ -112,6 +112,7 @@ public class JiraDataStore extends AtlassianDataStore {
     /**
      * Creates a JIRA client with the given parameters.
      *
+     * @param dataConfig the data configuration
      * @param paramMap the data store parameters
      * @return the configured JIRA client
      */
