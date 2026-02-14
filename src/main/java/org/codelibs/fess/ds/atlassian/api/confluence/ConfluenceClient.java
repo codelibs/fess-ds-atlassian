@@ -59,6 +59,7 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     /**
      * Constructs a new Confluence client with the specified parameters.
      *
+     * @param dataConfig the data configuration
      * @param paramMap the configuration parameters
      */
     public ConfluenceClient(final DataConfig dataConfig, final DataStoreParams paramMap) {

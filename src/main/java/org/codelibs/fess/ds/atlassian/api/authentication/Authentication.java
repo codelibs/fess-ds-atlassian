@@ -57,5 +57,10 @@ public abstract class Authentication {
      */
     public abstract CurlRequest getCurlRequest(final Function<String, CurlRequest> request, final String requestMethod, final URL url);
 
+    /**
+     * Returns the authentication type.
+     *
+     * @return the authentication type
+     */
     public abstract AuthType getAuthType();
 }

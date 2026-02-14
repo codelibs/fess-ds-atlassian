@@ -111,6 +111,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     /**
      * Creates a Confluence client with the given parameters.
      *
+     * @param dataConfig the data configuration
      * @param paramMap the data store parameters
      * @return the configured Confluence client
      */
