@@ -15,9 +15,10 @@
  */
 package org.codelibs.fess.ds.atlassian;
 
-import org.junit.jupiter.api.TestInfo;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
@@ -25,6 +26,8 @@ import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class JiraDataStoreTest extends UnitDsTestCase {
 
@@ -52,6 +55,7 @@ public class JiraDataStoreTest extends UnitDsTestCase {
         super.tearDown(testInfo);
     }
 
+    @Test
     public void test_storeData() {
         // doStoreDataTest();
     }
@@ -96,5 +100,116 @@ public class JiraDataStoreTest extends UnitDsTestCase {
 
         dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
 
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_singleParagraph() {
+        final Map<String, Object> adf = new LinkedHashMap<>();
+        adf.put("type", "doc");
+        adf.put("version", 1);
+
+        final Map<String, Object> textNode = new LinkedHashMap<>();
+        textNode.put("type", "text");
+        textNode.put("text", "Hello World");
+
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(textNode));
+
+        adf.put("content", List.of(paragraph));
+
+        final String result = dataStore.getExtractedTextFromAdf(adf);
+        assertEquals("Hello World", result);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_multipleParagraphs() {
+        final Map<String, Object> adf = new LinkedHashMap<>();
+        adf.put("type", "doc");
+        adf.put("version", 1);
+
+        final Map<String, Object> text1 = new LinkedHashMap<>();
+        text1.put("type", "text");
+        text1.put("text", "First paragraph");
+
+        final Map<String, Object> para1 = new LinkedHashMap<>();
+        para1.put("type", "paragraph");
+        para1.put("content", List.of(text1));
+
+        final Map<String, Object> text2 = new LinkedHashMap<>();
+        text2.put("type", "text");
+        text2.put("text", "Second paragraph");
+
+        final Map<String, Object> para2 = new LinkedHashMap<>();
+        para2.put("type", "paragraph");
+        para2.put("content", List.of(text2));
+
+        adf.put("content", List.of(para1, para2));
+
+        final String result = dataStore.getExtractedTextFromAdf(adf);
+        assertEquals("First paragraph\nSecond paragraph", result);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_withHeading() {
+        final Map<String, Object> adf = new LinkedHashMap<>();
+        adf.put("type", "doc");
+        adf.put("version", 1);
+
+        final Map<String, Object> headingText = new LinkedHashMap<>();
+        headingText.put("type", "text");
+        headingText.put("text", "Title");
+
+        final Map<String, Object> heading = new LinkedHashMap<>();
+        heading.put("type", "heading");
+        heading.put("content", List.of(headingText));
+
+        final Map<String, Object> paraText = new LinkedHashMap<>();
+        paraText.put("type", "text");
+        paraText.put("text", "Body text");
+
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(paraText));
+
+        adf.put("content", List.of(heading, paragraph));
+
+        final String result = dataStore.getExtractedTextFromAdf(adf);
+        assertEquals("Title\nBody text", result);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_emptyDoc() {
+        final Map<String, Object> adf = new LinkedHashMap<>();
+        adf.put("type", "doc");
+        adf.put("version", 1);
+        adf.put("content", new ArrayList<>());
+
+        final String result = dataStore.getExtractedTextFromAdf(adf);
+        assertEquals("", result);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_multipleTextNodesInParagraph() {
+        final Map<String, Object> adf = new LinkedHashMap<>();
+        adf.put("type", "doc");
+        adf.put("version", 1);
+
+        final Map<String, Object> text1 = new LinkedHashMap<>();
+        text1.put("type", "text");
+        text1.put("text", "Hello ");
+
+        final Map<String, Object> text2 = new LinkedHashMap<>();
+        text2.put("type", "text");
+        text2.put("text", "World");
+
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(text1, text2));
+
+        adf.put("content", List.of(paragraph));
+
+        final String result = dataStore.getExtractedTextFromAdf(adf);
+        assertEquals("Hello World", result);
     }
 }

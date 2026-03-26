@@ -31,7 +31,7 @@ public class Space {
     protected String name;
 
     /** The space description. */
-    protected String description;
+    protected Object description;
 
     /**
      * Default constructor.
@@ -62,7 +62,7 @@ public class Space {
      *
      * @return the space description
      */
-    public String getDescription() {
+    public Object getDescription() {
         return description;
     }
 

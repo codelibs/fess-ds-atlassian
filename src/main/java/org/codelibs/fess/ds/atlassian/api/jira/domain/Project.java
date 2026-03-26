@@ -37,7 +37,7 @@ public class Project {
     protected String name;
 
     /** The project description. */
-    protected String description;
+    protected Object description;
 
     /**
      * Default constructor.
@@ -86,7 +86,7 @@ public class Project {
      *
      * @return the project description
      */
-    public String getDescription() {
+    public Object getDescription() {
         return description;
     }
 
