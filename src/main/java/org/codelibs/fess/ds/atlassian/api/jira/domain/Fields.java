@@ -19,7 +19,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Represents the fields of a JIRA issue.
- * Contains essential information like summary, description, update time, and comments.
+ * Contains essential information like summary, description, update time, and
+ * comments.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Fields {
@@ -31,7 +32,7 @@ public class Fields {
     protected String updated;
 
     /** The description of the issue. */
-    protected String description;
+    protected Object description;
 
     /** The comments associated with the issue. */
     protected Comments comment;
@@ -65,7 +66,7 @@ public class Fields {
      *
      * @return the issue description
      */
-    public String getDescription() {
+    public Object getDescription() {
         return description;
     }
 

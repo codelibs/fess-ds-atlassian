@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class Comment {
 
     /** The body content of the comment. */
-    protected String body;
+    protected Object body;
 
     /**
      * Default constructor for Comment.
@@ -38,7 +38,7 @@ public class Comment {
      *
      * @return the comment body
      */
-    public String getBody() {
+    public Object getBody() {
         return body;
     }
 

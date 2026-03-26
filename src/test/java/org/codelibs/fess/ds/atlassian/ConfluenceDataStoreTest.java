@@ -25,6 +25,7 @@ import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
+import org.junit.jupiter.api.Test;
 
 public class ConfluenceDataStoreTest extends UnitDsTestCase {
     public ConfluenceDataStore dataStore;
@@ -51,6 +52,7 @@ public class ConfluenceDataStoreTest extends UnitDsTestCase {
         super.tearDown(testInfo);
     }
 
+    @Test
     public void test_storeData() {
         // doStoreDataTest();
     }

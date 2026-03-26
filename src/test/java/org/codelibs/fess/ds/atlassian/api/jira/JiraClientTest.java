@@ -18,6 +18,7 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Map;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClientTest;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
@@ -32,6 +33,7 @@ import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.junit.jupiter.api.Test;
 
 public class JiraClientTest extends AtlassianClientTest {
 
@@ -57,6 +59,7 @@ public class JiraClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getProjects_parseResponse() {
         String json = "[{" + //
                 "    \"name\": \"Project-0\"" + //
@@ -98,6 +101,7 @@ public class JiraClientTest extends AtlassianClientTest {
         });
     }
 
+    @Test
     public void test_search_parseResponse() {
         final String json = "{" + //
                 "  \"total\": 2," + //
@@ -135,7 +139,7 @@ public class JiraClientTest extends AtlassianClientTest {
             assertTrue(fields.getSummary().startsWith("Summary-"));
             final long totalComments = fields.getComment().getTotal();
             final List<Comment> comments = fields.getComment().getComments();
-            assertEquals(comments.size(), totalComments);
+            assertEquals((long) comments.size(), totalComments);
             for (int j = 0; j < comments.size(); j++) {
                 final Comment comment = comments.get(j);
                 assertEquals(comment.getBody(), "Comment-" + i + "-" + j);
@@ -154,6 +158,7 @@ public class JiraClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getComments_parseResponse() {
         final String json = "{" + //
                 "  \"total\": 1," + //
@@ -168,6 +173,111 @@ public class JiraClientTest extends AtlassianClientTest {
             final Comment comment = comments.get(i);
             assertEquals(comment.getBody(), "Comment-" + i);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void test_search_parseResponse_withAdfDescription() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"issues\": [{" + //
+                "      \"fields\": {" + //
+                "        \"summary\": \"Task 1\"," + //
+                "        \"description\": {" + //
+                "          \"type\": \"doc\"," + //
+                "          \"version\": 1," + //
+                "          \"content\": [{" + //
+                "            \"type\": \"paragraph\"," + //
+                "            \"content\": [{" + //
+                "              \"type\": \"text\"," + //
+                "              \"text\": \"This is a description.\"" + //
+                "            }]" + //
+                "          }]" + //
+                "        }," + //
+                "        \"updated\": \"2026-01-23T16:50:17.666+0900\"" + //
+                "      }," + //
+                "      \"key\": \"KAN-1\"" + //
+                "    }" + //
+                "  ]" + //
+                "}";
+        final SearchResponse response = SearchRequest.parseResponse(json);
+        final List<Issue> issues = response.getIssues();
+        assertEquals(1, issues.size());
+        final Issue issue = issues.get(0);
+        assertEquals("KAN-1", issue.getKey());
+        final Fields fields = issue.getFields();
+        assertEquals("Task 1", fields.getSummary());
+        assertTrue("description should be a Map", fields.getDescription() instanceof Map);
+        final Map<String, Object> adf = (Map<String, Object>) fields.getDescription();
+        assertEquals("doc", adf.get("type"));
+    }
+
+    @Test
+    public void test_search_parseResponse_withStringDescription() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"issues\": [{" + //
+                "      \"fields\": {" + //
+                "        \"summary\": \"Task 2\"," + //
+                "        \"description\": \"Plain text description\"," + //
+                "        \"updated\": \"2026-01-23T16:50:17.666+0900\"" + //
+                "      }," + //
+                "      \"key\": \"KAN-2\"" + //
+                "    }" + //
+                "  ]" + //
+                "}";
+        final SearchResponse response = SearchRequest.parseResponse(json);
+        final List<Issue> issues = response.getIssues();
+        assertEquals(1, issues.size());
+        final Fields fields = issues.get(0).getFields();
+        assertTrue("description should be a String", fields.getDescription() instanceof String);
+        assertEquals("Plain text description", fields.getDescription());
+    }
+
+    @Test
+    public void test_search_parseResponse_withNullDescription() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"issues\": [{" + //
+                "      \"fields\": {" + //
+                "        \"summary\": \"Task 3\"," + //
+                "        \"updated\": \"2026-01-23T16:50:17.666+0900\"" + //
+                "      }," + //
+                "      \"key\": \"KAN-3\"" + //
+                "    }" + //
+                "  ]" + //
+                "}";
+        final SearchResponse response = SearchRequest.parseResponse(json);
+        final List<Issue> issues = response.getIssues();
+        assertEquals(1, issues.size());
+        assertNull(issues.get(0).getFields().getDescription());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void test_getComments_parseResponse_withAdfBody() {
+        final String json = "{" + //
+                "  \"total\": 1," + //
+                "  \"comments\": [{" + //
+                "    \"body\": {" + //
+                "      \"type\": \"doc\"," + //
+                "      \"version\": 1," + //
+                "      \"content\": [{" + //
+                "        \"type\": \"paragraph\"," + //
+                "        \"content\": [{" + //
+                "          \"type\": \"text\"," + //
+                "          \"text\": \"ADF comment\"" + //
+                "        }]" + //
+                "      }]" + //
+                "    }" + //
+                "  }]" + //
+                "}";
+        final GetCommentsResponse response = GetCommentsRequest.parseResponse(json);
+        final List<Comment> comments = response.getComments();
+        assertEquals(1, comments.size());
+        assertTrue("body should be a Map", comments.get(0).getBody() instanceof Map);
+        final Map<String, Object> adf = (Map<String, Object>) comments.get(0).getBody();
+        assertEquals("doc", adf.get("type"));
     }
 
 }

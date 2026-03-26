@@ -19,6 +19,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import org.codelibs.fess.util.ComponentUtil;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
+import org.junit.jupiter.api.Test;
 
 public class AtlassianClientTest extends UnitDsTestCase {
 
@@ -49,6 +50,7 @@ public class AtlassianClientTest extends UnitDsTestCase {
         super.tearDown(testInfo);
     }
 
+    @Test
     public void test_production() {
         // doProductionTest();
     }
