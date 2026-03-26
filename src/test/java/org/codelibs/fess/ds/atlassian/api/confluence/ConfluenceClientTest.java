@@ -34,6 +34,7 @@ import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.junit.jupiter.api.Test;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
     protected final String confluenceHome = "";
@@ -63,6 +64,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getContents_parseResponse() {
         final String json = "{" + //
                 "  \"results\": [{" + //
@@ -107,6 +109,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getCommentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
@@ -142,6 +145,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getAttachmentsOfContent_parseResponse() {
         String json = "{" + //
                 "  \"results\": [" + //
@@ -170,6 +174,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
+    @Test
     public void test_getSpaces_parseResponse() {
         final String json = "{" + //
                 "  \"results\": [" + //
@@ -189,6 +194,7 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         // TODO
     }
 
+    @Test
     public void test_getSpace_parseResponse() {
         // TODO
     }
