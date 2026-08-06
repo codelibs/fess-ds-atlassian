@@ -38,6 +38,24 @@
 			</plugin>
 		</plugins>
 	</build>
+	<!-- Fess plugins are distributed through maven.codelibs.org instead of Maven Central.
+	     This cannot be inherited from fess-parent: distributionManagement is inherited
+	     unconditionally, so declaring it there would also redirect the SNAPSHOT
+	     deployments of fess-parent, fess, fess-crawler, fess-crawler-playwright and
+	     fess-suggest, which stay on Maven Central. The scpexe transport comes from
+	     the wagon-ssh-external build extension inherited from fess-parent. -->
+	<distributionManagement>
+		<repository>
+			<id>codelibs-repo</id>
+			<name>CodeLibs Repository</name>
+			<url>scpexe://maven.codelibs.org/var/www/maven/release</url>
+		</repository>
+		<snapshotRepository>
+			<id>codelibs-snapshots</id>
+			<name>CodeLibs Snapshot Repository</name>
+			<url>scpexe://maven.codelibs.org/var/www/maven/snapshot</url>
+		</snapshotRepository>
+	</distributionManagement>
 	<repositories>
 		<repository>
 			<id>snapshots.central.sonatype.com</id>
