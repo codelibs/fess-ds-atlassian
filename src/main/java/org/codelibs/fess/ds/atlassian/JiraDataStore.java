@@ -234,7 +234,7 @@ public class JiraDataStore extends AtlassianDataStore {
      * @return the issue view URL
      */
     protected String getIssueViewUrl(final Issue issue, final JiraClient client) {
-        return client.getJiraHome() + "/browse/" + issue.getKey();
+        return client.getEndpointStrategy().getIssueViewUrl(issue.getKey());
     }
 
     /**

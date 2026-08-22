@@ -32,6 +32,7 @@ import org.codelibs.fess.crawler.exception.MultipleCrawlingAccessException;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.helper.CrawlerStatsHelper;
@@ -133,8 +134,7 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             final ConfluenceClient client, final Content content) {
         final CrawlerStatsHelper crawlerStatsHelper = ComponentUtil.getCrawlerStatsHelper();
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
-        final String confluenceHome = client.getConfluenceHome();
-        final String url = getContentViewUrl(content, confluenceHome);
+        final String url = getContentViewUrl(content, client);
         final StatsKeyObject statsKey = new StatsKeyObject(url);
         paramMap.put(Constants.CRAWLER_STATS_KEY, statsKey);
         try {
@@ -249,14 +249,15 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     }
 
     /**
-     * Gets the view URL for a Confluence content item.
+     * Builds the browser-facing URL of a Confluence content item.
      *
-     * @param content the Confluence content
-     * @param confluenceHome the Confluence home URL
-     * @return the content view URL
+     * @param content the content item
+     * @param client the Confluence client
+     * @return the view URL
      */
-    protected String getContentViewUrl(final Content content, final String confluenceHome) {
-        return confluenceHome + "/pages/viewpage.action?pageId=" + content.getId();
+    protected String getContentViewUrl(final Content content, final ConfluenceClient client) {
+        final Space space = content.getSpace();
+        return client.getEndpointStrategy().getContentViewUrl(content.getId(), space == null ? null : space.getKey());
     }
 
 }

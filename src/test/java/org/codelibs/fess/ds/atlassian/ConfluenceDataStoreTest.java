@@ -29,6 +29,9 @@ import org.codelibs.fess.crawler.extractor.impl.TikaExtractor;
 import org.codelibs.fess.crawler.filter.UrlFilter;
 import org.codelibs.fess.crawler.helper.ContentLengthHelper;
 import org.codelibs.fess.crawler.helper.impl.MimeTypeHelperImpl;
+import org.codelibs.fess.ds.atlassian.api.confluence.ConfluenceClient;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
+import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.helper.CrawlerStatsHelper;
@@ -239,6 +242,34 @@ public class ConfluenceDataStoreTest extends UnitDsTestCase {
 
         dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
 
+    }
+
+    @Test
+    public void test_content_view_url_is_cloud_style_on_cloud() throws Exception {
+        assertContentViewUrl("cloud", "https://example.atlassian.net", "https://example.atlassian.net/wiki/spaces/SP/pages/1");
+    }
+
+    @Test
+    public void test_content_view_url_is_viewpage_action_on_datacenter() throws Exception {
+        assertContentViewUrl("datacenter", "https://wiki.example.com", "https://wiki.example.com/pages/viewpage.action?pageId=1");
+    }
+
+    private void assertContentViewUrl(final String deployment, final String home, final String expected) {
+        final DataStoreParams paramMap = new DataStoreParams();
+        paramMap.put("home", home);
+        paramMap.put("deployment", deployment);
+        paramMap.put("auth_type", "basic");
+        paramMap.put("basic.username", "user");
+        paramMap.put("basic.password", "pass");
+
+        final Content content =
+                GetContentsRequest.parseResponse("{\"results\":[{\"content\":{\"id\":\"1\",\"title\":\"T\",\"space\":{\"key\":\"SP\"}}}]}")
+                        .getContents()
+                        .get(0);
+
+        try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), paramMap)) {
+            Assertions.assertEquals(expected, new ConfluenceDataStore().getContentViewUrl(content, client));
+        }
     }
 
 }
