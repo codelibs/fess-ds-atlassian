@@ -133,4 +133,16 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
         Assertions.assertNull(GetContentsRequest.extractCursor(null));
         Assertions.assertNull(GetContentsRequest.extractCursor(""));
     }
+
+    /**
+     * Real Confluence Cloud cursors are opaque base64-ish strings containing {@code :} and
+     * {@code =}, so {@code _links.next} carries them percent-encoded. Returning the raw encoded
+     * form would re-encode it on the follow-up request and yield a 400 or an empty page on the
+     * second page of every space.
+     */
+    @Test
+    public void test_extract_cursor_percent_decodes_the_value() {
+        Assertions.assertEquals("raw:Y29udGVudA==",
+                GetContentsRequest.extractCursor("/rest/api/search?cql=type%3Dpage&cursor=raw%3AY29udGVudA%3D%3D&limit=25"));
+    }
 }
