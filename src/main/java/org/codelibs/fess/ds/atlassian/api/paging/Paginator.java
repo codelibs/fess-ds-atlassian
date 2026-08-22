@@ -30,6 +30,11 @@ import org.apache.logging.log4j.Logger;
  * ignores {@code start}, so a loop that trusts the server to advance can spin forever or stop
  * after the first page. This driver therefore stops as soon as the cursor fails to advance or an
  * empty page claims that more results exist.</p>
+ *
+ * <p>Neither of those guards can catch an offset endpoint that keeps serving the same full page:
+ * the caller derives the next offset from the number of rows it received, so the cursor always
+ * looks like it advanced and the page is never empty. {@link #isOffsetIgnored} closes that gap by
+ * comparing the offset the server echoes back against the one that was requested.</p>
  */
 public final class Paginator {
 
@@ -87,5 +92,33 @@ public final class Paginator {
             previousKey = nextKey;
             cursor = next;
         }
+    }
+
+    /**
+     * Reports whether the server ignored the offset paging parameter.
+     *
+     * <p>Jira's {@code /rest/api/2/search} echoes the offset it served as {@code startAt} and
+     * Confluence's {@code /rest/api/search} echoes it as {@code start}. When the echoed value
+     * differs from the offset that was requested, the server is paging from somewhere other than
+     * where it was told to and the caller must stop rather than request the same rows forever.</p>
+     *
+     * <p>A response that omits the echo tells us nothing, so it is never treated as a stall.</p>
+     *
+     * @param description a short label used in the warning message, e.g. {@code "Jira issues"}
+     * @param endpoint the request URL, named in the warning message
+     * @param requestedOffset the offset that was sent to the server
+     * @param servedOffset the offset the server echoed back, or null when it reported none
+     * @return true when the offsets disagree and paging must stop
+     */
+    public static boolean isOffsetIgnored(final String description, final String endpoint, final int requestedOffset,
+            final Integer servedOffset) {
+        if (servedOffset == null || servedOffset.intValue() == requestedOffset) {
+            return false;
+        }
+        logger.warn(
+                "Stopped paging {}: requested offset {} from {} but the server served offset {}. "
+                        + "The server is ignoring the paging parameter.",
+                description, Integer.valueOf(requestedOffset), endpoint, servedOffset);
+        return true;
     }
 }

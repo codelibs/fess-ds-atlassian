@@ -184,7 +184,7 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
             final String nextCursor =
                     linksNode != null && linksNode.hasNonNull("next") ? GetContentsRequest.extractCursor(linksNode.get("next").asText())
                             : null;
-            return new GetCommentsOfContentResponse(comments, nextCursor);
+            return new GetCommentsOfContentResponse(comments, nextCursor, GetContentsRequest.extractStart(rootNode));
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
         }

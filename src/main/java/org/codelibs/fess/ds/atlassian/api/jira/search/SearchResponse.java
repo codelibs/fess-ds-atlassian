@@ -31,6 +31,9 @@ public class SearchResponse {
     /** Number of total hits. **/
     protected Long total;
 
+    /** The offset the endpoint actually served, echoed back from the request. */
+    protected Integer startAt;
+
     /** The list of issues returned by the search. */
     protected List<Issue> issues;
 
@@ -54,6 +57,15 @@ public class SearchResponse {
      */
     public Long getTotal() {
         return total;
+    }
+
+    /**
+     * Returns the offset the endpoint reported serving.
+     *
+     * @return the offset, or null when the endpoint did not echo one
+     */
+    public Integer getStartAt() {
+        return startAt;
     }
 
     /**

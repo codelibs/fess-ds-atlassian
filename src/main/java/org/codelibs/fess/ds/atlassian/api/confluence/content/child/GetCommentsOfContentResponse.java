@@ -30,6 +30,9 @@ public class GetCommentsOfContentResponse {
     /** The cursor for the next page, or null when this is the last page. */
     protected final String nextCursor;
 
+    /** The offset the endpoint actually served, echoed back from the request. */
+    protected final Integer start;
+
     /**
      * Constructs a response with the given comment list and no continuation cursor.
      *
@@ -46,8 +49,20 @@ public class GetCommentsOfContentResponse {
      * @param nextCursor the cursor for the next page, may be null
      */
     public GetCommentsOfContentResponse(final List<Comment> comments, final String nextCursor) {
+        this(comments, nextCursor, null);
+    }
+
+    /**
+     * Constructs a response with the given comment list, continuation cursor and served offset.
+     *
+     * @param comments the list of comments
+     * @param nextCursor the cursor for the next page, may be null
+     * @param start the offset the endpoint echoed back, may be null
+     */
+    public GetCommentsOfContentResponse(final List<Comment> comments, final String nextCursor, final Integer start) {
         this.comments = comments;
         this.nextCursor = nextCursor;
+        this.start = start;
     }
 
     /**
@@ -66,6 +81,15 @@ public class GetCommentsOfContentResponse {
      */
     public String getNextCursor() {
         return nextCursor;
+    }
+
+    /**
+     * Gets the offset the endpoint reported serving.
+     *
+     * @return the offset, or null when the endpoint did not echo one
+     */
+    public Integer getStart() {
+        return start;
     }
 
 }

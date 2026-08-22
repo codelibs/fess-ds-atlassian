@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian.api.confluence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codelibs.fess.ds.atlassian.MockAtlassianServer;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
@@ -170,6 +171,58 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
 
             Assertions.assertEquals(List.of("D1", "D2", "D3"), titles);
             Assertions.assertEquals(2, server.getRequests().size());
+        }
+    }
+
+    /**
+     * getContents terminates only on a short page, so a Data Center instance (or a proxy in front
+     * of it) that ignores {@code start} and replies with the same full page would loop forever:
+     * the next offset is derived from the row count, so the cursor always looks like it advanced
+     * and the page is never empty. The echoed {@code start} is the only evidence available.
+     *
+     * <p>The mock gives up after ten calls so that a missing guard fails this assertion instead of
+     * hanging the build.</p>
+     */
+    @Test
+    public void test_datacenter_stops_when_served_offset_ignores_start() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/search", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":0,\"results\":[]}");
+                }
+                // start is echoed as 0 no matter which offset was requested.
+                return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":2,\"results\":" + resultsJson("D1", "D2") + "}");
+            });
+
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getContents(content -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
+        }
+    }
+
+    /**
+     * The same stall on the comment endpoint, whose offset branch is a verbatim copy of the one in
+     * getContents.
+     */
+    @Test
+    public void test_datacenter_comments_stop_when_served_offset_ignores_start() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/search", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":0,\"results\":[]}");
+                }
+                return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":2,\"results\":" + commentsJson("C1", "C2") + "}");
+            });
+
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getContentComments("123", comment -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
         }
     }
 
