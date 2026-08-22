@@ -205,4 +205,50 @@ public class JiraPaginationTest extends UnitDsTestCase {
             Assertions.assertEquals(2, server.getRequests().size(), "an empty page must end the loop even when total is large");
         }
     }
+
+    /**
+     * Regression guard for silent record loss: when a page returns fewer rows than requested,
+     * the next offset must advance by the number received, not by the requested page size.
+     */
+    @Test
+    public void test_datacenter_advances_by_received_count_not_page_size() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/rest/api/2/search", req -> {
+                final String startAt = req.query().getOrDefault("startAt", "0");
+                if ("0".equals(startAt)) {
+                    // Fewer rows than maxResults=2.
+                    return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":3,\"issues\":" + issuesJson("D-1") + "}");
+                }
+                if ("1".equals(startAt)) {
+                    return MockAtlassianServer
+                            .json("{\"startAt\":1,\"maxResults\":2,\"total\":3,\"issues\":" + issuesJson("D-2", "D-3") + "}");
+                }
+                // Only reachable if the client advanced by maxResults instead of by the received count.
+                return MockAtlassianServer.json("{\"startAt\":2,\"maxResults\":2,\"total\":3,\"issues\":" + issuesJson("D-3") + "}");
+            });
+
+            final List<String> keys = new ArrayList<>();
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getIssues(issue -> keys.add(issue.getKey()));
+            }
+
+            Assertions.assertEquals(List.of("D-1", "D-2", "D-3"), keys, "advancing by page size would skip D-2");
+        }
+    }
+
+    @Test
+    public void test_cloud_stops_when_is_last_is_true_even_with_a_token() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/rest/api/3/search/jql", req -> MockAtlassianServer
+                    .json("{\"issues\":" + issuesJson("A-1", "A-2") + ",\"nextPageToken\":\"tok2\",\"isLast\":true}"));
+
+            final List<String> keys = new ArrayList<>();
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "cloud"))) {
+                client.getIssues(issue -> keys.add(issue.getKey()));
+            }
+
+            Assertions.assertEquals(1, server.getRequests().size(), "isLast=true must end the loop even when a token is present");
+            Assertions.assertEquals(List.of("A-1", "A-2"), keys);
+        }
+    }
 }
