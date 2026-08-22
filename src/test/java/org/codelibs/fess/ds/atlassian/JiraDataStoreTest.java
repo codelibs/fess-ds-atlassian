@@ -168,12 +168,22 @@ public class JiraDataStoreTest extends UnitDsTestCase {
             new JiraDataStore().storeData(new DataConfig(), callback, paramMap, scriptMap, new HashMap<>());
 
             Assertions.assertEquals(1, stored.size());
-            // "basic.password" is no longer a literal key in the script's result map, so Groovy
-            // evaluates it as a property access on an unbound "basic" variable and throws
-            // MissingPropertyException; the script engine catches that and returns null, and
-            // processIssue only writes non-null script results into dataMap. The key is therefore
-            // absent from the stored document entirely, not present with a null value - assert
-            // that directly rather than the ambiguous get() == null.
+            // What makes this test discriminate is the short-circuit at the top of
+            // AbstractDataStore#convertValue, which runs before the script engine is ever
+            // consulted:
+            //
+            //     if (paramMap.containsKey(template)) {
+            //         return paramMap.get(template);
+            //     }
+            //
+            // Before the fix the script's result map was seeded from paramMap, so the template
+            // string "basic.password" was a literal key in that map and convertValue handed back
+            // the raw credential without Groovy being invoked at all. The fix removes the
+            // credentials from that map, so the template now falls through to Groovy, which
+            // evaluates it as a property access on an unbound "basic" variable and fails; the
+            // engine turns that into null and processIssue writes only non-null script results.
+            // The key is therefore absent from the stored document entirely rather than present
+            // with a null value - assert that directly rather than the ambiguous get() == null.
             Assertions.assertFalse(stored.get(0).containsKey("leaked"), "credentials must not be reachable from the script");
             for (final Object value : stored.get(0).values()) {
                 Assertions.assertNotEquals("s3cr3t", value, "the password must not appear anywhere in the document");
