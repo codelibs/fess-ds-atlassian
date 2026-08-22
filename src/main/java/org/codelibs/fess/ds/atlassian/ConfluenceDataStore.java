@@ -93,9 +93,6 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             client.getContents(content -> executorService
                     .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
 
-            client.getBlogContents(content -> executorService
-                    .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
-
             if (logger.isDebugEnabled()) {
                 logger.debug("Shutting down thread executor.");
             }
