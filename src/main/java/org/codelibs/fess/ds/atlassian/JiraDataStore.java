@@ -158,7 +158,7 @@ public class JiraDataStore extends AtlassianDataStore {
 
             logger.info("Crawling URL: {}", url);
 
-            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap.asMap());
+            final Map<String, Object> resultMap = new LinkedHashMap<>(defaultDataMap);
             final Map<String, Object> issueMap = new HashMap<>();
 
             issueMap.put(ISSUE_SUMMARY, issue.getFields().getSummary());
