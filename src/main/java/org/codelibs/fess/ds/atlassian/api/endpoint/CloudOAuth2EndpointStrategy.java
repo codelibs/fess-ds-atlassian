@@ -25,6 +25,7 @@ import org.codelibs.curl.CurlRequest;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
@@ -97,6 +98,11 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
         logger.info("Resolved Atlassian Cloud API URL: {}", cachedApiUrl);
 
         return cachedApiUrl;
+    }
+
+    @Override
+    public Deployment getDeployment() {
+        return Deployment.CLOUD;
     }
 
     private String resolveCloudId(String home, OAuth2Authentication authentication) {

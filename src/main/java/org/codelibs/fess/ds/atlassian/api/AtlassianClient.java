@@ -19,12 +19,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
+import org.codelibs.fess.ds.atlassian.api.endpoint.CloudBasicEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
-import org.codelibs.fess.ds.atlassian.api.endpoint.DefaultEndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.endpoint.DataCenterEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
@@ -46,6 +48,8 @@ public abstract class AtlassianClient {
     protected static final String HOME_PARAM = "home";
     /** Parameter key for Cloud. */
     protected static final String IS_CLOUD = "is_cloud";
+    /** Parameter key for the deployment type. */
+    protected static final String DEPLOYMENT_PARAM = "deployment";
     /** Parameter key for authentication type selection. */
     protected static final String AUTH_TYPE_PARAM = "auth_type";
     /** Parameter key for OAuth consumer key. */
@@ -111,9 +115,10 @@ public abstract class AtlassianClient {
         final String home = paramMap.getAsString(HOME_PARAM, StringUtil.EMPTY);
 
         if (home.isEmpty()) {
-            logger.warn("parameter \"{}\" required", HOME_PARAM);
-            return;
+            throw new AtlassianDataStoreException("parameter \"" + HOME_PARAM + "\" is required.");
         }
+
+        final Deployment deployment = resolveDeployment(paramMap, home);
 
         final String authType = getAuthType(paramMap);
         switch (authType) {
@@ -126,7 +131,7 @@ public abstract class AtlassianClient {
                         "parameter \"" + BASIC_USERNAME_PARAM + "\" and \"" + BASIC_PASS_PARAM + " required for Basic authentication.");
             }
             authentication = new BasicAuthentication(username, password);
-            endpointStrategy = new DefaultEndpointStrategy(home);
+            endpointStrategy = createEndpointStrategy(deployment, home, product);
             break;
         }
         case OAUTH: {
@@ -140,7 +145,7 @@ public abstract class AtlassianClient {
                         + SECRET_PARAM + "\" and \"" + ACCESS_TOKEN_PARAM + "\" required for OAuth authentication.");
             }
             authentication = new OAuthAuthentication(consumerKey, privateKey, accessToken, verifier);
-            endpointStrategy = new DefaultEndpointStrategy(home);
+            endpointStrategy = createEndpointStrategy(deployment, home, product);
             break;
         }
         case OAUTH2: {
@@ -179,11 +184,10 @@ public abstract class AtlassianClient {
                 logger.info("Updated DataConfig: {}", dataConfig.getId());
             });
 
-            final boolean isCloud = Boolean.parseBoolean(paramMap.getAsString(IS_CLOUD, "true"));
-            if (isCloud) {
+            if (deployment == Deployment.CLOUD) {
                 endpointStrategy = new CloudOAuth2EndpointStrategy(home, product, authentication);
             } else {
-                endpointStrategy = new DefaultEndpointStrategy(home);
+                endpointStrategy = new DataCenterEndpointStrategy(home);
             }
             break;
         }
@@ -217,6 +221,56 @@ public abstract class AtlassianClient {
     }
 
     /**
+     * Resolves the deployment type from parameters.
+     * The deprecated {@code is_cloud} parameter is still honoured but logs a migration warning.
+     *
+     * @param paramMap the configuration parameters
+     * @param home the instance home URL
+     * @return the resolved deployment type
+     */
+    protected Deployment resolveDeployment(final DataStoreParams paramMap, final String home) {
+        final String deploymentValue = paramMap.getAsString(DEPLOYMENT_PARAM, StringUtil.EMPTY);
+        final String isCloudValue = paramMap.getAsString(IS_CLOUD, StringUtil.EMPTY);
+
+        if (StringUtil.isNotBlank(isCloudValue)) {
+            if (StringUtil.isNotBlank(deploymentValue)) {
+                logger.warn("Both \"{}\" and deprecated \"{}\" are set. Using \"{}\" and ignoring \"{}\".", DEPLOYMENT_PARAM, IS_CLOUD,
+                        DEPLOYMENT_PARAM, IS_CLOUD);
+            } else {
+                final Deployment fromIsCloud = Boolean.parseBoolean(isCloudValue) ? Deployment.CLOUD : Deployment.DATA_CENTER;
+                logger.warn("Parameter \"{}\" is deprecated and will be removed in 16.0. Use \"{}={}\" instead.", IS_CLOUD,
+                        DEPLOYMENT_PARAM, fromIsCloud == Deployment.CLOUD ? "cloud" : "datacenter");
+                return fromIsCloud;
+            }
+        }
+        return Deployment.of(deploymentValue, home);
+    }
+
+    /**
+     * Creates the endpoint strategy for non-OAuth2 authentication.
+     *
+     * @param deployment the deployment type
+     * @param home the instance home URL
+     * @param product the Atlassian product
+     * @return the endpoint strategy
+     */
+    protected EndpointStrategy createEndpointStrategy(final Deployment deployment, final String home, final AtlassianProduct product) {
+        if (deployment == Deployment.CLOUD) {
+            return new CloudBasicEndpointStrategy(home, product);
+        }
+        return new DataCenterEndpointStrategy(home);
+    }
+
+    /**
+     * Returns the endpoint strategy resolved for this client.
+     *
+     * @return the endpoint strategy
+     */
+    public EndpointStrategy getEndpointStrategy() {
+        return endpointStrategy;
+    }
+
+    /**
      * Configures a request with authentication and timeout settings.
      *
      * @param <T> the request type
@@ -226,6 +280,7 @@ public abstract class AtlassianClient {
     protected <T extends AtlassianRequest> T createRequest(final T request) {
         request.setAuthentication(authentication);
         request.setApiUrl(getApiUrl());
+        request.setEndpointStrategy(endpointStrategy);
         request.setConnectionTimeout(connectionTimeout);
         request.setReadTimeout(readTimeout);
         return request;

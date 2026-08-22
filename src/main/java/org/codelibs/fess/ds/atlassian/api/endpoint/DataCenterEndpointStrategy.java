@@ -15,20 +15,23 @@
  */
 package org.codelibs.fess.ds.atlassian.api.endpoint;
 
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
 /**
- * Default endpoint strategy using the home URL directly.
+ * Endpoint strategy for Atlassian Data Center and the end-of-life Server edition.
+ * The configured home URL is used verbatim.
  */
-public class DefaultEndpointStrategy implements EndpointStrategy {
+public class DataCenterEndpointStrategy implements EndpointStrategy {
+
     private final String home;
 
     /**
-     * Constructs a new default endpoint strategy.
+     * Constructs a Data Center endpoint strategy.
      *
-     * @param home the Atlassian instance home URL
+     * @param home the instance home URL
      */
-    public DefaultEndpointStrategy(final String home) {
+    public DataCenterEndpointStrategy(final String home) {
         this.home = UrlUtil.normalizeUrl(home);
     }
 
@@ -40,5 +43,10 @@ public class DefaultEndpointStrategy implements EndpointStrategy {
     @Override
     public String getApiUrl() {
         return home;
+    }
+
+    @Override
+    public Deployment getDeployment() {
+        return Deployment.DATA_CENTER;
     }
 }

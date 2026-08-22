@@ -28,6 +28,7 @@ import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.authentication.AuthType;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
+import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,6 +74,8 @@ public abstract class AtlassianRequest {
     protected Authentication authentication;
     /** Application API URL. */
     protected String apiUrl;
+    /** Endpoint strategy used to resolve deployment-specific paths and parameters. */
+    protected EndpointStrategy endpointStrategy;
     /** HTTP connection timeout in milliseconds. */
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
@@ -209,6 +212,15 @@ public abstract class AtlassianRequest {
      */
     public void setApiUrl(final String apiUrl) {
         this.apiUrl = apiUrl;
+    }
+
+    /**
+     * Sets the endpoint strategy for this request.
+     *
+     * @param endpointStrategy the endpoint strategy
+     */
+    public void setEndpointStrategy(final EndpointStrategy endpointStrategy) {
+        this.endpointStrategy = endpointStrategy;
     }
 
     /**
