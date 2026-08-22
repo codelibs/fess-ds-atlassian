@@ -141,11 +141,6 @@ public class ConfluenceDataStoreTest extends UnitDsTestCase {
     }
 
     @Test
-    public void test_storeData() {
-        // doStoreDataTest();
-    }
-
-    @Test
     public void test_storeData_fetches_each_page_once() throws Exception {
         try (MockAtlassianServer server = new MockAtlassianServer().start()) {
             server.on("/wiki/rest/api/search",
@@ -201,47 +196,6 @@ public class ConfluenceDataStoreTest extends UnitDsTestCase {
                     server.getRequests().stream().filter(r -> !r.query().getOrDefault("cql", "").contains("type=\"comment\"")).count();
             Assertions.assertEquals(1, contentSearchRequests, "the content search endpoint must be called once, not once per content type");
         }
-    }
-
-    protected void doStoreDataTest() {
-
-        final DataConfig dataConfig = new DataConfig();
-        final IndexUpdateCallback callback = new IndexUpdateCallback() {
-            @Override
-            public void store(DataStoreParams paramMap, Map<String, Object> dataMap) {
-                System.out.println(dataMap);
-            }
-
-            @Override
-            public long getExecuteTime() {
-                return 0;
-            }
-
-            @Override
-            public long getDocumentSize() {
-                return 0;
-            }
-
-            @Override
-            public void commit() {
-            }
-        };
-        final DataStoreParams paramMap = new DataStoreParams();
-        paramMap.put("confluence.home", "");
-        paramMap.put("confluence.oauth.consumer_key", "");
-        paramMap.put("confluence.oauth.private_key", "");
-        paramMap.put("confluence.oauth.secret", "");
-        paramMap.put("confluence.oauth.access_token", "");
-        final Map<String, String> scriptMap = new HashMap<>();
-        final Map<String, Object> defaultDataMap = new HashMap<>();
-
-        scriptMap.put("url", "content.view_url");
-        scriptMap.put("title", "content.title");
-        scriptMap.put("content", "content.body + content.comments");
-        scriptMap.put("last_modified", "content.last_modified");
-
-        dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
-
     }
 
     @Test

@@ -125,11 +125,6 @@ public class JiraDataStoreTest extends UnitDsTestCase {
     }
 
     @Test
-    public void test_storeData() {
-        // doStoreDataTest();
-    }
-
-    @Test
     public void test_script_cannot_read_credentials() throws Exception {
         try (MockAtlassianServer server = new MockAtlassianServer().start()) {
             server.on("/rest/api/3/search/jql", req -> MockAtlassianServer.json(
@@ -184,48 +179,6 @@ public class JiraDataStoreTest extends UnitDsTestCase {
                 Assertions.assertNotEquals("s3cr3t", value, "the password must not appear anywhere in the document");
             }
         }
-    }
-
-    protected void doStoreDataTest() {
-
-        final DataConfig dataConfig = new DataConfig();
-        final IndexUpdateCallback callback = new IndexUpdateCallback() {
-            @Override
-            public void store(DataStoreParams paramMap, Map<String, Object> dataMap) {
-                System.out.println(dataMap);
-            }
-
-            @Override
-            public long getExecuteTime() {
-                return 0;
-            }
-
-            @Override
-            public long getDocumentSize() {
-                return 0;
-            }
-
-            @Override
-            public void commit() {
-            }
-        };
-        final DataStoreParams paramMap = new DataStoreParams();
-        paramMap.put("jira.home", "");
-        paramMap.put("jira.oauth.consumer_key", "");
-        paramMap.put("jira.oauth.private_key", "");
-        paramMap.put("jira.oauth.secret", "");
-        paramMap.put("jira.oauth.access_token", "");
-        // paramMap.put("jira.issue.jql", "");
-        final Map<String, String> scriptMap = new HashMap<>();
-        final Map<String, Object> defaultDataMap = new HashMap<>();
-
-        scriptMap.put("url", "issue.view_url");
-        scriptMap.put("title", "issue.summary");
-        scriptMap.put("content", "issue.description + issue.comments");
-        scriptMap.put("last_modified", "issue.last_modified");
-
-        dataStore.storeData(dataConfig, callback, paramMap, scriptMap, defaultDataMap);
-
     }
 
     @Test

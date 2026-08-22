@@ -32,37 +32,11 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesResponse;
-import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ConfluenceClientTest extends AtlassianClientTest {
     protected final String confluenceHome = "";
-
-    protected void doProductionTest() {
-        final DataStoreParams paramMap = new DataStoreParams();
-        paramMap.put(AUTH_TYPE_PARAM, "oauth");
-        paramMap.put(CONSUMER_KEY_PARAM, "");
-        paramMap.put(PRIVATE_KEY_PARAM, "");
-        paramMap.put(SECRET_PARAM, "");
-        paramMap.put(ACCESS_TOKEN_PARAM, "");
-        final ConfluenceClient confluenceClient = new ConfluenceClient(new DataConfig(), paramMap);
-        doGetContentsTest(confluenceClient);
-        doGetCommentsOfContentTest(confluenceClient);
-        doGetAttachmentsOfContentTest(confluenceClient);
-        doGetSpacesTest(confluenceClient);
-    }
-
-    protected void doGetContentsTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.contents().expand("body.view", "version").execute().getContents();
-        if (!contents.isEmpty()) {
-            final Content content = contents.get(0);
-            assertTrue("not contains \"title\"", content.getTitle() != null);
-
-            assertTrue("not contains \"body\"", content.getBody() != null);
-            assertTrue("not contains \"lastModified\"", content.getLastModified() != null);
-        }
-    }
 
     @Test
     public void test_getContents_parseResponse() {
@@ -81,30 +55,18 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "}";
         final GetContentsResponse response = GetContentsRequest.parseResponse(json);
         final List<Content> contents = response.getContents();
+        Assertions.assertEquals(2, contents.size());
         for (int i = 0; i < contents.size(); i++) {
             final Content content = contents.get(i);
-            assertEquals(content.getTitle(), "Title-" + i);
-            assertEquals(content.getBody(), "Body-" + i);
+            Assertions.assertEquals("Title-" + i, content.getTitle());
+            Assertions.assertEquals("Body-" + i, content.getBody());
             // TODO
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             try {
-                assertEquals(content.getLastModified(), (Long) format.parse("2018-08-01T12:34:56.789Z").getTime());
+                Assertions.assertEquals((Long) format.parse("2018-08-01T12:34:56.789Z").getTime(), content.getLastModified());
             } catch (Exception e) {
                 e.printStackTrace();
-            }
-        }
-    }
-
-    protected void doGetCommentsOfContentTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.contents().execute().getContents();
-        if (!contents.isEmpty()) {
-            final String id = contents.get(0).getId();
-            final GetCommentsOfContentResponse response =
-                    confluenceClient.commentsOfContent(id).depth("all").expand("content.body.view").execute();
-            for (final Comment comment : response.getComments()) {
-                assertTrue("not contains \"title\"", comment.getTitle() != null);
-                assertTrue("not contains \"value\" in \"body.view\"", comment.getBody() != null);
             }
         }
     }
@@ -125,23 +87,11 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "}";
         final GetCommentsOfContentResponse response = GetCommentsOfContentRequest.parseResponse(json);
         final List<Comment> comments = response.getComments();
+        Assertions.assertEquals(2, comments.size());
         for (int i = 0; i < comments.size(); i++) {
             final Comment comment = comments.get(i);
             assertEquals("Title-" + i, comment.getTitle());
             assertEquals("<p>Comment-" + i + "</p>", comment.getBody());
-        }
-    }
-
-    protected void doGetAttachmentsOfContentTest(final ConfluenceClient confluenceClient) {
-        final List<Content> contents = confluenceClient.contents().execute().getContents();
-        if (!contents.isEmpty()) {
-            final String id = contents.get(0).getId();
-            final GetAttachmentsOfContentResponse response = confluenceClient.attachmentsOfContent(id).execute();
-            for (final Attachment attachment : response.getAttachments()) {
-                assertTrue("not contains \"title\"", attachment.getTitle() != null);
-                assertTrue("not contains \"mediaType\" in \"metadata\"", attachment.getMediaType() != null);
-                assertTrue("not contains \"download\" in \"_links\"", attachment.getDownloadLink() != null);
-            }
         }
     }
 
@@ -160,18 +110,11 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "}";
         final GetAttachmentsOfContentResponse response = GetAttachmentsOfContentRequest.parseResponse(json);
         final List<Attachment> attachments = response.getAttachments();
+        Assertions.assertEquals(1, attachments.size());
         final Attachment attachment = attachments.get(0);
         assertEquals("title.txt", attachment.getTitle());
         assertEquals("text/plain", attachment.getMediaType());
         assertEquals("/download", attachment.getDownloadLink());
-    }
-
-    protected void doGetSpacesTest(final ConfluenceClient confluenceClient) {
-        final GetSpacesResponse response = confluenceClient.spaces().expand("description").execute();
-        for (final Space space : response.getSpaces()) {
-            assertTrue("not contains \"name\"", space.getName() != null);
-            assertTrue("not contains \"description\"", space.getDescription() != null);
-        }
     }
 
     @Test
@@ -184,9 +127,10 @@ public class ConfluenceClientTest extends AtlassianClientTest {
                 "}";
         final GetSpacesResponse response = GetSpacesRequest.parseResponse(json);
         final List<Space> spaces = response.getSpaces();
+        Assertions.assertEquals(2, spaces.size());
         for (int i = 0; i < spaces.size(); i++) {
             final Space space = spaces.get(i);
-            assertEquals(space.getName(), "Space-" + i);
+            Assertions.assertEquals("Space-" + i, space.getName());
         }
     }
 
