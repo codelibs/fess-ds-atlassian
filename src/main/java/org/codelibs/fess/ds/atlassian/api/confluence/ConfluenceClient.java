@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
-import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
@@ -29,7 +28,6 @@ import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOf
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOfContentResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
-import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpaceRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
@@ -121,32 +119,12 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     }
 
     /**
-     * Creates a request to get a specific space.
-     *
-     * @param spaceKey the space key
-     * @return a GetSpaceRequest instance
-     */
-    public GetSpaceRequest space(final String spaceKey) {
-        return createRequest(new GetSpaceRequest(spaceKey));
-    }
-
-    /**
      * Creates a request to get content.
      *
      * @return a GetContentsRequest instance
      */
     public GetContentsRequest contents() {
         return createRequest(new GetContentsRequest());
-    }
-
-    /**
-     * Creates a request to get specific content.
-     *
-     * @param contentId the content ID
-     * @return a GetContentRequest instance
-     */
-    public GetContentRequest content(final String contentId) {
-        return createRequest(new GetContentRequest(contentId));
     }
 
     /**

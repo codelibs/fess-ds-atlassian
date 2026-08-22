@@ -190,12 +190,4 @@ public class ConfluenceClientTest extends AtlassianClientTest {
         }
     }
 
-    protected void doGetSpaceTest(final ConfluenceClient confluenceClient) {
-        // TODO
-    }
-
-    @Test
-    public void test_getSpace_parseResponse() {
-        // TODO
-    }
 }

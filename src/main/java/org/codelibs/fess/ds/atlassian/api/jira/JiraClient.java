@@ -25,8 +25,6 @@ import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
-import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
-import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
@@ -157,32 +155,12 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     /**
-     * Creates a request to get a specific project.
-     *
-     * @param projectIdOrKey the project ID or key
-     * @return a GetProjectRequest instance
-     */
-    public GetProjectRequest project(final String projectIdOrKey) {
-        return createRequest(new GetProjectRequest(projectIdOrKey));
-    }
-
-    /**
      * Creates a search request for issues.
      *
      * @return a SearchRequest instance
      */
     public SearchRequest search() {
         return createRequest(new SearchRequest());
-    }
-
-    /**
-     * Creates a request to get a specific issue.
-     *
-     * @param issueIdOrKey the issue ID or key
-     * @return a GetIssueRequest instance
-     */
-    public GetIssueRequest issue(final String issueIdOrKey) {
-        return createRequest(new GetIssueRequest(issueIdOrKey));
     }
 
     /**
