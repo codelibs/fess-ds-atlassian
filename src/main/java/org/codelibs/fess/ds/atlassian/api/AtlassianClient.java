@@ -46,7 +46,12 @@ public abstract class AtlassianClient {
     // parameters
     /** Parameter key for the Atlassian instance home URL. */
     protected static final String HOME_PARAM = "home";
-    /** Parameter key for Cloud. */
+    /**
+     * Parameter key for Cloud.
+     *
+     * @deprecated Use {@link #DEPLOYMENT_PARAM} instead. Will be removed in 16.0.
+     */
+    @Deprecated
     protected static final String IS_CLOUD = "is_cloud";
     /** Parameter key for the deployment type. */
     protected static final String DEPLOYMENT_PARAM = "deployment";
@@ -244,6 +249,33 @@ public abstract class AtlassianClient {
             }
         }
         return Deployment.of(deploymentValue, home);
+    }
+
+    /**
+     * Reads a parameter, accepting a deprecated key as a fallback.
+     * The new key always wins; using the deprecated key logs a migration warning.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the current parameter key
+     * @param deprecatedKey the deprecated parameter key
+     * @param defaultValue the value returned when neither key is set
+     * @return the resolved value
+     */
+    protected String getParamWithDeprecatedAlias(final DataStoreParams paramMap, final String key, final String deprecatedKey,
+            final String defaultValue) {
+        final String value = paramMap.getAsString(key, StringUtil.EMPTY);
+        final String legacy = paramMap.getAsString(deprecatedKey, StringUtil.EMPTY);
+
+        if (StringUtil.isNotBlank(legacy)) {
+            if (StringUtil.isNotBlank(value)) {
+                logger.warn("Both \"{}\" and deprecated \"{}\" are set. Using \"{}\" and ignoring \"{}\".", key, deprecatedKey, key,
+                        deprecatedKey);
+            } else {
+                logger.warn("Parameter \"{}\" is deprecated and will be removed in 16.0. Use \"{}\" instead.", deprecatedKey, key);
+                return legacy;
+            }
+        }
+        return StringUtil.isNotBlank(value) ? value : defaultValue;
     }
 
     /**

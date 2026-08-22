@@ -44,8 +44,16 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     protected static final String DEFAULT_CONTENT_LIMIT = "25";
 
     // parameters for confluence
-    /** Parameter key for content limit configuration. */
-    protected static final String CONTENT_LIMIT_PARAM = "content_limit";
+    /** Parameter key for the search page size. */
+    protected static final String CONTENT_LIMIT_PARAM = "confluence.limit";
+
+    /**
+     * Deprecated parameter key for the search page size.
+     *
+     * @deprecated Use {@link #CONTENT_LIMIT_PARAM} instead. Will be removed in 16.0.
+     */
+    @Deprecated
+    protected static final String DEPRECATED_CONTENT_LIMIT_PARAM = "content_limit";
 
     /** The Confluence instance home URL. */
     protected final String confluenceHome;
@@ -84,13 +92,23 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
     }
 
     /**
-     * Gets the content limit from parameters.
+     * Gets the search page size from parameters.
      *
      * @param paramMap the parameter map
-     * @return the content limit
+     * @return the page size
      */
     public Integer getContentLimit(final DataStoreParams paramMap) {
-        return Integer.parseInt(paramMap.getAsString(CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
+        return Integer
+                .valueOf(getParamWithDeprecatedAlias(paramMap, CONTENT_LIMIT_PARAM, DEPRECATED_CONTENT_LIMIT_PARAM, DEFAULT_CONTENT_LIMIT));
+    }
+
+    /**
+     * Returns the resolved search page size.
+     *
+     * @return the page size
+     */
+    public Integer getContentLimit() {
+        return contentLimit;
     }
 
     /**
