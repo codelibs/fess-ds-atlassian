@@ -56,6 +56,23 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
         return buf.append(']').toString();
     }
 
+    private static String commentsJson(final String... titles) {
+        final StringBuilder buf = new StringBuilder("[");
+        for (int i = 0; i < titles.length; i++) {
+            if (i > 0) {
+                buf.append(',');
+            }
+            buf.append("{\"content\":{\"id\":\"")
+                    .append(i)
+                    .append("\",\"title\":\"")
+                    .append(titles[i])
+                    .append("\",\"body\":{\"view\":{\"value\":\"<p>")
+                    .append(titles[i])
+                    .append("</p>\"}}}}");
+        }
+        return buf.append(']').toString();
+    }
+
     @Test
     public void test_cloud_follows_links_next_cursor() throws Exception {
         try (MockAtlassianServer server = new MockAtlassianServer().start()) {
@@ -100,6 +117,38 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
 
             Assertions.assertEquals(List.of("P1", "P2"), titles);
             Assertions.assertEquals(1, server.getRequests().size());
+        }
+    }
+
+    /**
+     * getContentComments duplicates the cursor logic of getContents verbatim, but the only place
+     * comments run end to end returns an empty {@code _links} object, so the follow-the-cursor
+     * branch had no coverage at all.
+     */
+    @Test
+    public void test_cloud_comments_follow_links_next_cursor() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/wiki/rest/api/search", req -> {
+                final String cursor = req.query().get("cursor");
+                if (cursor == null) {
+                    return MockAtlassianServer.json("{\"results\":" + commentsJson("C1", "C2")
+                            + ",\"_links\":{\"next\":\"/rest/api/search?cql=container%3D%22123%22&cursor=CUR2&limit=2\"}}");
+                }
+                if ("CUR2".equals(cursor)) {
+                    return MockAtlassianServer.json("{\"results\":" + commentsJson("C3") + ",\"_links\":{}}");
+                }
+                return MockAtlassianServer.status(400, "{\"message\":\"bad cursor\"}");
+            });
+
+            final List<String> titles = new ArrayList<>();
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "cloud"))) {
+                client.getContentComments("123", comment -> titles.add(comment.getTitle()));
+            }
+
+            Assertions.assertEquals(List.of("C1", "C2", "C3"), titles);
+            Assertions.assertEquals(2, server.getRequests().size());
+            Assertions.assertNull(server.getRequests().get(0).query().get("start"),
+                    "start was removed from /rest/api/search in 2020 and must not be sent");
         }
     }
 
