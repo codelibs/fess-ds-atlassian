@@ -27,13 +27,27 @@ public class GetCommentsOfContentResponse {
     /** The list of comments returned by the API. */
     protected final List<Comment> comments;
 
+    /** The cursor for the next page, or null when this is the last page. */
+    protected final String nextCursor;
+
     /**
-     * Constructs a response with the given list of comments.
+     * Constructs a response with the given comment list and no continuation cursor.
      *
      * @param comments the list of comments
      */
     public GetCommentsOfContentResponse(final List<Comment> comments) {
+        this(comments, null);
+    }
+
+    /**
+     * Constructs a response with the given comment list and continuation cursor.
+     *
+     * @param comments the list of comments
+     * @param nextCursor the cursor for the next page, may be null
+     */
+    public GetCommentsOfContentResponse(final List<Comment> comments, final String nextCursor) {
         this.comments = comments;
+        this.nextCursor = nextCursor;
     }
 
     /**
@@ -43,6 +57,15 @@ public class GetCommentsOfContentResponse {
      */
     public List<Comment> getComments() {
         return comments;
+    }
+
+    /**
+     * Gets the cursor for the next page.
+     *
+     * @return the cursor, or null when this is the last page
+     */
+    public String getNextCursor() {
+        return nextCursor;
     }
 
 }

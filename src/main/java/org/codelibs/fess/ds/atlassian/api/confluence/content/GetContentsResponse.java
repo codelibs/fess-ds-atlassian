@@ -27,13 +27,27 @@ public class GetContentsResponse {
     /** The list of content items. */
     protected final List<Content> contents;
 
+    /** The cursor for the next page, or null when this is the last page. */
+    protected final String nextCursor;
+
     /**
-     * Constructs a response with the given content list.
+     * Constructs a response with the given content list and no continuation cursor.
      *
      * @param contents the list of content items
      */
     public GetContentsResponse(final List<Content> contents) {
+        this(contents, null);
+    }
+
+    /**
+     * Constructs a response with the given content list and continuation cursor.
+     *
+     * @param contents the list of content items
+     * @param nextCursor the cursor for the next page, may be null
+     */
+    public GetContentsResponse(final List<Content> contents, final String nextCursor) {
         this.contents = contents;
+        this.nextCursor = nextCursor;
     }
 
     /**
@@ -43,6 +57,15 @@ public class GetContentsResponse {
      */
     public List<Content> getContents() {
         return contents;
+    }
+
+    /**
+     * Gets the cursor for the next page.
+     *
+     * @return the cursor, or null when this is the last page
+     */
+    public String getNextCursor() {
+        return nextCursor;
     }
 
 }
