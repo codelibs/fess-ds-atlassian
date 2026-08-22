@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
@@ -28,6 +29,8 @@ import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
+import org.codelibs.fess.ds.atlassian.api.paging.PageCursor;
+import org.codelibs.fess.ds.atlassian.api.paging.Paginator;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
@@ -190,25 +193,31 @@ public class JiraClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each issue
      */
     public void getIssues(final Consumer<Issue> consumer) {
-        int startAt = 0;
-        while (true) {
-            final SearchResponse searchResponse =
-                    search().jql(jql).startAt(startAt).maxResults(issueMaxResults).fields("summary", "description", "updated").execute();
-            final List<Issue> issues = searchResponse.getIssues();
-            issues.forEach(consumer);
-
-            final Long total = searchResponse.getTotal();
-            if (total != null) {
-                if (startAt + issues.size() >= total) {
-                    break;
+        final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
+        Paginator.forEach("Jira issues", cursor -> {
+            final SearchRequest request = search().jql(jql).maxResults(issueMaxResults).fields("summary", "description", "updated");
+            if (cloud) {
+                if (cursor.token() != null) {
+                    request.nextPageToken(cursor.token());
                 }
             } else {
-                if (issues.size() < issueMaxResults) {
-                    break;
-                }
+                request.startAt(cursor.offset() == null ? 0 : cursor.offset().intValue());
             }
-            startAt += issueMaxResults;
-        }
+
+            final SearchResponse response = request.execute();
+            final List<Issue> issues = response.getIssues() == null ? List.of() : response.getIssues();
+
+            if (cloud) {
+                final String token = response.getNextPageToken();
+                final boolean last = Boolean.TRUE.equals(response.getIsLast()) || token == null;
+                return new Paginator.Page<>(issues, last ? PageCursor.done() : PageCursor.token(token));
+            }
+
+            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            final Long total = response.getTotal();
+            final boolean last = total != null ? offset + issues.size() >= total.longValue() : issues.size() < issueMaxResults.intValue();
+            return new Paginator.Page<>(issues, last ? PageCursor.done() : PageCursor.offset(offset + issues.size()));
+        }, consumer);
     }
 
     /**
@@ -218,15 +227,15 @@ public class JiraClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each comment
      */
     public void getComments(final String issueId, final Consumer<Comment> consumer) {
-        int startAt = 0;
-        while (true) {
-            final GetCommentsResponse getCommentsResponse = comments(issueId).startAt(startAt).maxResults(issueMaxResults).execute();
-            final List<Comment> comments = getCommentsResponse.getComments();
-            comments.forEach(consumer);
-            if (comments.size() < issueMaxResults) {
-                break;
-            }
-            startAt += issueMaxResults;
-        }
+        Paginator.forEach("Jira comments of " + issueId, cursor -> {
+            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            final GetCommentsResponse response = comments(issueId).startAt(offset).maxResults(issueMaxResults).execute();
+            final List<Comment> comments = response.getComments() == null ? List.of() : response.getComments();
+
+            final Long total = response.getTotal();
+            final boolean last =
+                    total != null ? offset + comments.size() >= total.longValue() : comments.size() < issueMaxResults.intValue();
+            return new Paginator.Page<>(comments, last ? PageCursor.done() : PageCursor.offset(offset + comments.size()));
+        }, consumer);
     }
 }

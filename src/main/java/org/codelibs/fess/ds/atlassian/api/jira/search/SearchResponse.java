@@ -34,6 +34,12 @@ public class SearchResponse {
     /** The list of issues returned by the search. */
     protected List<Issue> issues;
 
+    /** Continuation token returned by the enhanced JQL search endpoint. */
+    protected String nextPageToken;
+
+    /** Whether this is the last page, as reported by the enhanced JQL search endpoint. */
+    protected Boolean isLast;
+
     /**
      * Default constructor for SearchResponse.
      */
@@ -57,6 +63,24 @@ public class SearchResponse {
      */
     public List<Issue> getIssues() {
         return issues;
+    }
+
+    /**
+     * Returns the continuation token for the next page.
+     *
+     * @return the token, or null when the endpoint did not return one
+     */
+    public String getNextPageToken() {
+        return nextPageToken;
+    }
+
+    /**
+     * Returns whether the endpoint reported this as the last page.
+     *
+     * @return the flag, or null when the endpoint did not return one
+     */
+    public Boolean getIsLast() {
+        return isLast;
     }
 
     /**
