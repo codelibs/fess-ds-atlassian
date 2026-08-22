@@ -111,6 +111,9 @@ public class JiraClientTest extends AtlassianClientTest {
         final GetCommentsResponse response = GetCommentsRequest.parseResponse(json);
         final List<Comment> comments = response.getComments();
         Assertions.assertEquals(2, comments.size());
+        // The reported total is what lets an exactly-full page end the crawl without a
+        // pointless extra request, so the parser must carry it onto the response.
+        Assertions.assertEquals(Long.valueOf(2L), response.getTotal());
         for (int i = 0; i < comments.size(); i++) {
             final Comment comment = comments.get(i);
             Assertions.assertEquals("Comment-" + i, comment.getBody());

@@ -183,6 +183,33 @@ public class JiraPaginationTest extends UnitDsTestCase {
     }
 
     /**
+     * When an issue's comment count is an exact multiple of the page size, the reported total is
+     * the only signal that the crawl is done. Without it the client spends an extra HTTP request
+     * per issue and logs a "server is ignoring the paging parameter" warning on a healthy crawl.
+     */
+    @Test
+    public void test_comments_stop_on_reported_total_when_page_is_exactly_full() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/rest/api/2/issue/1/comment", req -> {
+                final String startAt = req.query().getOrDefault("startAt", "0");
+                if ("0".equals(startAt)) {
+                    return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":2,\"comments\":"
+                            + "[{\"id\":\"c1\",\"body\":\"B1\"},{\"id\":\"c2\",\"body\":\"B2\"}]}");
+                }
+                return MockAtlassianServer.json("{\"startAt\":" + startAt + ",\"maxResults\":2,\"total\":2,\"comments\":[]}");
+            });
+
+            final List<String> bodies = new ArrayList<>();
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getComments("1", comment -> bodies.add(String.valueOf(comment.getBody())));
+            }
+
+            Assertions.assertEquals(List.of("B1", "B2"), bodies);
+            Assertions.assertEquals(1, server.getRequests().size(), "the reported total must end the loop without a second request");
+        }
+    }
+
+    /**
      * Regression guard for the 2020 forum report: the server ignores startAt and
      * returns an empty page while still reporting a large total.
      */
