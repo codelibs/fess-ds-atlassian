@@ -106,7 +106,7 @@ public class GetProjectsRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return apiUrl + "/rest/api/3/project";
+        return apiUrl + endpointStrategy.getJiraApiBase() + "/project";
     }
 
     @Override
