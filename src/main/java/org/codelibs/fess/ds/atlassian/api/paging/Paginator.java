@@ -72,8 +72,8 @@ public final class Paginator {
             }
 
             if (items.isEmpty()) {
-                logger.warn("Stopped paging {}: the server returned an empty page but reported more results. "
-                        + "The paging parameter is likely being ignored.", description);
+                logger.warn("Stopped paging {}: the page at cursor {} was empty but the server reported more results. "
+                        + "The paging parameter is likely being ignored.", description, cursor.key());
                 return;
             }
 
