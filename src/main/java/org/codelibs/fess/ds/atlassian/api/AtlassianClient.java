@@ -142,8 +142,8 @@ public abstract class AtlassianClient {
 
         final Deployment deployment = resolveDeployment(paramMap, home);
 
-        connectionTimeout = Integer.valueOf((int) getLongParam(paramMap, HTTP_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT_MILLIS));
-        readTimeout = Integer.valueOf((int) getLongParam(paramMap, HTTP_READ_TIMEOUT, DEFAULT_READ_TIMEOUT_MILLIS));
+        connectionTimeout = Integer.valueOf(getIntParam(paramMap, HTTP_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT_MILLIS));
+        readTimeout = Integer.valueOf(getIntParam(paramMap, HTTP_READ_TIMEOUT, DEFAULT_READ_TIMEOUT_MILLIS));
 
         final String authType = getAuthType(paramMap);
         switch (authType) {
@@ -455,6 +455,25 @@ public abstract class AtlassianClient {
             logger.warn("Parameter \"{}\" is not a number: \"{}\". Using {}.", key, value, defaultValue);
             return defaultValue;
         }
+    }
+
+    /**
+     * Reads an int parameter, falling back to the default when absent, unparsable, or out of
+     * int range. A timeout beyond int range would be silently truncated by a cast, and a
+     * truncated value of zero means "no timeout" to HttpURLConnection.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the parameter key
+     * @param defaultValue the value used when absent, unparsable or out of range
+     * @return the resolved value
+     */
+    protected int getIntParam(final DataStoreParams paramMap, final String key, final int defaultValue) {
+        final long value = getLongParam(paramMap, key, defaultValue);
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            logger.warn("Parameter \"{}\" is out of range: {}. Using {}.", key, value, defaultValue);
+            return defaultValue;
+        }
+        return (int) value;
     }
 
 }

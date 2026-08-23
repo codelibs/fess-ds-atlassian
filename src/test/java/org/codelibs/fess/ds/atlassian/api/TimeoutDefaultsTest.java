@@ -60,4 +60,15 @@ public class TimeoutDefaultsTest extends UnitDsTestCase {
             Assertions.assertEquals(Integer.valueOf(20000), client.getConnectionTimeout());
         }
     }
+
+    @Test
+    public void test_out_of_int_range_value_falls_back_to_the_default() {
+        final DataStoreParams p = base();
+        // A valid long, but far beyond int range. A bare (int) cast would truncate this to 0,
+        // which HttpURLConnection reads as "wait forever".
+        p.put("read_timeout", "4294967296");
+        try (JiraClient client = new JiraClient(new DataConfig(), p)) {
+            Assertions.assertEquals(Integer.valueOf(60000), client.getReadTimeout());
+        }
+    }
 }
