@@ -24,7 +24,9 @@ public enum AuthType {
     /** OAuth authentication. */
     OAUTH("oauth"),
     /** OAuth2 authentication. */
-    OAUTH2("oauth2");
+    OAUTH2("oauth2"),
+    /** Personal Access Token authentication (Data Center only). */
+    PAT("pat");
 
     private final String authType;
 

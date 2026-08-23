@@ -24,6 +24,7 @@ import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.PatAuthentication;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudBasicEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.DataCenterEndpointStrategy;
@@ -83,6 +84,8 @@ public abstract class AtlassianClient {
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
     /** Parameter key for basic authentication password. */
     protected static final String BASIC_PASS_PARAM = "basic.password";
+    /** Parameter key for the personal access token. */
+    protected static final String PAT_TOKEN_PARAM = "pat.token";
     /** Parameter key for HTTP proxy host. */
     protected static final String PROXY_HOST_PARAM = "proxy_host";
     /** Parameter key for HTTP proxy port. */
@@ -111,6 +114,9 @@ public abstract class AtlassianClient {
 
     /** Authentication type constant for OAuth2 authentication. */
     protected static final String OAUTH2 = "oauth2";
+
+    /** Authentication type constant for Personal Access Token authentication. */
+    protected static final String PAT = "pat";
 
     /** The authentication instance used for API requests. */
     protected Authentication authentication;
@@ -220,6 +226,20 @@ public abstract class AtlassianClient {
             } else {
                 endpointStrategy = new DataCenterEndpointStrategy(home);
             }
+            break;
+        }
+        case PAT: {
+            logger.info("Setup personal access token authentication");
+            final String token = paramMap.getAsString(PAT_TOKEN_PARAM, StringUtil.EMPTY);
+            if (token.isEmpty()) {
+                throw new AtlassianDataStoreException("parameter \"" + PAT_TOKEN_PARAM + "\" is required for PAT authentication.");
+            }
+            if (deployment == Deployment.CLOUD) {
+                logger.warn("auth_type=pat is a Data Center feature; Atlassian Cloud has no personal access tokens. "
+                        + "Use auth_type=basic with an API token instead.");
+            }
+            authentication = new PatAuthentication(token);
+            endpointStrategy = createEndpointStrategy(deployment, home, product);
             break;
         }
         default: {
