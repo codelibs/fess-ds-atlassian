@@ -63,6 +63,43 @@ public class RetryPolicyTest extends UnitDsTestCase {
         Assertions.assertEquals(0L, policy.delayMillis(0, Long.valueOf(0L)));
     }
 
+    /**
+     * The Finding-1 drain waits for the pool to terminate, so an uncapped Retry-After would park
+     * the whole job -- reported as "running" in the admin UI -- for as long as the server asked.
+     * Past the cap the retry budget exhausts normally and ignore_error decides what that means.
+     */
+    @Test
+    public void test_retry_after_above_the_cap_is_capped() {
+        final RetryPolicy policy = fixed();
+        Assertions.assertEquals(3600000L, policy.delayMillis(0, Long.valueOf(3601L)));
+        Assertions.assertEquals(3600000L, policy.delayMillis(0, Long.valueOf(86400L)));
+        Assertions.assertEquals(3600000L, policy.delayMillis(2, Long.valueOf(86400L)));
+        Assertions.assertEquals(3600000L, RetryPolicy.MAX_RETRY_AFTER_MILLIS);
+    }
+
+    /**
+     * The cap must not creep down onto legitimate values: exactly one hour is still honoured
+     * verbatim, and so is Atlassian's documented 1847 s (pinned by
+     * {@link #test_retry_after_is_honoured_verbatim()}, which is deliberately left unedited).
+     */
+    @Test
+    public void test_retry_after_at_or_below_the_cap_is_verbatim() {
+        final RetryPolicy policy = fixed();
+        Assertions.assertEquals(3600000L, policy.delayMillis(0, Long.valueOf(3600L)));
+        Assertions.assertEquals(3599000L, policy.delayMillis(0, Long.valueOf(3599L)));
+    }
+
+    /**
+     * A server is free to send a Retry-After large enough that "seconds * 1000" overflows into a
+     * negative delay, which would be skipped rather than waited. The comparison happens in
+     * seconds, before the multiplication, so the cap holds.
+     */
+    @Test
+    public void test_an_overflowing_retry_after_is_capped_not_wrapped() {
+        final RetryPolicy policy = fixed();
+        Assertions.assertEquals(3600000L, policy.delayMillis(0, Long.valueOf(Long.MAX_VALUE)));
+    }
+
     @Test
     public void test_retryable_statuses() {
         final RetryPolicy policy = fixed();
