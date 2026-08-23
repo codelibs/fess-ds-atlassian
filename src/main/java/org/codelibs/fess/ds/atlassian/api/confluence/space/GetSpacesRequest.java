@@ -215,4 +215,9 @@ public class GetSpacesRequest extends AtlassianRequest {
         return queryParams;
     }
 
+    @Override
+    public String toString() {
+        return "GetSpacesRequest [url=" + getURL() + ", start=" + start + ", limit=" + limit + "]";
+    }
+
 }
