@@ -9,9 +9,13 @@ on:
     - master
     - "*.x"
   pull_request:
+    # This filter matches the BASE branch. In a stacked-PR effort only the bottom PR targets
+    # master, so without "feature/**" every stacked PR reports "no checks reported" and both the
+    # test suite and "mvn formatter:validate license:check" go unrun until the eventual merge.
     branches:
     - master
     - "*.x"
+    - "feature/**"
 
 jobs:
   build:
