@@ -85,6 +85,23 @@ public class IdempotentRetryTest extends UnitDsTestCase {
         Assertions.assertFalse(AtlassianRequest.isIdempotent("PUT"));
     }
 
+    /**
+     * "Connection reset" arrives as a bare {@link java.net.SocketException}, which is the single
+     * most common transient failure on a multi-hour HTTPS crawl. curl4j wraps IO failures, so the
+     * whole cause chain has to be walked.
+     */
+    @Test
+    public void test_transient_transport_failures_include_connection_reset() {
+        Assertions.assertTrue(AtlassianRequest.isTransientTransportFailure(new java.net.SocketException("Connection reset")));
+        Assertions.assertTrue(AtlassianRequest.isTransientTransportFailure(new java.net.SocketTimeoutException("Read timed out")));
+        Assertions.assertTrue(AtlassianRequest.isTransientTransportFailure(new java.net.ConnectException("Connection refused")));
+        Assertions.assertTrue(AtlassianRequest
+                .isTransientTransportFailure(new RuntimeException("wrapped", new java.net.SocketException("Connection reset"))));
+
+        Assertions.assertFalse(AtlassianRequest.isTransientTransportFailure(new java.io.IOException("Premature EOF")));
+        Assertions.assertFalse(AtlassianRequest.isTransientTransportFailure(new IllegalStateException("not transport")));
+    }
+
     @Test
     public void test_a_500_is_retried_for_get() throws Exception {
         try (MockAtlassianServer server = new MockAtlassianServer().start()) {

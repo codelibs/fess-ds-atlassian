@@ -282,10 +282,19 @@ public abstract class AtlassianRequest {
     /**
      * Returns whether a failure is a transport hiccup worth retrying.
      * curl4j wraps IO failures, so the cause chain is walked rather than the top-level type.
+     *
+     * <p>{@link java.net.SocketException} covers "Connection reset", the single most common
+     * transient failure on a multi-hour HTTPS crawl, and subsumes
+     * {@link java.net.ConnectException}. {@link java.net.SocketTimeoutException} extends
+     * {@code InterruptedIOException} rather than {@code SocketException}, so it is listed
+     * separately and widening to {@code SocketException} re-catches nothing already handled.</p>
+     *
+     * @param throwable the failure to classify
+     * @return true when the failure is a transient transport failure
      */
-    private boolean isTransientTransportFailure(final Throwable throwable) {
+    static boolean isTransientTransportFailure(final Throwable throwable) {
         for (Throwable t = throwable; t != null; t = t.getCause()) {
-            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
+            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.SocketException) {
                 return true;
             }
             if (t.getCause() == t) {
