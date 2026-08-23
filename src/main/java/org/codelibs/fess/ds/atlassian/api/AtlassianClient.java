@@ -28,6 +28,8 @@ import org.codelibs.fess.ds.atlassian.api.endpoint.CloudBasicEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.DataCenterEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RateLimitState;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RetryPolicy;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
@@ -89,6 +91,8 @@ public abstract class AtlassianClient {
     protected static final String HTTP_CONNECTION_TIMEOUT = "connection_timeout";
     /** Parameter key for HTTP read timeout. */
     protected static final String HTTP_READ_TIMEOUT = "read_timeout";
+    /** Parameter key for the interval between requests. */
+    protected static final String READ_INTERVAL_PARAM = "read_interval";
 
     // values for parameters
     /** Authentication type constant for basic authentication. */
@@ -107,6 +111,10 @@ public abstract class AtlassianClient {
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
     protected Integer readTimeout;
+    /** Rate-limit state shared by every request this client issues. */
+    protected final RateLimitState rateLimitState;
+    /** Retry policy shared by every request this client issues. */
+    protected final RetryPolicy retryPolicy = RetryPolicy.defaults();
 
     /**
      * Constructs a new Atlassian client with the given parameters.
@@ -223,6 +231,8 @@ public abstract class AtlassianClient {
         if (paramMap.containsKey(HTTP_READ_TIMEOUT)) {
             readTimeout = Integer.parseInt(paramMap.getAsString(HTTP_READ_TIMEOUT));
         }
+
+        rateLimitState = RateLimitState.of(getLongParam(paramMap, READ_INTERVAL_PARAM, 0L));
     }
 
     /**
@@ -315,7 +325,18 @@ public abstract class AtlassianClient {
         request.setEndpointStrategy(endpointStrategy);
         request.setConnectionTimeout(connectionTimeout);
         request.setReadTimeout(readTimeout);
+        request.setRetryPolicy(retryPolicy);
+        request.setRateLimitState(rateLimitState);
         return request;
+    }
+
+    /**
+     * Returns the rate-limit state shared by this client's requests.
+     *
+     * @return the rate-limit state
+     */
+    public RateLimitState getRateLimitState() {
+        return rateLimitState;
     }
 
     /**
@@ -384,6 +405,27 @@ public abstract class AtlassianClient {
 
     private String getProxyPort(final DataStoreParams paramMap) {
         return paramMap.getAsString(PROXY_PORT_PARAM, StringUtil.EMPTY);
+    }
+
+    /**
+     * Reads a long parameter, falling back to the default when absent or unparsable.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the parameter key
+     * @param defaultValue the value used when absent or unparsable
+     * @return the resolved value
+     */
+    protected long getLongParam(final DataStoreParams paramMap, final String key, final long defaultValue) {
+        final String value = paramMap.getAsString(key, StringUtil.EMPTY);
+        if (StringUtil.isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (final NumberFormatException e) {
+            logger.warn("Parameter \"{}\" is not a number: \"{}\". Using {}.", key, value, defaultValue);
+            return defaultValue;
+        }
     }
 
 }
