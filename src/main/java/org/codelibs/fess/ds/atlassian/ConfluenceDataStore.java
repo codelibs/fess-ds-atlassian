@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +36,7 @@ import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Space;
 import org.codelibs.fess.ds.callback.IndexUpdateCallback;
 import org.codelibs.fess.entity.DataStoreParams;
+import org.codelibs.fess.exception.DataStoreCrawlingException;
 import org.codelibs.fess.helper.CrawlerStatsHelper;
 import org.codelibs.fess.helper.CrawlerStatsHelper.StatsAction;
 import org.codelibs.fess.helper.CrawlerStatsHelper.StatsKeyObject;
@@ -90,9 +92,18 @@ public class ConfluenceDataStore extends AtlassianDataStore {
         }
 
         final ExecutorService executorService = newFixedThreadPool(getNumberOfThreads(paramMap));
+        // processContent runs on a pool thread, so an abort (ignore_error=false) it throws would
+        // otherwise be swallowed by the executor. Capture the first one and rethrow it here so
+        // the crawl actually stops instead of merely logging an uncaught exception in the pool.
+        final AtomicReference<DataStoreCrawlingException> abortException = new AtomicReference<>();
         try (final ConfluenceClient client = createClient(dataConfig, paramMap)) {
-            client.getContents(content -> executorService
-                    .execute(() -> processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content)));
+            client.getContents(content -> executorService.execute(() -> {
+                try {
+                    processContent(dataConfig, callback, configMap, paramMap, scriptMap, defaultDataMap, client, content);
+                } catch (final DataStoreCrawlingException e) {
+                    abortException.compareAndSet(null, e);
+                }
+            }));
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Shutting down thread executor.");
@@ -103,6 +114,11 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             throw new InterruptedRuntimeException(e);
         } finally {
             executorService.shutdownNow();
+        }
+
+        final DataStoreCrawlingException aborted = abortException.get();
+        if (aborted != null) {
+            throw aborted;
         }
     }
 
@@ -209,11 +225,17 @@ public class ConfluenceDataStore extends AtlassianDataStore {
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
             failureUrlService.store(dataConfig, errorName, url, target);
             crawlerStatsHelper.record(statsKey, StatsAction.ACCESS_EXCEPTION);
+            if (Boolean.FALSE.equals(configMap.get(IGNORE_ERROR))) {
+                throw new DataStoreCrawlingException(url, "Failed to process " + url, target, true);
+            }
         } catch (final Throwable t) {
-            logger.warn("Crawling Access Exception at : {}", dataMap, t);
+            logger.warn("Failed to process : {}", dataMap, t);
             final FailureUrlService failureUrlService = ComponentUtil.getComponent(FailureUrlService.class);
             failureUrlService.store(dataConfig, t.getClass().getCanonicalName(), url, t);
             crawlerStatsHelper.record(statsKey, StatsAction.EXCEPTION);
+            if (Boolean.FALSE.equals(configMap.get(IGNORE_ERROR))) {
+                throw new DataStoreCrawlingException(url, "Failed to process " + url, t, true);
+            }
         } finally {
             crawlerStatsHelper.done(statsKey);
         }
