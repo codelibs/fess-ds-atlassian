@@ -112,7 +112,8 @@ public class RetryPolicy {
      *
      * <p>A {@code Retry-After} is honoured verbatim up to {@link #MAX_RETRY_AFTER_SECONDS}; beyond
      * that it is capped and the request the server actually made is logged at WARN, so an operator
-     * can see why the crawl did not wait as long as it was told to.</p>
+     * can see why the crawl did not wait as long as it was told to. A negative {@code Retry-After}
+     * is a malformed header rather than an instruction to wait, and yields no delay at all.</p>
      *
      * @param attempt the zero-based retry index
      * @param retryAfterSeconds the server's Retry-After value in seconds, or null
@@ -120,10 +121,20 @@ public class RetryPolicy {
      */
     public long delayMillis(final int attempt, final Long retryAfterSeconds) {
         if (retryAfterSeconds != null) {
+            // Range-checked in seconds, before multiplying. parseRetryAfter accepts any value that
+            // Long.parseLong accepts, and "seconds * 1000" overflows at BOTH ends: a large positive
+            // value wraps to a negative delay that would be skipped, and a large negative one wraps
+            // to a huge positive delay that would be slept off (-9223372036854776 * 1000L ==
+            // 9223372036854775616L). Either way the multiplication must not be reached unchecked.
             final long seconds = retryAfterSeconds.longValue();
+            if (seconds < 0L) {
+                // Not a server asking for a long wait, so no WARN: just retry immediately.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Ignoring a negative Retry-After: {} seconds.", seconds);
+                }
+                return 0L;
+            }
             if (seconds > MAX_RETRY_AFTER_SECONDS) {
-                // Compared in seconds, before multiplying: a server is free to send a value large
-                // enough that "seconds * 1000" would overflow into a negative delay.
                 logger.warn("Retry-After asked for {} seconds; capping at {}.", seconds, MAX_RETRY_AFTER_SECONDS);
                 return MAX_RETRY_AFTER_MILLIS;
             }
