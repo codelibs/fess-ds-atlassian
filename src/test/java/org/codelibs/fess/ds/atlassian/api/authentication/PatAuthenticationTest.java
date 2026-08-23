@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian.api.authentication;
 
 import java.util.List;
 
+import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.MockAtlassianServer;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
 import org.codelibs.fess.ds.atlassian.api.jira.JiraClient;
@@ -55,8 +56,13 @@ public class PatAuthenticationTest extends UnitDsTestCase {
         p.put("deployment", "datacenter");
         p.put("auth_type", "pat");
 
-        Assertions.assertThrows(org.codelibs.fess.ds.atlassian.AtlassianDataStoreException.class,
-                () -> new JiraClient(new DataConfig(), p).close());
+        final AtlassianDataStoreException thrown =
+                Assertions.assertThrows(AtlassianDataStoreException.class, () -> new JiraClient(new DataConfig(), p).close());
+        // Asserting only the exception type would be vacuous: the switch's pre-existing
+        // `default:` branch throws the same type for any unrecognised auth_type, so the test
+        // would pass even with the PAT case absent entirely. Pin the message instead.
+        Assertions.assertTrue(thrown.getMessage().contains("pat.token"),
+                "should name the missing parameter rather than merely rejecting the auth type: " + thrown.getMessage());
     }
 
     @Test
