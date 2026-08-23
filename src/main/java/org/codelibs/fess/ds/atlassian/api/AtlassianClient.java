@@ -94,6 +94,15 @@ public abstract class AtlassianClient {
     /** Parameter key for the interval between requests. */
     protected static final String READ_INTERVAL_PARAM = "read_interval";
 
+    /** Default connection timeout, matching fess-ds-gsuite. */
+    public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 20000;
+
+    /**
+     * Default read timeout. Longer than the connection timeout because Confluence CQL
+     * searches with expand are slow enough that a read timeout was reported in the field.
+     */
+    public static final int DEFAULT_READ_TIMEOUT_MILLIS = 60000;
+
     // values for parameters
     /** Authentication type constant for basic authentication. */
     protected static final String BASIC = "basic";
@@ -132,6 +141,9 @@ public abstract class AtlassianClient {
         }
 
         final Deployment deployment = resolveDeployment(paramMap, home);
+
+        connectionTimeout = Integer.valueOf((int) getLongParam(paramMap, HTTP_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT_MILLIS));
+        readTimeout = Integer.valueOf((int) getLongParam(paramMap, HTTP_READ_TIMEOUT, DEFAULT_READ_TIMEOUT_MILLIS));
 
         final String authType = getAuthType(paramMap);
         switch (authType) {
@@ -172,33 +184,39 @@ public abstract class AtlassianClient {
             if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
                 throw new AtlassianDataStoreException("Parameters required for OAuth2 are missing.");
             }
-            authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
-                // Process for updating DataConfig by refresh token.
-                final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
-                    String value;
-                    if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
-                        value = tokenUpdateResult.getAccessToken();
-                    } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
-                        value = tokenUpdateResult.getRefreshToken();
-                    } else {
-                        value = e.getValue();
-                    }
-                    if (value != null) {
-                        // Escape value.
-                        value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
-                    } else {
-                        value = StringUtil.EMPTY;
-                    }
-                    return e.getKey() + "=" + value;
-                }).collect(Collectors.joining("\n"));
+            final OAuth2Authentication oauth2Authentication =
+                    new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
+                        // Process for updating DataConfig by refresh token.
+                        final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
+                            String value;
+                            if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
+                                value = tokenUpdateResult.getAccessToken();
+                            } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
+                                value = tokenUpdateResult.getRefreshToken();
+                            } else {
+                                value = e.getValue();
+                            }
+                            if (value != null) {
+                                // Escape value.
+                                value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
+                            } else {
+                                value = StringUtil.EMPTY;
+                            }
+                            return e.getKey() + "=" + value;
+                        }).collect(Collectors.joining("\n"));
 
-                dataConfig.setHandlerParameter(paramStr);
-                ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
-                logger.info("Updated DataConfig: {}", dataConfig.getId());
-            });
+                        dataConfig.setHandlerParameter(paramStr);
+                        ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
+                        logger.info("Updated DataConfig: {}", dataConfig.getId());
+                    });
+            oauth2Authentication.setTimeouts(connectionTimeout, readTimeout);
+            authentication = oauth2Authentication;
 
             if (deployment == Deployment.CLOUD) {
-                endpointStrategy = new CloudOAuth2EndpointStrategy(home, product, authentication);
+                final CloudOAuth2EndpointStrategy cloudOAuth2EndpointStrategy =
+                        new CloudOAuth2EndpointStrategy(home, product, authentication);
+                cloudOAuth2EndpointStrategy.setTimeouts(connectionTimeout, readTimeout);
+                endpointStrategy = cloudOAuth2EndpointStrategy;
             } else {
                 endpointStrategy = new DataCenterEndpointStrategy(home);
             }
@@ -223,13 +241,6 @@ public abstract class AtlassianClient {
             } catch (final NumberFormatException e) {
                 throw new AtlassianDataStoreException("parameter " + "'" + PROXY_PORT_PARAM + "' invalid.", e);
             }
-        }
-
-        if (paramMap.containsKey(HTTP_CONNECTION_TIMEOUT)) {
-            connectionTimeout = Integer.parseInt(paramMap.getAsString(HTTP_CONNECTION_TIMEOUT));
-        }
-        if (paramMap.containsKey(HTTP_READ_TIMEOUT)) {
-            readTimeout = Integer.parseInt(paramMap.getAsString(HTTP_READ_TIMEOUT));
         }
 
         rateLimitState = RateLimitState.of(getLongParam(paramMap, READ_INTERVAL_PARAM, 0L));
@@ -310,6 +321,24 @@ public abstract class AtlassianClient {
      */
     public EndpointStrategy getEndpointStrategy() {
         return endpointStrategy;
+    }
+
+    /**
+     * Returns the resolved connection timeout.
+     *
+     * @return the timeout in milliseconds
+     */
+    public Integer getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    /**
+     * Returns the resolved read timeout.
+     *
+     * @return the timeout in milliseconds
+     */
+    public Integer getReadTimeout() {
+        return readTimeout;
     }
 
     /**
