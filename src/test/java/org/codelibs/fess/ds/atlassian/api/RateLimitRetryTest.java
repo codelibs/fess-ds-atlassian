@@ -98,7 +98,10 @@ public class RateLimitRetryTest extends UnitDsTestCase {
             final AtomicInteger calls = new AtomicInteger();
             server.on("/rest/api/3/search/jql", req -> {
                 if (calls.incrementAndGet() == 1) {
-                    return MockAtlassianServer.status(500, "{\"message\":\"boom\"}");
+                    // Retry-After: 0 keeps the suite fast. Without it the 500 falls through to
+                    // the computed exponential backoff and this test really sleeps 1.4-2.6s.
+                    return new MockAtlassianServer.MockResponse(500, Map.of("Content-Type", "application/json", "Retry-After", "0"),
+                            "{\"message\":\"boom\"}");
                 }
                 return MockAtlassianServer.json("{\"issues\":" + issuesJson("A-1") + ",\"isLast\":true}");
             });
