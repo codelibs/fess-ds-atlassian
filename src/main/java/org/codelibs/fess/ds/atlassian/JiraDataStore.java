@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -320,6 +321,10 @@ public class JiraDataStore extends AtlassianDataStore {
         return StringUtil.EMPTY;
     }
 
+    /** ADF node types that end a block and therefore need a separator after them. */
+    private static final Set<String> ADF_BLOCK_TYPES =
+            Set.of("paragraph", "heading", "tableCell", "tableHeader", "listItem", "codeBlock", "blockquote", "panel");
+
     /**
      * Extracts text content from Atlassian Document Format (ADF) map.
      *
@@ -348,13 +353,24 @@ public class JiraDataStore extends AtlassianDataStore {
                     sb.append(text.toString());
                 }
             }
+            if (map.containsKey("attrs")) {
+                final Object attrs = map.get("attrs");
+                if (attrs instanceof Map) {
+                    final Map<String, Object> attrMap = (Map<String, Object>) attrs;
+                    final Object inlineText = "mention".equals(map.get("type")) ? attrMap.get("text")
+                            : "inlineCard".equals(map.get("type")) ? attrMap.get("url") : null;
+                    if (inlineText != null) {
+                        sb.append(' ').append(inlineText).append(' ');
+                    }
+                }
+            }
             if (map.containsKey("content")) {
                 extractTextFromAdf(map.get("content"), sb);
             }
 
             final Object type = map.get("type");
-            if ("paragraph".equals(type) || "heading".equals(type)) {
-                sb.append("\n");
+            if (ADF_BLOCK_TYPES.contains(type)) {
+                sb.append('\n');
             }
         } else if (obj instanceof List) {
             final List<Object> list = (List<Object>) obj;
