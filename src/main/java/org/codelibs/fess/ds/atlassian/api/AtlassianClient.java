@@ -209,7 +209,7 @@ public abstract class AtlassianClient {
                         // plain text. Only the oauth2.access_token / oauth2.refresh_token lines are
                         // replaced; every other line -- comments, blank lines, encrypted values, ordering
                         // -- is preserved verbatim.
-                        final String paramStr = updateTokenParameters(dataConfig.getHandlerParameter(), tokenUpdateResult);
+                        final String paramStr = updateTokenParameters(dataConfig.getHandlerParameter(), grantType, tokenUpdateResult);
 
                         dataConfig.setHandlerParameter(paramStr);
                         ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
@@ -430,19 +430,31 @@ public abstract class AtlassianClient {
      * {@code oauth2.client_secret={cipher}...} in their decrypted form. Only the
      * {@value #OAUTH2_ACCESS_TOKEN} and {@value #OAUTH2_REFRESH_TOKEN} lines are replaced; every
      * other line -- comments, blank lines, encrypted values, ordering -- is preserved verbatim.
-     * For the client-credentials grant {@code tokenUpdateResult} carries no refresh token, so only
-     * the access-token line is updated.
+     * </p>
+     * <p>
+     * For the {@value OAuth2Authentication#GRANT_CLIENT_CREDENTIALS} grant, the
+     * {@value #OAUTH2_REFRESH_TOKEN} line is <em>never</em> touched, regardless of what
+     * {@code tokenUpdateResult} carries: a client-credentials token response never returns a
+     * refresh token, so {@link OAuth2Authentication#refreshToken} simply carries forward whatever
+     * value the object was constructed with. If an operator migrating from
+     * {@value OAuth2Authentication#GRANT_AUTHORIZATION_CODE} leaves a stale (possibly
+     * {@code {cipher}}-encrypted) {@value #OAUTH2_REFRESH_TOKEN} line behind, gating only on
+     * {@code isNotBlank} would rewrite it in plain text on every refresh cycle. Gating on grant
+     * type instead makes that line untouchable under client_credentials no matter what value is
+     * passed in.
      * </p>
      *
      * @param handlerParameter the current raw {@code handlerParameter} string (may be {@code null})
+     * @param grantType the OAuth2 grant type in use
      * @param tokenUpdateResult the refreshed token values
      * @return the rebuilt {@code handlerParameter} string
      */
-    protected static String updateTokenParameters(final String handlerParameter,
+    protected static String updateTokenParameters(final String handlerParameter, final String grantType,
             final OAuth2Authentication.TokenUpdateResult tokenUpdateResult) {
         final Map<String, String> pending = new LinkedHashMap<>();
         pending.put(OAUTH2_ACCESS_TOKEN, escapeParameterValue(tokenUpdateResult.getAccessToken()));
-        if (StringUtil.isNotBlank(tokenUpdateResult.getRefreshToken())) {
+        if (!OAuth2Authentication.GRANT_CLIENT_CREDENTIALS.equals(grantType)
+                && StringUtil.isNotBlank(tokenUpdateResult.getRefreshToken())) {
             pending.put(OAUTH2_REFRESH_TOKEN, escapeParameterValue(tokenUpdateResult.getRefreshToken()));
         }
 

@@ -105,7 +105,8 @@ public class AtlassianClientTest extends UnitDsTestCase {
         final OAuth2Authentication.TokenUpdateResult tokenUpdateResult =
                 new OAuth2Authentication.TokenUpdateResult("new-access", "new-refresh");
 
-        final String updated = AtlassianClient.updateTokenParameters(handlerParameter, tokenUpdateResult);
+        final String updated =
+                AtlassianClient.updateTokenParameters(handlerParameter, OAuth2Authentication.GRANT_AUTHORIZATION_CODE, tokenUpdateResult);
 
         Assertions.assertEquals("oauth2.access_token=new-access\n" + "oauth2.refresh_token=new-refresh\n" + "oauth2.client_id=client-id\n"
                 + "oauth2.client_secret={cipher}ABCDEF==\n" + "home=https://example.atlassian.net", updated);
@@ -120,7 +121,8 @@ public class AtlassianClientTest extends UnitDsTestCase {
 
         final OAuth2Authentication.TokenUpdateResult tokenUpdateResult = new OAuth2Authentication.TokenUpdateResult("fresh-token", null);
 
-        final String updated = AtlassianClient.updateTokenParameters(handlerParameter, tokenUpdateResult);
+        final String updated =
+                AtlassianClient.updateTokenParameters(handlerParameter, OAuth2Authentication.GRANT_CLIENT_CREDENTIALS, tokenUpdateResult);
 
         Assertions.assertEquals("oauth2.access_token=fresh-token\n" + "oauth2.client_id=client-id\n" + "oauth2.client_secret={cipher}XYZ==",
                 updated);
@@ -134,10 +136,35 @@ public class AtlassianClientTest extends UnitDsTestCase {
 
         final OAuth2Authentication.TokenUpdateResult tokenUpdateResult = new OAuth2Authentication.TokenUpdateResult("fresh-token", null);
 
-        final String updated = AtlassianClient.updateTokenParameters(handlerParameter, tokenUpdateResult);
+        final String updated =
+                AtlassianClient.updateTokenParameters(handlerParameter, OAuth2Authentication.GRANT_AUTHORIZATION_CODE, tokenUpdateResult);
 
         Assertions.assertEquals("# oauth2 config\n" + "\n" + "oauth2.access_token=fresh-token\n" + "\n" + "oauth2.client_id=client-id",
                 updated);
+    }
+
+    // Regression (review finding on Task 10): under client_credentials, a stale oauth2.refresh_token
+    // line -- left over from a config migrated off authorization_code -- must never be touched, even
+    // if TokenUpdateResult happens to still carry a non-blank (stale) refresh token value. The
+    // client_credentials response never returns a refresh_token, so OAuth2Authentication.refreshToken
+    // carries the original constructed value forward unchanged; gating only on isNotBlank would rewrite
+    // an encrypted line in plain text on every refresh cycle. The guard must be on grant type, not on
+    // whether the token value happens to be blank.
+    @Test
+    public void test_updateTokenParameters_clientCredentials_neverTouchesStaleRefreshTokenLine() {
+        final String handlerParameter = "oauth2.access_token=old-access\n" + "oauth2.refresh_token={cipher}SOMETHING==\n"
+                + "oauth2.client_id=client-id\n" + "oauth2.client_secret={cipher}XYZ==";
+
+        // Simulates the stale case: OAuth2Authentication still carries the old decrypted refresh
+        // token forward because a client_credentials response never overwrites it.
+        final OAuth2Authentication.TokenUpdateResult tokenUpdateResult =
+                new OAuth2Authentication.TokenUpdateResult("fresh-token", "stale-decrypted-refresh-token");
+
+        final String updated =
+                AtlassianClient.updateTokenParameters(handlerParameter, OAuth2Authentication.GRANT_CLIENT_CREDENTIALS, tokenUpdateResult);
+
+        Assertions.assertEquals("oauth2.access_token=fresh-token\n" + "oauth2.refresh_token={cipher}SOMETHING==\n"
+                + "oauth2.client_id=client-id\n" + "oauth2.client_secret={cipher}XYZ==", updated);
     }
 
 }
