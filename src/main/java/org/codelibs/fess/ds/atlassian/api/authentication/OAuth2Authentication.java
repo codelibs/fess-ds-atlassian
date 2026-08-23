@@ -44,6 +44,12 @@ public class OAuth2Authentication extends Authentication {
     public static final String DEFAULT_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
     private static final long MIN_REFRESH_INTERVAL = 3000;
 
+    /** Authorization-code grant, refreshed with a refresh token. */
+    public static final String GRANT_AUTHORIZATION_CODE = "authorization_code";
+
+    /** Two-legged client-credentials grant, used by Atlassian service accounts. */
+    public static final String GRANT_CLIENT_CREDENTIALS = "client_credentials";
+
     /** The access token. */
     protected String accessToken;
     /** The refresh token. */
@@ -54,6 +60,8 @@ public class OAuth2Authentication extends Authentication {
     protected final String clientSecret;
     /** The token URL. */
     protected final String tokenUrl;
+    /** The grant type used to refresh the access token. */
+    protected final String grantType;
     /** The callback for token updates. */
     protected final Consumer<TokenUpdateResult> tokenUpdateCallback;
     private volatile long lastRefreshTime = 0;
@@ -63,7 +71,7 @@ public class OAuth2Authentication extends Authentication {
     private Integer readTimeout;
 
     /**
-     * Constructs a new OAuth2 authentication.
+     * Constructs a new OAuth2 authentication using the authorization-code grant.
      *
      * @param accessToken the access token
      * @param refreshToken the refresh token
@@ -74,11 +82,28 @@ public class OAuth2Authentication extends Authentication {
      */
     public OAuth2Authentication(final String accessToken, final String refreshToken, final String clientId, final String clientSecret,
             final String tokenUrl, final Consumer<TokenUpdateResult> tokenUpdateCallback) {
+        this(accessToken, refreshToken, clientId, clientSecret, tokenUrl, GRANT_AUTHORIZATION_CODE, tokenUpdateCallback);
+    }
+
+    /**
+     * Constructs a new OAuth2 authentication.
+     *
+     * @param accessToken the access token
+     * @param refreshToken the refresh token
+     * @param clientId the client ID
+     * @param clientSecret the client secret
+     * @param tokenUrl the token URL
+     * @param grantType the grant type used to refresh the access token
+     * @param tokenUpdateCallback the callback for token updates
+     */
+    public OAuth2Authentication(final String accessToken, final String refreshToken, final String clientId, final String clientSecret,
+            final String tokenUrl, final String grantType, final Consumer<TokenUpdateResult> tokenUpdateCallback) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenUrl = tokenUrl;
+        this.grantType = grantType;
         this.tokenUpdateCallback = tokenUpdateCallback;
     }
 
@@ -139,15 +164,19 @@ public class OAuth2Authentication extends Authentication {
             return;
         }
 
-        if (StringUtil.isBlank(refreshToken)) {
+        if (!GRANT_CLIENT_CREDENTIALS.equals(grantType) && StringUtil.isBlank(refreshToken)) {
             throw new AtlassianDataStoreException("Refresh token is not available.");
         }
 
         final Map<String, String> params = new HashMap<>();
-        params.put("grant_type", "refresh_token");
-        params.put("refresh_token", refreshToken);
         params.put("client_id", clientId);
         params.put("client_secret", clientSecret);
+        if (GRANT_CLIENT_CREDENTIALS.equals(grantType)) {
+            params.put("grant_type", GRANT_CLIENT_CREDENTIALS);
+        } else {
+            params.put("grant_type", "refresh_token");
+            params.put("refresh_token", refreshToken);
+        }
 
         final CurlRequest request = Curl.post(tokenUrl).header("Content-Type", "application/json");
         applyTimeouts(request);

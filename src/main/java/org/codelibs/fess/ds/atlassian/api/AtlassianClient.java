@@ -36,7 +36,8 @@ import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 
-import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Abstract base class for Atlassian API clients providing common authentication
@@ -79,6 +80,8 @@ public abstract class AtlassianClient {
     protected static final String OAUTH2_CLIENT_SECRET = "oauth2.client_secret";
     /** Parameter key for OAuth2 token URL. */
     protected static final String OAUTH2_TOKEN_URL = "oauth2.token_url";
+    /** Parameter key for OAuth2 grant type. */
+    protected static final String OAUTH2_GRANT_TYPE = "oauth2.grant_type";
 
     /** Parameter key for basic authentication username. */
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
@@ -186,30 +189,27 @@ public abstract class AtlassianClient {
             final String clientId = paramMap.getAsString(OAUTH2_CLIENT_ID, StringUtil.EMPTY);
             final String clientSecret = paramMap.getAsString(OAUTH2_CLIENT_SECRET, StringUtil.EMPTY);
             final String tokenUrl = paramMap.getAsString(OAUTH2_TOKEN_URL, OAuth2Authentication.DEFAULT_TOKEN_URL);
+            final String grantType = paramMap.getAsString(OAUTH2_GRANT_TYPE, OAuth2Authentication.GRANT_AUTHORIZATION_CODE);
 
-            if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
+            if (OAuth2Authentication.GRANT_CLIENT_CREDENTIALS.equals(grantType)) {
+                if (clientId.isEmpty() || clientSecret.isEmpty()) {
+                    throw new AtlassianDataStoreException("parameter \"" + OAUTH2_CLIENT_ID + "\" and \"" + OAUTH2_CLIENT_SECRET
+                            + "\" are required for the " + "client_credentials grant.");
+                }
+            } else if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
                 throw new AtlassianDataStoreException("Parameters required for OAuth2 are missing.");
             }
-            final OAuth2Authentication oauth2Authentication =
-                    new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
+            final OAuth2Authentication oauth2Authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret,
+                    tokenUrl, grantType, (tokenUpdateResult) -> {
                         // Process for updating DataConfig by refresh token.
-                        final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
-                            String value;
-                            if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
-                                value = tokenUpdateResult.getAccessToken();
-                            } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
-                                value = tokenUpdateResult.getRefreshToken();
-                            } else {
-                                value = e.getValue();
-                            }
-                            if (value != null) {
-                                // Escape value.
-                                value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
-                            } else {
-                                value = StringUtil.EMPTY;
-                            }
-                            return e.getKey() + "=" + value;
-                        }).collect(Collectors.joining("\n"));
+                        //
+                        // Edit the RAW handlerParameter string, not getHandlerParameterMap() (which
+                        // ParameterUtil.parse has already decrypted): rebuilding from the decrypted map
+                        // would write encrypted values such as oauth2.client_secret={cipher}... back in
+                        // plain text. Only the oauth2.access_token / oauth2.refresh_token lines are
+                        // replaced; every other line -- comments, blank lines, encrypted values, ordering
+                        // -- is preserved verbatim.
+                        final String paramStr = updateTokenParameters(dataConfig.getHandlerParameter(), tokenUpdateResult);
 
                         dataConfig.setHandlerParameter(paramStr);
                         ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
@@ -418,6 +418,66 @@ public abstract class AtlassianClient {
      */
     protected String getApiUrl() {
         return endpointStrategy.getApiUrl();
+    }
+
+    /**
+     * Rebuilds the raw {@code handlerParameter} string with the refreshed OAuth2 access token
+     * (and, when present, refresh token) applied in place.
+     * <p>
+     * The RAW {@code handlerParameter} string is edited line by line rather than being rebuilt
+     * from {@link DataConfig#getHandlerParameterMap()}: that map is already decrypted (by
+     * {@code ParameterUtil.parse}), so rebuilding from it would rewrite encrypted values such as
+     * {@code oauth2.client_secret={cipher}...} in their decrypted form. Only the
+     * {@value #OAUTH2_ACCESS_TOKEN} and {@value #OAUTH2_REFRESH_TOKEN} lines are replaced; every
+     * other line -- comments, blank lines, encrypted values, ordering -- is preserved verbatim.
+     * For the client-credentials grant {@code tokenUpdateResult} carries no refresh token, so only
+     * the access-token line is updated.
+     * </p>
+     *
+     * @param handlerParameter the current raw {@code handlerParameter} string (may be {@code null})
+     * @param tokenUpdateResult the refreshed token values
+     * @return the rebuilt {@code handlerParameter} string
+     */
+    protected static String updateTokenParameters(final String handlerParameter,
+            final OAuth2Authentication.TokenUpdateResult tokenUpdateResult) {
+        final Map<String, String> pending = new LinkedHashMap<>();
+        pending.put(OAUTH2_ACCESS_TOKEN, escapeParameterValue(tokenUpdateResult.getAccessToken()));
+        if (StringUtil.isNotBlank(tokenUpdateResult.getRefreshToken())) {
+            pending.put(OAUTH2_REFRESH_TOKEN, escapeParameterValue(tokenUpdateResult.getRefreshToken()));
+        }
+
+        final String[] lines = handlerParameter == null ? new String[0] : handlerParameter.split("\n", -1);
+        final StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            final String line = lines[i];
+            final int pos = line.indexOf('=');
+            final String key = (pos >= 0 ? line.substring(0, pos) : line).trim();
+            if (i > 0) {
+                buf.append('\n');
+            }
+            if (pending.containsKey(key)) {
+                // Update in place, keeping the original line's position.
+                buf.append(key).append('=').append(pending.remove(key));
+            } else {
+                // Preserve every other line verbatim, including encrypted values and blank lines.
+                buf.append(line);
+            }
+        }
+        pending.forEach((key, value) -> {
+            if (buf.length() > 0) {
+                buf.append('\n');
+            }
+            buf.append(key).append('=').append(value);
+        });
+        return buf.toString();
+    }
+
+    private static String escapeParameterValue(final String value) {
+        if (value == null) {
+            return StringUtil.EMPTY;
+        }
+        // Escape value, matching the escaping the pre-existing write-back used.
+        return value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private String getBasicUsername(final DataStoreParams paramMap) {
