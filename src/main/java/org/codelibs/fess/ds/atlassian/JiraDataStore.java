@@ -117,8 +117,15 @@ public class JiraDataStore extends AtlassianDataStore {
                 logger.debug("Shutting down thread executor.");
             }
             executorService.shutdown();
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                logger.warn("Crawler tasks did not finish within 60 seconds; some documents may not have been indexed.");
+            // Wait for the pool to actually drain. A single request can now occupy a worker for
+            // minutes -- five attempts at up to the read timeout plus exponential backoff -- and
+            // for as long as the server asks when it supplies Retry-After. Giving up after one
+            // 60-second window would let the finally block interrupt a worker that is correctly
+            // waiting out a rate limit, losing the document (and, under ignore_error=false,
+            // turning a transient 429 into a whole-crawl failure). The message stays as a
+            // periodic progress signal.
+            while (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                logger.warn("Waiting for crawler tasks to finish. Retries and rate-limit backoff can take minutes.");
             }
         } catch (final InterruptedException e) {
             throw new InterruptedRuntimeException(e);
