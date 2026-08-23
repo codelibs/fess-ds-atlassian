@@ -20,6 +20,9 @@ import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,6 +33,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Content {
+
+    /** Logger instance for this class. */
+    private static final Logger logger = LogManager.getLogger(Content.class);
 
     /** The unique identifier of the content. */
     protected String id;
@@ -127,18 +133,24 @@ public class Content {
     /**
      * Unpacks version information from the API response.
      *
+     * <p>An unparsable timestamp must not abort the crawl over a single malformed record; the
+     * content is still worth indexing without its last-modified date, so the failure is logged
+     * and {@link #lastModified} is left {@code null} instead of being rethrown.</p>
+     *
      * @param version the version data from API response
-     * @throws ParseException if the date format cannot be parsed
      */
     @JsonProperty("version")
-    public void unpackVersion(final Map<String, Object> version) throws ParseException {
+    public void unpackVersion(final Map<String, Object> version) {
         final String when = (String) version.get("when");
+        if (when == null) {
+            return;
+        }
         try {
             final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             this.lastModified = format.parse(when).getTime();
         } catch (final ParseException e) {
-            throw e; // TODO
+            logger.warn("Failed to parse a Confluence version timestamp: {}", when, e);
         }
     }
 

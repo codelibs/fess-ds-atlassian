@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -120,7 +121,35 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
      * @return the number of threads, defaults to 1
      */
     protected Integer getNumberOfThreads(final DataStoreParams paramMap) {
-        return Integer.parseInt(paramMap.getAsString(NUMBER_OF_THREADS, "1"));
+        return getIntParam(paramMap, NUMBER_OF_THREADS, 1);
+    }
+
+    /**
+     * Reads an int parameter, falling back to the default when absent, unparsable, or out of
+     * int range, instead of letting a bad value (e.g. {@code number_of_threads=abc}) throw a
+     * {@link NumberFormatException} that kills the crawl at startup.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the parameter key
+     * @param defaultValue the value used when absent, unparsable or out of range
+     * @return the resolved value
+     */
+    protected int getIntParam(final DataStoreParams paramMap, final String key, final int defaultValue) {
+        final String value = paramMap.getAsString(key, StringUtil.EMPTY);
+        if (StringUtil.isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            final long longValue = Long.parseLong(value.trim());
+            if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
+                logger.warn("Parameter \"{}\" is out of range: {}. Using {}.", key, longValue, defaultValue);
+                return defaultValue;
+            }
+            return (int) longValue;
+        } catch (final NumberFormatException e) {
+            logger.warn("Parameter \"{}\" is not a number: \"{}\". Using {}.", key, value, defaultValue);
+            return defaultValue;
+        }
     }
 
     /**
@@ -164,7 +193,7 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
      * @return the extracted text
      */
     public String getExtractedText(final String text, final String mimeType) {
-        try (final InputStream in = new ByteArrayInputStream(text.getBytes())) {
+        try (final InputStream in = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))) {
             // Ignore mimeType because the extractor specified by extractorName is always used.
             return ComponentUtil.getExtractorFactory().builder(in, null).extractorName(extractorName).extract().getContent();
         } catch (final Exception e) {

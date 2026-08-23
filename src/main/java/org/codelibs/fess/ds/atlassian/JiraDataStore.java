@@ -116,7 +116,9 @@ public class JiraDataStore extends AtlassianDataStore {
                 logger.debug("Shutting down thread executor.");
             }
             executorService.shutdown();
-            executorService.awaitTermination(60, TimeUnit.SECONDS);
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                logger.warn("Crawler tasks did not finish within 60 seconds; some documents may not have been indexed.");
+            }
         } catch (final InterruptedException e) {
             throw new InterruptedRuntimeException(e);
         } finally {
@@ -159,7 +161,11 @@ public class JiraDataStore extends AtlassianDataStore {
         final Map<String, Object> dataMap = new HashMap<>(defaultDataMap);
         final String url = getIssueViewUrl(issue, client);
         final StatsKeyObject statsKey = new StatsKeyObject(url);
-        paramMap.put(Constants.CRAWLER_STATS_KEY, statsKey);
+        // paramMap is shared across worker threads; putting the per-issue stats key directly on it
+        // would let concurrent threads overwrite each other's key. Store it on a thread-local copy
+        // instead so callback.store() still receives it without the race.
+        final DataStoreParams localParams = paramMap.newInstance();
+        localParams.put(Constants.CRAWLER_STATS_KEY, statsKey);
         try {
             crawlerStatsHelper.begin(statsKey);
 
@@ -208,7 +214,7 @@ public class JiraDataStore extends AtlassianDataStore {
                 statsKey.setUrl(statsUrl);
             }
 
-            callback.store(paramMap, dataMap);
+            callback.store(localParams, dataMap);
             crawlerStatsHelper.record(statsKey, StatsAction.FINISHED);
         } catch (final CrawlingAccessException e) {
             logger.warn("Crawling Access Exception at : {}", dataMap, e);
