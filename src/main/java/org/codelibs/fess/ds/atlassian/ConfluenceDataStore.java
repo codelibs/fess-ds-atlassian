@@ -269,11 +269,15 @@ public class ConfluenceDataStore extends AtlassianDataStore {
     /**
      * Converts a timestamp to a Date object.
      *
-     * @param date the timestamp in seconds
-     * @return the Date object
+     * <p>{@code date} is null when {@link Content#unpackVersion} could not parse the source
+     * timestamp; unboxing it here would NPE and, caught by {@link #processContent}'s catch-all,
+     * silently drop the whole document instead of just its last-modified date.</p>
+     *
+     * @param date the timestamp in seconds, may be null
+     * @return the Date object, or null if date is null
      */
     protected Date getLastModifiedAsDate(final Long date) {
-        return new Date(date);
+        return date == null ? null : new Date(date);
     }
 
     /**
