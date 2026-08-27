@@ -24,6 +24,7 @@ import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.BasicAuthentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuthAuthentication;
+import org.codelibs.fess.ds.atlassian.api.authentication.PatAuthentication;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudBasicEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.DataCenterEndpointStrategy;
@@ -35,7 +36,8 @@ import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.util.ComponentUtil;
 
-import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Abstract base class for Atlassian API clients providing common authentication
@@ -78,11 +80,22 @@ public abstract class AtlassianClient {
     protected static final String OAUTH2_CLIENT_SECRET = "oauth2.client_secret";
     /** Parameter key for OAuth2 token URL. */
     protected static final String OAUTH2_TOKEN_URL = "oauth2.token_url";
+    /** Parameter key for OAuth2 grant type. */
+    protected static final String OAUTH2_GRANT_TYPE = "oauth2.grant_type";
+
+    /**
+     * Prefix marking an encrypted value in a {@code handlerParameter} line.
+     * Mirrors the private constant of the same name in {@code org.codelibs.fess.util.ParameterUtil},
+     * which is what writes and reads it when a data config is saved through the admin UI.
+     */
+    protected static final String CIPHER_PREFIX = "{cipher}";
 
     /** Parameter key for basic authentication username. */
     protected static final String BASIC_USERNAME_PARAM = "basic.username";
     /** Parameter key for basic authentication password. */
     protected static final String BASIC_PASS_PARAM = "basic.password";
+    /** Parameter key for the personal access token. */
+    protected static final String PAT_TOKEN_PARAM = "pat.token";
     /** Parameter key for HTTP proxy host. */
     protected static final String PROXY_HOST_PARAM = "proxy_host";
     /** Parameter key for HTTP proxy port. */
@@ -111,6 +124,9 @@ public abstract class AtlassianClient {
 
     /** Authentication type constant for OAuth2 authentication. */
     protected static final String OAUTH2 = "oauth2";
+
+    /** Authentication type constant for Personal Access Token authentication. */
+    protected static final String PAT = "pat";
 
     /** The authentication instance used for API requests. */
     protected Authentication authentication;
@@ -180,30 +196,42 @@ public abstract class AtlassianClient {
             final String clientId = paramMap.getAsString(OAUTH2_CLIENT_ID, StringUtil.EMPTY);
             final String clientSecret = paramMap.getAsString(OAUTH2_CLIENT_SECRET, StringUtil.EMPTY);
             final String tokenUrl = paramMap.getAsString(OAUTH2_TOKEN_URL, OAuth2Authentication.DEFAULT_TOKEN_URL);
+            final String grantType = paramMap.getAsString(OAUTH2_GRANT_TYPE, OAuth2Authentication.GRANT_AUTHORIZATION_CODE);
 
-            if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
+            if (OAuth2Authentication.GRANT_CLIENT_CREDENTIALS.equals(grantType)) {
+                if (clientId.isEmpty() || clientSecret.isEmpty()) {
+                    throw new AtlassianDataStoreException("parameter \"" + OAUTH2_CLIENT_ID + "\" and \"" + OAUTH2_CLIENT_SECRET
+                            + "\" are required for the " + "client_credentials grant.");
+                }
+            } else if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
                 throw new AtlassianDataStoreException("Parameters required for OAuth2 are missing.");
             }
-            final OAuth2Authentication oauth2Authentication =
-                    new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
+            final OAuth2Authentication oauth2Authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret,
+                    tokenUrl, grantType, (tokenUpdateResult) -> {
+                        // Nothing to persist under client_credentials. The access token is derivable
+                        // from client_id/client_secret at any time and lives an hour, so there is no
+                        // refresh token to keep and re-fetching on expiry is the whole recovery
+                        // story. Writing it back would cost an OpenSearch write and an INFO log per
+                        // refresh, would overwrite an operator's {cipher} oauth2.access_token line in
+                        // plain text, and -- in the natural client_credentials setup, which has no
+                        // oauth2.access_token line at all -- would append a plaintext bearer token to
+                        // a config that never contained one.
+                        if (OAuth2Authentication.GRANT_CLIENT_CREDENTIALS.equals(grantType)) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("Skipping the DataConfig write-back: client_credentials tokens are not persisted.");
+                            }
+                            return;
+                        }
+
                         // Process for updating DataConfig by refresh token.
-                        final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
-                            String value;
-                            if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
-                                value = tokenUpdateResult.getAccessToken();
-                            } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
-                                value = tokenUpdateResult.getRefreshToken();
-                            } else {
-                                value = e.getValue();
-                            }
-                            if (value != null) {
-                                // Escape value.
-                                value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
-                            } else {
-                                value = StringUtil.EMPTY;
-                            }
-                            return e.getKey() + "=" + value;
-                        }).collect(Collectors.joining("\n"));
+                        //
+                        // Edit the RAW handlerParameter string, not getHandlerParameterMap() (which
+                        // ParameterUtil.parse has already decrypted): rebuilding from the decrypted map
+                        // would write encrypted values such as oauth2.client_secret={cipher}... back in
+                        // plain text. Only the oauth2.access_token / oauth2.refresh_token lines are
+                        // replaced; every other line -- comments, blank lines, encrypted values, ordering
+                        // -- is preserved verbatim.
+                        final String paramStr = updateTokenParameters(dataConfig.getHandlerParameter(), grantType, tokenUpdateResult);
 
                         dataConfig.setHandlerParameter(paramStr);
                         ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
@@ -220,6 +248,20 @@ public abstract class AtlassianClient {
             } else {
                 endpointStrategy = new DataCenterEndpointStrategy(home);
             }
+            break;
+        }
+        case PAT: {
+            logger.info("Setup personal access token authentication");
+            final String token = paramMap.getAsString(PAT_TOKEN_PARAM, StringUtil.EMPTY);
+            if (token.isEmpty()) {
+                throw new AtlassianDataStoreException("parameter \"" + PAT_TOKEN_PARAM + "\" is required for PAT authentication.");
+            }
+            if (deployment == Deployment.CLOUD) {
+                logger.warn("auth_type=pat is a Data Center feature; Atlassian Cloud has no personal access tokens. "
+                        + "Use auth_type=basic with an API token instead.");
+            }
+            authentication = new PatAuthentication(token);
+            endpointStrategy = createEndpointStrategy(deployment, home, product);
             break;
         }
         default: {
@@ -398,6 +440,111 @@ public abstract class AtlassianClient {
      */
     protected String getApiUrl() {
         return endpointStrategy.getApiUrl();
+    }
+
+    /**
+     * Rebuilds the raw {@code handlerParameter} string with the refreshed OAuth2 access token
+     * (and, when present, refresh token) applied in place.
+     * <p>
+     * The RAW {@code handlerParameter} string is edited line by line rather than being rebuilt
+     * from {@link DataConfig#getHandlerParameterMap()}: that map is already decrypted (by
+     * {@code ParameterUtil.parse}), so rebuilding from it would rewrite encrypted values such as
+     * {@code oauth2.client_secret={cipher}...} in their decrypted form. Only the
+     * {@value #OAUTH2_ACCESS_TOKEN} and {@value #OAUTH2_REFRESH_TOKEN} lines are replaced; every
+     * other line -- comments, blank lines, encrypted values, ordering -- is preserved verbatim.
+     * </p>
+     * <p>
+     * For the {@value OAuth2Authentication#GRANT_CLIENT_CREDENTIALS} grant, the
+     * {@value #OAUTH2_REFRESH_TOKEN} line is <em>never</em> touched, regardless of what
+     * {@code tokenUpdateResult} carries: a client-credentials token response never returns a
+     * refresh token, so {@link OAuth2Authentication#refreshToken} simply carries forward whatever
+     * value the object was constructed with. If an operator migrating from
+     * {@value OAuth2Authentication#GRANT_AUTHORIZATION_CODE} leaves a stale (possibly
+     * {@code {cipher}}-encrypted) {@value #OAUTH2_REFRESH_TOKEN} line behind, gating only on
+     * {@code isNotBlank} would rewrite it in plain text on every refresh cycle. Gating on grant
+     * type instead makes that line untouchable under client_credentials no matter what value is
+     * passed in.
+     * </p>
+     * <p>
+     * A replaced line keeps the operator's choice of encryption. Fess's default
+     * {@code app.encrypt.property.pattern} is {@code .*password|.*key|.*token|.*secret}, so both
+     * {@value #OAUTH2_ACCESS_TOKEN} and {@value #OAUTH2_REFRESH_TOKEN} match {@code .*token} and
+     * any data config saved through the admin UI holds them as {@code {cipher}...}. This
+     * write-back calls {@code DataConfigBhv.update} directly and so bypasses the
+     * {@code ParameterUtil.encrypt} that {@code DataConfigService.store} would have applied; when
+     * the line it replaces already began with {@value #CIPHER_PREFIX} the new value is therefore
+     * re-encrypted with {@link ComponentUtil#getPrimaryCipher()} rather than written in plain
+     * text. A line that was plain text stays plain text -- that was the operator's choice. The
+     * assembled string is deliberately <em>not</em> run through {@code ParameterUtil.encrypt},
+     * which re-parses it and would destroy the comments, blank lines and ordering this method
+     * works to preserve.
+     * </p>
+     *
+     * @param handlerParameter the current raw {@code handlerParameter} string (may be {@code null})
+     * @param grantType the OAuth2 grant type in use
+     * @param tokenUpdateResult the refreshed token values
+     * @return the rebuilt {@code handlerParameter} string
+     */
+    protected static String updateTokenParameters(final String handlerParameter, final String grantType,
+            final OAuth2Authentication.TokenUpdateResult tokenUpdateResult) {
+        final Map<String, String> pending = new LinkedHashMap<>();
+        pending.put(OAUTH2_ACCESS_TOKEN, tokenUpdateResult.getAccessToken());
+        if (!OAuth2Authentication.GRANT_CLIENT_CREDENTIALS.equals(grantType)
+                && StringUtil.isNotBlank(tokenUpdateResult.getRefreshToken())) {
+            pending.put(OAUTH2_REFRESH_TOKEN, tokenUpdateResult.getRefreshToken());
+        }
+
+        final String[] lines = handlerParameter == null ? new String[0] : handlerParameter.split("\n", -1);
+        final StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            final String line = lines[i];
+            final int pos = line.indexOf('=');
+            final String key = (pos >= 0 ? line.substring(0, pos) : line).trim();
+            if (i > 0) {
+                buf.append('\n');
+            }
+            if (pending.containsKey(key)) {
+                // Update in place, keeping the original line's position and its encryption.
+                final String currentValue = pos >= 0 ? line.substring(pos + 1).trim() : StringUtil.EMPTY;
+                buf.append(key).append('=').append(formatTokenValue(pending.remove(key), currentValue.startsWith(CIPHER_PREFIX)));
+            } else {
+                // Preserve every other line verbatim, including encrypted values and blank lines.
+                buf.append(line);
+            }
+        }
+        pending.forEach((key, value) -> {
+            if (buf.length() > 0) {
+                buf.append('\n');
+            }
+            // A key with no line to replace has no encryption choice to preserve; write it plain.
+            buf.append(key).append('=').append(formatTokenValue(value, false));
+        });
+        return buf.toString();
+    }
+
+    /**
+     * Renders a refreshed token value for a raw {@code handlerParameter} line, re-encrypting it
+     * when the line it replaces was encrypted.
+     *
+     * @param value the refreshed token value
+     * @param encrypted whether the line being replaced began with {@value #CIPHER_PREFIX}
+     * @return the value to write after the {@code =}
+     */
+    private static String formatTokenValue(final String value, final boolean encrypted) {
+        if (encrypted) {
+            // The cipher emits base64, so there is nothing here for escapeParameterValue to escape
+            // -- and escaping it would corrupt what ParameterUtil.parse hands back to decrypt().
+            return CIPHER_PREFIX + ComponentUtil.getPrimaryCipher().encrypt(value == null ? StringUtil.EMPTY : value);
+        }
+        return escapeParameterValue(value);
+    }
+
+    private static String escapeParameterValue(final String value) {
+        if (value == null) {
+            return StringUtil.EMPTY;
+        }
+        // Escape value, matching the escaping the pre-existing write-back used.
+        return value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private String getBasicUsername(final DataStoreParams paramMap) {

@@ -22,6 +22,17 @@ package org.codelibs.fess.ds.atlassian.api.ratelimit;
  * rate-limit state rather than let each thread discover the limit independently, and that
  * parallelising to get around a limit makes things worse. One instance therefore lives on
  * the client and is handed to every request it builds.</p>
+ *
+ * <p>What is shared is a <em>rate</em>, not merely a flag. {@link #awaitBeforeRequest()} reserves
+ * the next departure slot under a lock and then sleeps until that slot outside it, so threads
+ * pace through the gate one interval apart instead of each sleeping the interval concurrently.
+ * Sleeping on the calling thread alone would let {@code number_of_threads=5} with
+ * {@code read_interval=1000} issue roughly 5 req/s rather than the 1 req/s the operator
+ * configured -- and the failure mode of that is the 429s this class exists to avoid.</p>
+ *
+ * <p>The first request through an idle gate departs immediately; pacing applies from the second
+ * onwards. The near-limit flag is read outside the lock, so a change to it takes effect from the
+ * next reservation.</p>
  */
 public class RateLimitState {
 
@@ -33,6 +44,9 @@ public class RateLimitState {
     private final long nearLimitDelayMillis;
 
     private volatile boolean nearLimit;
+
+    /** Epoch millis of the next free departure slot. Guarded by {@code this}. */
+    private long nextAllowedAtMillis;
 
     /**
      * Constructs a rate-limit state.
@@ -83,14 +97,28 @@ public class RateLimitState {
     }
 
     /**
-     * Waits the interval returned by {@link #nextWaitMillis()}.
+     * Reserves the next departure slot and waits for it.
+     *
+     * <p>The slot is claimed under the lock so concurrent callers queue up one
+     * {@link #nextWaitMillis()} apart; the sleep itself happens outside the lock, since holding it
+     * while sleeping would serialise the computation as well for no benefit.</p>
      *
      * @throws InterruptedException if the thread is interrupted while waiting
      */
     public void awaitBeforeRequest() throws InterruptedException {
         final long wait = nextWaitMillis();
-        if (wait > 0L) {
-            Thread.sleep(wait);
+        if (wait <= 0L) {
+            return;
+        }
+        final long slot;
+        synchronized (this) {
+            final long now = System.currentTimeMillis();
+            slot = Math.max(now, nextAllowedAtMillis);
+            nextAllowedAtMillis = slot + wait;
+        }
+        final long delay = slot - System.currentTimeMillis();
+        if (delay > 0L) {
+            Thread.sleep(delay);
         }
     }
 }

@@ -190,8 +190,10 @@ public abstract class AtlassianRequest {
                 } catch (final Exception e) {
                     // A read timeout is now reachable because timeouts have defaults. Without
                     // retrying it we would simply reproduce the reported failure where a slow
-                    // Confluence response kills the crawl.
-                    if (!isTransientTransportFailure(e) || attempt >= retryPolicy.getMaxRetries()) {
+                    // Confluence response kills the crawl. A transport failure gives no evidence
+                    // about whether the server processed the request, so only idempotent methods
+                    // may be replayed.
+                    if (!isTransientTransportFailure(e) || !isIdempotent(requestMethod) || attempt >= retryPolicy.getMaxRetries()) {
                         throw e;
                     }
                     final long transportDelay = retryPolicy.delayMillis(attempt, null);
@@ -212,7 +214,7 @@ public abstract class AtlassianRequest {
                 }
 
                 final int statusCode = response.getHttpStatusCode();
-                if (!retryPolicy.isRetryable(statusCode)) {
+                if (!isRetryableStatus(statusCode, requestMethod)) {
                     return response;
                 }
                 if (attempt >= retryPolicy.getMaxRetries()) {
@@ -250,12 +252,49 @@ public abstract class AtlassianRequest {
     }
 
     /**
+     * Returns whether a response status may be retried for the method that produced it.
+     *
+     * <p>429 means the request was rejected before it was processed, so replaying it is safe
+     * whatever the method. A 5xx carries no such guarantee -- the write may well have landed --
+     * so only idempotent methods are replayed. Every caller today goes through
+     * {@code getCurlResponse(GET)}, but attachment support will introduce non-GET traffic that
+     * would otherwise inherit duplicate writes silently.</p>
+     */
+    private boolean isRetryableStatus(final int statusCode, final String requestMethod) {
+        if (!retryPolicy.isRetryable(statusCode)) {
+            return false;
+        }
+        return statusCode == 429 || isIdempotent(requestMethod);
+    }
+
+    /**
+     * Returns whether replaying the method is safe.
+     * GET and DELETE are idempotent per RFC 9110; POST and PUT as this client uses them are not
+     * (Atlassian's PUT endpoints are partial updates, not whole-resource replacements).
+     *
+     * @param requestMethod the HTTP method name
+     * @return true when the request may be replayed
+     */
+    static boolean isIdempotent(final String requestMethod) {
+        return GET.equals(requestMethod) || DELETE.equals(requestMethod);
+    }
+
+    /**
      * Returns whether a failure is a transport hiccup worth retrying.
      * curl4j wraps IO failures, so the cause chain is walked rather than the top-level type.
+     *
+     * <p>{@link java.net.SocketException} covers "Connection reset", the single most common
+     * transient failure on a multi-hour HTTPS crawl, and subsumes
+     * {@link java.net.ConnectException}. {@link java.net.SocketTimeoutException} extends
+     * {@code InterruptedIOException} rather than {@code SocketException}, so it is listed
+     * separately and widening to {@code SocketException} re-catches nothing already handled.</p>
+     *
+     * @param throwable the failure to classify
+     * @return true when the failure is a transient transport failure
      */
-    private boolean isTransientTransportFailure(final Throwable throwable) {
+    static boolean isTransientTransportFailure(final Throwable throwable) {
         for (Throwable t = throwable; t != null; t = t.getCause()) {
-            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
+            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.SocketException) {
                 return true;
             }
             if (t.getCause() == t) {
