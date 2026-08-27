@@ -28,6 +28,8 @@ import org.codelibs.fess.ds.atlassian.api.endpoint.CloudBasicEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.CloudOAuth2EndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.DataCenterEndpointStrategy;
 import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RateLimitState;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RetryPolicy;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exbhv.DataConfigBhv;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
@@ -89,6 +91,17 @@ public abstract class AtlassianClient {
     protected static final String HTTP_CONNECTION_TIMEOUT = "connection_timeout";
     /** Parameter key for HTTP read timeout. */
     protected static final String HTTP_READ_TIMEOUT = "read_timeout";
+    /** Parameter key for the interval between requests. */
+    protected static final String READ_INTERVAL_PARAM = "read_interval";
+
+    /** Default connection timeout, matching fess-ds-gsuite. */
+    public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 20000;
+
+    /**
+     * Default read timeout. Longer than the connection timeout because Confluence CQL
+     * searches with expand are slow enough that a read timeout was reported in the field.
+     */
+    public static final int DEFAULT_READ_TIMEOUT_MILLIS = 60000;
 
     // values for parameters
     /** Authentication type constant for basic authentication. */
@@ -107,6 +120,10 @@ public abstract class AtlassianClient {
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
     protected Integer readTimeout;
+    /** Rate-limit state shared by every request this client issues. */
+    protected final RateLimitState rateLimitState;
+    /** Retry policy shared by every request this client issues. */
+    protected final RetryPolicy retryPolicy = RetryPolicy.defaults();
 
     /**
      * Constructs a new Atlassian client with the given parameters.
@@ -124,6 +141,9 @@ public abstract class AtlassianClient {
         }
 
         final Deployment deployment = resolveDeployment(paramMap, home);
+
+        connectionTimeout = Integer.valueOf(getIntParam(paramMap, HTTP_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT_MILLIS));
+        readTimeout = Integer.valueOf(getIntParam(paramMap, HTTP_READ_TIMEOUT, DEFAULT_READ_TIMEOUT_MILLIS));
 
         final String authType = getAuthType(paramMap);
         switch (authType) {
@@ -164,33 +184,39 @@ public abstract class AtlassianClient {
             if (accessToken.isEmpty() || clientId.isEmpty() || clientSecret.isEmpty()) {
                 throw new AtlassianDataStoreException("Parameters required for OAuth2 are missing.");
             }
-            authentication = new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
-                // Process for updating DataConfig by refresh token.
-                final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
-                    String value;
-                    if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
-                        value = tokenUpdateResult.getAccessToken();
-                    } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
-                        value = tokenUpdateResult.getRefreshToken();
-                    } else {
-                        value = e.getValue();
-                    }
-                    if (value != null) {
-                        // Escape value.
-                        value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
-                    } else {
-                        value = StringUtil.EMPTY;
-                    }
-                    return e.getKey() + "=" + value;
-                }).collect(Collectors.joining("\n"));
+            final OAuth2Authentication oauth2Authentication =
+                    new OAuth2Authentication(accessToken, refreshToken, clientId, clientSecret, tokenUrl, (tokenUpdateResult) -> {
+                        // Process for updating DataConfig by refresh token.
+                        final String paramStr = dataConfig.getHandlerParameterMap().entrySet().stream().map(e -> {
+                            String value;
+                            if (OAUTH2_ACCESS_TOKEN.equals(e.getKey())) {
+                                value = tokenUpdateResult.getAccessToken();
+                            } else if (OAUTH2_REFRESH_TOKEN.equals(e.getKey())) {
+                                value = tokenUpdateResult.getRefreshToken();
+                            } else {
+                                value = e.getValue();
+                            }
+                            if (value != null) {
+                                // Escape value.
+                                value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
+                            } else {
+                                value = StringUtil.EMPTY;
+                            }
+                            return e.getKey() + "=" + value;
+                        }).collect(Collectors.joining("\n"));
 
-                dataConfig.setHandlerParameter(paramStr);
-                ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
-                logger.info("Updated DataConfig: {}", dataConfig.getId());
-            });
+                        dataConfig.setHandlerParameter(paramStr);
+                        ComponentUtil.getComponent(DataConfigBhv.class).update(dataConfig);
+                        logger.info("Updated DataConfig: {}", dataConfig.getId());
+                    });
+            oauth2Authentication.setTimeouts(connectionTimeout, readTimeout);
+            authentication = oauth2Authentication;
 
             if (deployment == Deployment.CLOUD) {
-                endpointStrategy = new CloudOAuth2EndpointStrategy(home, product, authentication);
+                final CloudOAuth2EndpointStrategy cloudOAuth2EndpointStrategy =
+                        new CloudOAuth2EndpointStrategy(home, product, authentication);
+                cloudOAuth2EndpointStrategy.setTimeouts(connectionTimeout, readTimeout);
+                endpointStrategy = cloudOAuth2EndpointStrategy;
             } else {
                 endpointStrategy = new DataCenterEndpointStrategy(home);
             }
@@ -217,12 +243,7 @@ public abstract class AtlassianClient {
             }
         }
 
-        if (paramMap.containsKey(HTTP_CONNECTION_TIMEOUT)) {
-            connectionTimeout = Integer.parseInt(paramMap.getAsString(HTTP_CONNECTION_TIMEOUT));
-        }
-        if (paramMap.containsKey(HTTP_READ_TIMEOUT)) {
-            readTimeout = Integer.parseInt(paramMap.getAsString(HTTP_READ_TIMEOUT));
-        }
+        rateLimitState = RateLimitState.of(getLongParam(paramMap, READ_INTERVAL_PARAM, 0L));
     }
 
     /**
@@ -303,6 +324,24 @@ public abstract class AtlassianClient {
     }
 
     /**
+     * Returns the resolved connection timeout.
+     *
+     * @return the timeout in milliseconds
+     */
+    public Integer getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    /**
+     * Returns the resolved read timeout.
+     *
+     * @return the timeout in milliseconds
+     */
+    public Integer getReadTimeout() {
+        return readTimeout;
+    }
+
+    /**
      * Configures a request with authentication and timeout settings.
      *
      * @param <T> the request type
@@ -315,7 +354,18 @@ public abstract class AtlassianClient {
         request.setEndpointStrategy(endpointStrategy);
         request.setConnectionTimeout(connectionTimeout);
         request.setReadTimeout(readTimeout);
+        request.setRetryPolicy(retryPolicy);
+        request.setRateLimitState(rateLimitState);
         return request;
+    }
+
+    /**
+     * Returns the rate-limit state shared by this client's requests.
+     *
+     * @return the rate-limit state
+     */
+    public RateLimitState getRateLimitState() {
+        return rateLimitState;
     }
 
     /**
@@ -384,6 +434,46 @@ public abstract class AtlassianClient {
 
     private String getProxyPort(final DataStoreParams paramMap) {
         return paramMap.getAsString(PROXY_PORT_PARAM, StringUtil.EMPTY);
+    }
+
+    /**
+     * Reads a long parameter, falling back to the default when absent or unparsable.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the parameter key
+     * @param defaultValue the value used when absent or unparsable
+     * @return the resolved value
+     */
+    protected long getLongParam(final DataStoreParams paramMap, final String key, final long defaultValue) {
+        final String value = paramMap.getAsString(key, StringUtil.EMPTY);
+        if (StringUtil.isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (final NumberFormatException e) {
+            logger.warn("Parameter \"{}\" is not a number: \"{}\". Using {}.", key, value, defaultValue);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Reads an int parameter, falling back to the default when absent, unparsable, or out of
+     * int range. A timeout beyond int range would be silently truncated by a cast, and a
+     * truncated value of zero means "no timeout" to HttpURLConnection.
+     *
+     * @param paramMap the configuration parameters
+     * @param key the parameter key
+     * @param defaultValue the value used when absent, unparsable or out of range
+     * @return the resolved value
+     */
+    protected int getIntParam(final DataStoreParams paramMap, final String key, final int defaultValue) {
+        final long value = getLongParam(paramMap, key, defaultValue);
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            logger.warn("Parameter \"{}\" is out of range: {}. Using {}.", key, value, defaultValue);
+            return defaultValue;
+        }
+        return (int) value;
     }
 
 }

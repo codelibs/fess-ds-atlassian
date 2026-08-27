@@ -52,6 +52,10 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
 
     private String cachedApiUrl = null;
 
+    private Integer connectionTimeout;
+
+    private Integer readTimeout;
+
     /**
      * Constructs a new Cloud OAuth2 endpoint strategy.
      *
@@ -105,6 +109,28 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
         return Deployment.CLOUD;
     }
 
+    /**
+     * Sets the HTTP timeouts used by this component's own requests.
+     *
+     * @param connectionTimeout the connection timeout in milliseconds, may be null
+     * @param readTimeout the read timeout in milliseconds, may be null
+     */
+    public void setTimeouts(final Integer connectionTimeout, final Integer readTimeout) {
+        this.connectionTimeout = connectionTimeout;
+        this.readTimeout = readTimeout;
+    }
+
+    private void applyTimeouts(final CurlRequest request) {
+        request.onConnect((req, con) -> {
+            if (connectionTimeout != null) {
+                con.setConnectTimeout(connectionTimeout.intValue());
+            }
+            if (readTimeout != null) {
+                con.setReadTimeout(readTimeout.intValue());
+            }
+        });
+    }
+
     private String resolveCloudId(String home, OAuth2Authentication authentication) {
         ResolveCloudIdResponse response = resolveCloudIdInternal(home, authentication);
         if (response.statusCode == 401) {
@@ -125,6 +151,7 @@ public class CloudOAuth2EndpointStrategy implements EndpointStrategy {
         try {
             final URL url = new URI(CLOUD_API_ACCESSIBLE_RESOURCES_URL).toURL();
             final CurlRequest request = authentication.getCurlRequest(Curl::get, "GET", url);
+            applyTimeouts(request);
 
             try (CurlResponse response = request.execute()) {
                 if (response.getHttpStatusCode() != 200) {

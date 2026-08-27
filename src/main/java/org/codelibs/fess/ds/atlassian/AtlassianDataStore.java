@@ -63,8 +63,6 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
     protected static final String URL_FILTER = "url_filter";
     /** Parameter key for number of threads configuration. */
     protected static final String NUMBER_OF_THREADS = "number_of_threads";
-    /** Parameter key for read interval configuration. */
-    protected static final String READ_INTERVAL = "read_interval";
 
     /** Name of the text extractor to use for content processing. */
     protected String extractorName = "tikaExtractor";
@@ -145,7 +143,6 @@ public abstract class AtlassianDataStore extends AbstractDataStore {
         final Map<String, Object> configMap = new HashMap<>();
         configMap.put(IGNORE_ERROR, isIgnoreError(paramMap));
         configMap.put(URL_FILTER, getUrlFilter(paramMap));
-        configMap.put(READ_INTERVAL, getReadInterval(paramMap));
         return configMap;
     }
 

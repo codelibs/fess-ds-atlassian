@@ -15,8 +15,10 @@
  */
 package org.codelibs.fess.ds.atlassian.api;
 
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +31,8 @@ import org.codelibs.fess.ds.atlassian.api.authentication.AuthType;
 import org.codelibs.fess.ds.atlassian.api.authentication.Authentication;
 import org.codelibs.fess.ds.atlassian.api.authentication.OAuth2Authentication;
 import org.codelibs.fess.ds.atlassian.api.endpoint.EndpointStrategy;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RateLimitState;
+import org.codelibs.fess.ds.atlassian.api.ratelimit.RetryPolicy;
 import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,6 +84,28 @@ public abstract class AtlassianRequest {
     protected Integer connectionTimeout;
     /** HTTP read timeout in milliseconds. */
     protected Integer readTimeout;
+    /** Retry policy applied to rate-limited and failed requests. */
+    protected RetryPolicy retryPolicy = RetryPolicy.defaults();
+    /** Shared rate-limit state observed across this request's client. */
+    protected RateLimitState rateLimitState = RateLimitState.of(0L);
+
+    /**
+     * Sets the retry policy for this request.
+     *
+     * @param retryPolicy the retry policy
+     */
+    public void setRetryPolicy(final RetryPolicy retryPolicy) {
+        this.retryPolicy = retryPolicy;
+    }
+
+    /**
+     * Sets the shared rate-limit state for this request.
+     *
+     * @param rateLimitState the rate-limit state
+     */
+    public void setRateLimitState(final RateLimitState rateLimitState) {
+        this.rateLimitState = rateLimitState;
+    }
 
     /**
      * Gets the application home URL.
@@ -146,25 +172,118 @@ public abstract class AtlassianRequest {
      */
     public CurlResponse getCurlResponse(final Function<String, CurlRequest> method, final String requestMethod) {
         try {
-            CurlResponse response = doExecute(method, requestMethod);
-            if (response.getHttpStatusCode() == 401 && authentication.getAuthType() == AuthType.OAUTH2) {
+            int attempt = 0;
+            while (true) {
+                rateLimitState.awaitBeforeRequest();
+
+                final AtomicReference<HttpURLConnection> connectionRef = new AtomicReference<>();
+                CurlResponse response;
                 try {
-                    response.close();
-                } catch (Exception e) {
-                    logger.warn("Failed to close response.", e);
+                    response = doExecute(method, requestMethod, connectionRef);
+
+                    if (response.getHttpStatusCode() == 401 && authentication.getAuthType() == AuthType.OAUTH2) {
+                        closeQuietly(response);
+                        ((OAuth2Authentication) authentication).refreshAccessToken();
+                        connectionRef.set(null);
+                        response = doExecute(method, requestMethod, connectionRef);
+                    }
+                } catch (final Exception e) {
+                    // A read timeout is now reachable because timeouts have defaults. Without
+                    // retrying it we would simply reproduce the reported failure where a slow
+                    // Confluence response kills the crawl.
+                    if (!isTransientTransportFailure(e) || attempt >= retryPolicy.getMaxRetries()) {
+                        throw e;
+                    }
+                    final long transportDelay = retryPolicy.delayMillis(attempt, null);
+                    logger.warn("{} failed with {}; retrying in {} ms (attempt {} of {}).", getURL(), e.getClass().getSimpleName(),
+                            transportDelay, attempt + 1, retryPolicy.getMaxRetries());
+                    if (transportDelay > 0L) {
+                        Thread.sleep(transportDelay);
+                    }
+                    attempt++;
+                    continue;
                 }
 
-                // Refresh token
-                ((OAuth2Authentication) authentication).refreshAccessToken();
-                response = doExecute(method, requestMethod);
+                // curl4j's CurlResponse exposes no headers, so read them from the connection
+                // captured in onConnect. Verified: they remain readable after execute() returns.
+                final HttpURLConnection connection = connectionRef.get();
+                if (connection != null) {
+                    rateLimitState.observeNearLimit(connection.getHeaderField("X-RateLimit-NearLimit"));
+                }
+
+                final int statusCode = response.getHttpStatusCode();
+                if (!retryPolicy.isRetryable(statusCode)) {
+                    return response;
+                }
+                if (attempt >= retryPolicy.getMaxRetries()) {
+                    closeQuietly(response);
+                    throw new AtlassianDataStoreException(
+                            "Gave up on " + getURL() + " after " + (attempt + 1) + " attempts; last status was " + statusCode + ".");
+                }
+
+                final Long retryAfterSeconds = parseRetryAfter(connection);
+                final long delay = retryPolicy.delayMillis(attempt, retryAfterSeconds);
+                logger.warn("{} returned {}; retrying in {} ms (attempt {} of {}).", getURL(), statusCode, delay, attempt + 1,
+                        retryPolicy.getMaxRetries());
+                closeQuietly(response);
+                if (delay > 0L) {
+                    Thread.sleep(delay);
+                }
+                attempt++;
             }
-            return response;
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AtlassianDataStoreException("Interrupted while accessing " + getURL(), e);
+        } catch (final AtlassianDataStoreException e) {
+            throw e;
         } catch (final Exception e) {
             throw new AtlassianDataStoreException("Failed to access " + getURL(), e);
         }
     }
 
-    private CurlResponse doExecute(final Function<String, CurlRequest> method, final String requestMethod) throws Exception {
+    private void closeQuietly(final CurlResponse response) {
+        try {
+            response.close();
+        } catch (final Exception e) {
+            logger.warn("Failed to close response.", e);
+        }
+    }
+
+    /**
+     * Returns whether a failure is a transport hiccup worth retrying.
+     * curl4j wraps IO failures, so the cause chain is walked rather than the top-level type.
+     */
+    private boolean isTransientTransportFailure(final Throwable throwable) {
+        for (Throwable t = throwable; t != null; t = t.getCause()) {
+            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
+                return true;
+            }
+            if (t.getCause() == t) {
+                break;
+            }
+        }
+        return false;
+    }
+
+    private Long parseRetryAfter(final HttpURLConnection connection) {
+        if (connection == null) {
+            return null;
+        }
+        final String value = connection.getHeaderField("Retry-After");
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value.trim());
+        } catch (final NumberFormatException e) {
+            // Retry-After may also be an HTTP-date. Fall back to the computed backoff.
+            logger.debug("Non-numeric Retry-After: {}", value);
+            return null;
+        }
+    }
+
+    private CurlResponse doExecute(final Function<String, CurlRequest> method, final String requestMethod,
+            final AtomicReference<HttpURLConnection> connectionRef) throws Exception {
         final StringBuilder urlBuf = new StringBuilder();
         urlBuf.append(getURL());
 
@@ -182,6 +301,7 @@ public abstract class AtlassianRequest {
         }
 
         request.onConnect((req, con) -> {
+            connectionRef.set(con);
             if (logger.isDebugEnabled()) {
                 logger.debug("connectionTimeout: {}, readTimeout: {}", connectionTimeout, readTimeout);
             }

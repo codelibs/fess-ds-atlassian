@@ -58,6 +58,10 @@ public class OAuth2Authentication extends Authentication {
     protected final Consumer<TokenUpdateResult> tokenUpdateCallback;
     private volatile long lastRefreshTime = 0;
 
+    private Integer connectionTimeout;
+
+    private Integer readTimeout;
+
     /**
      * Constructs a new OAuth2 authentication.
      *
@@ -102,6 +106,28 @@ public class OAuth2Authentication extends Authentication {
     }
 
     /**
+     * Sets the HTTP timeouts used by this component's own requests.
+     *
+     * @param connectionTimeout the connection timeout in milliseconds, may be null
+     * @param readTimeout the read timeout in milliseconds, may be null
+     */
+    public void setTimeouts(final Integer connectionTimeout, final Integer readTimeout) {
+        this.connectionTimeout = connectionTimeout;
+        this.readTimeout = readTimeout;
+    }
+
+    private void applyTimeouts(final CurlRequest request) {
+        request.onConnect((req, con) -> {
+            if (connectionTimeout != null) {
+                con.setConnectTimeout(connectionTimeout.intValue());
+            }
+            if (readTimeout != null) {
+                con.setReadTimeout(readTimeout.intValue());
+            }
+        });
+    }
+
+    /**
      * Refreshes the access token using the refresh token.
      */
     public synchronized void refreshAccessToken() {
@@ -124,6 +150,7 @@ public class OAuth2Authentication extends Authentication {
         params.put("client_secret", clientSecret);
 
         final CurlRequest request = Curl.post(tokenUrl).header("Content-Type", "application/json");
+        applyTimeouts(request);
 
         if (httpProxy != null) {
             request.proxy(httpProxy);
