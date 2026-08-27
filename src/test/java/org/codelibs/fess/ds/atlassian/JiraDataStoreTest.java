@@ -301,4 +301,123 @@ public class JiraDataStoreTest extends UnitDsTestCase {
         final String result = dataStore.getExtractedTextFromAdf(adf);
         assertEquals("Hello World", result);
     }
+
+    @Test
+    public void test_getExtractedTextFromAdf_separates_table_cells() {
+        final Map<String, Object> cellA = adfCell("Alpha");
+        final Map<String, Object> cellB = adfCell("Beta");
+        final Map<String, Object> row = new LinkedHashMap<>();
+        row.put("type", "tableRow");
+        row.put("content", List.of(cellA, cellB));
+        final Map<String, Object> table = new LinkedHashMap<>();
+        table.put("type", "table");
+        table.put("content", List.of(row));
+        final Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("type", "doc");
+        doc.put("version", 1);
+        doc.put("content", List.of(table));
+
+        final String text = dataStore.getExtractedTextFromAdf(doc);
+        Assertions.assertFalse(text.contains("AlphaBeta"), "cells must not run together: " + text);
+        Assertions.assertTrue(text.contains("Alpha"), text);
+        Assertions.assertTrue(text.contains("Beta"), text);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_separates_list_items() {
+        final Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("type", "doc");
+        doc.put("version", 1);
+        doc.put("content", List.of(adfListItem("First"), adfListItem("Second")));
+
+        final String text = dataStore.getExtractedTextFromAdf(doc);
+        Assertions.assertFalse(text.contains("FirstSecond"), "list items must not run together: " + text);
+    }
+
+    private static Map<String, Object> adfText(final String value) {
+        final Map<String, Object> node = new LinkedHashMap<>();
+        node.put("type", "text");
+        node.put("text", value);
+        return node;
+    }
+
+    private static Map<String, Object> adfCell(final String value) {
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(adfText(value)));
+        final Map<String, Object> cell = new LinkedHashMap<>();
+        cell.put("type", "tableCell");
+        cell.put("content", List.of(paragraph));
+        return cell;
+    }
+
+    private static Map<String, Object> adfListItem(final String value) {
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(adfText(value)));
+        final Map<String, Object> item = new LinkedHashMap<>();
+        item.put("type", "listItem");
+        item.put("content", List.of(paragraph));
+        return item;
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_separates_code_blocks() {
+        final Map<String, Object> codeBlockA = new LinkedHashMap<>();
+        codeBlockA.put("type", "codeBlock");
+        codeBlockA.put("content", List.of(adfText("Alpha")));
+        final Map<String, Object> codeBlockB = new LinkedHashMap<>();
+        codeBlockB.put("type", "codeBlock");
+        codeBlockB.put("content", List.of(adfText("Beta")));
+        final Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("type", "doc");
+        doc.put("version", 1);
+        doc.put("content", List.of(codeBlockA, codeBlockB));
+
+        final String text = dataStore.getExtractedTextFromAdf(doc);
+        Assertions.assertFalse(text.contains("AlphaBeta"), "adjacent code blocks must not run together: " + text);
+        Assertions.assertTrue(text.contains("Alpha"), text);
+        Assertions.assertTrue(text.contains("Beta"), text);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_includesMentionText() {
+        final Map<String, Object> mentionAttrs = new LinkedHashMap<>();
+        mentionAttrs.put("id", "abc-123");
+        mentionAttrs.put("text", "@Jane Doe");
+        final Map<String, Object> mention = new LinkedHashMap<>();
+        mention.put("type", "mention");
+        mention.put("attrs", mentionAttrs);
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(adfText("Assigned to "), mention, adfText(" for review")));
+        final Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("type", "doc");
+        doc.put("version", 1);
+        doc.put("content", List.of(paragraph));
+
+        final String text = dataStore.getExtractedTextFromAdf(doc);
+        Assertions.assertTrue(text.contains("@Jane Doe"), "mention text must be extracted: " + text);
+        Assertions.assertFalse(text.contains("to@Jane"), "mention must not fuse with neighboring text: " + text);
+        Assertions.assertFalse(text.contains("Doefor"), "mention must not fuse with neighboring text: " + text);
+    }
+
+    @Test
+    public void test_getExtractedTextFromAdf_includesInlineCardUrl() {
+        final Map<String, Object> inlineCardAttrs = new LinkedHashMap<>();
+        inlineCardAttrs.put("url", "https://example.atlassian.net/browse/FOO-1");
+        final Map<String, Object> inlineCard = new LinkedHashMap<>();
+        inlineCard.put("type", "inlineCard");
+        inlineCard.put("attrs", inlineCardAttrs);
+        final Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(adfText("See "), inlineCard));
+        final Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("type", "doc");
+        doc.put("version", 1);
+        doc.put("content", List.of(paragraph));
+
+        final String text = dataStore.getExtractedTextFromAdf(doc);
+        Assertions.assertTrue(text.contains("https://example.atlassian.net/browse/FOO-1"), "inline card url must be extracted: " + text);
+    }
 }

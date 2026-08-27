@@ -16,6 +16,7 @@
 package org.codelibs.fess.ds.atlassian.api.jira.project;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -119,6 +120,11 @@ public class GetProjectsRequest extends AtlassianRequest {
             queryParams.put("recent", recent.toString());
         }
         return queryParams;
+    }
+
+    @Override
+    public String toString() {
+        return "GetProjectsRequest [url=" + getURL() + ", expand=" + Arrays.toString(expand) + "]";
     }
 
 }

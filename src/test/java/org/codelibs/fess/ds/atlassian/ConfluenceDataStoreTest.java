@@ -199,6 +199,53 @@ public class ConfluenceDataStoreTest extends UnitDsTestCase {
     }
 
     @Test
+    public void test_storeData_indexes_a_content_with_an_unparsable_date() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/wiki/rest/api/search",
+                    req -> MockAtlassianServer.json("{\"results\":[{\"content\":{"
+                            + "\"id\":\"1\",\"type\":\"page\",\"title\":\"Broken-Date\",\"space\":{\"key\":\"SP\"},"
+                            + "\"body\":{\"view\":{\"value\":\"body\"}},\"version\":{\"when\":\"not a date\"}}}]," + "\"_links\":{}}"));
+
+            final DataStoreParams paramMap = new DataStoreParams();
+            paramMap.put("home", server.getBaseUrl());
+            paramMap.put("deployment", "cloud");
+            paramMap.put("auth_type", "basic");
+            paramMap.put("basic.username", "user");
+            paramMap.put("basic.password", "pass");
+
+            final List<Map<String, Object>> stored = new ArrayList<>();
+            final IndexUpdateCallback callback = new IndexUpdateCallback() {
+                @Override
+                public void store(final DataStoreParams params, final Map<String, Object> dataMap) {
+                    stored.add(dataMap);
+                }
+
+                @Override
+                public long getExecuteTime() {
+                    return 0;
+                }
+
+                @Override
+                public long getDocumentSize() {
+                    return stored.size();
+                }
+
+                @Override
+                public void commit() {
+                    // no-op
+                }
+            };
+
+            final Map<String, String> scriptMap = new HashMap<>();
+            scriptMap.put("title", "content.title");
+
+            new ConfluenceDataStore().storeData(new DataConfig(), callback, paramMap, scriptMap, new HashMap<>());
+
+            Assertions.assertEquals(1, stored.size(), "an unparsable date must cost the document its timestamp, not the document");
+        }
+    }
+
+    @Test
     public void test_content_view_url_is_cloud_style_on_cloud() throws Exception {
         assertContentViewUrl("cloud", "https://example.atlassian.net", "https://example.atlassian.net/wiki/spaces/SP/pages/1");
     }

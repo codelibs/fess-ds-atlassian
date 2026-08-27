@@ -476,4 +476,11 @@ public abstract class AtlassianClient {
         return (int) value;
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + " [home=" + (endpointStrategy == null ? "?" : endpointStrategy.getHomeUrl()) + ", deployment="
+                + (endpointStrategy == null ? "?" : endpointStrategy.getDeployment()) + ", authType="
+                + (authentication == null ? "?" : authentication.getAuthType()) + "]";
+    }
+
 }
