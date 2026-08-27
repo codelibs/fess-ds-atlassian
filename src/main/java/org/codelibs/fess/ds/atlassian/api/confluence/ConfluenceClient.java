@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsResponse;
 import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetAttachmentsOfContentRequest;
@@ -29,6 +30,8 @@ import org.codelibs.fess.ds.atlassian.api.confluence.content.child.GetCommentsOf
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 import org.codelibs.fess.ds.atlassian.api.confluence.space.GetSpacesRequest;
+import org.codelibs.fess.ds.atlassian.api.paging.PageCursor;
+import org.codelibs.fess.ds.atlassian.api.paging.Paginator;
 import org.codelibs.fess.entity.DataStoreParams;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 
@@ -163,15 +166,30 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each content item
      */
     public void getContents(final Consumer<Content> consumer) {
-        for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response =
-                    contents().start(start).limit(contentLimit).expand("content.space", "content.version", "content.body.view").execute();
-            final List<Content> contents = response.getContents();
-            contents.forEach(consumer);
-            if (contents.size() < contentLimit) {
-                break;
+        final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
+        Paginator.forEach("Confluence contents", cursor -> {
+            final GetContentsRequest request =
+                    contents().limit(contentLimit).expand("content.space", "content.version", "content.body.view");
+            if (cloud) {
+                if (cursor.token() != null) {
+                    request.cursor(cursor.token());
+                }
+            } else {
+                request.start(cursor.offset() == null ? 0 : cursor.offset().intValue());
             }
-        }
+
+            final GetContentsResponse response = request.execute();
+            final List<Content> contents = response.getContents() == null ? List.of() : response.getContents();
+
+            if (cloud) {
+                final String next = response.getNextCursor();
+                return new Paginator.Page<>(contents, next == null ? PageCursor.done() : PageCursor.token(next));
+            }
+
+            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            final boolean last = contents.size() < contentLimit.intValue();
+            return new Paginator.Page<>(contents, last ? PageCursor.done() : PageCursor.offset(offset + contents.size()));
+        }, consumer);
     }
 
     /**
@@ -180,18 +198,30 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each blog content item
      */
     public void getBlogContents(final Consumer<Content> consumer) {
-        for (int start = 0;; start += contentLimit) {
-            final GetContentsResponse response = contents().start(start)
-                    .limit(contentLimit)
-                    .type("blogpost")
-                    .expand("content.space", "content.version", "content.body.view")
-                    .execute();
-            final List<Content> contents = response.getContents();
-            contents.forEach(consumer);
-            if (contents.size() < contentLimit) {
-                break;
+        final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
+        Paginator.forEach("Confluence blog contents", cursor -> {
+            final GetContentsRequest request =
+                    contents().type("blogpost").limit(contentLimit).expand("content.space", "content.version", "content.body.view");
+            if (cloud) {
+                if (cursor.token() != null) {
+                    request.cursor(cursor.token());
+                }
+            } else {
+                request.start(cursor.offset() == null ? 0 : cursor.offset().intValue());
             }
-        }
+
+            final GetContentsResponse response = request.execute();
+            final List<Content> contents = response.getContents() == null ? List.of() : response.getContents();
+
+            if (cloud) {
+                final String next = response.getNextCursor();
+                return new Paginator.Page<>(contents, next == null ? PageCursor.done() : PageCursor.token(next));
+            }
+
+            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            final boolean last = contents.size() < contentLimit.intValue();
+            return new Paginator.Page<>(contents, last ? PageCursor.done() : PageCursor.offset(offset + contents.size()));
+        }, consumer);
     }
 
     /**
@@ -201,15 +231,29 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each comment
      */
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
-        for (int start = 0;; start += contentLimit) {
-            final GetCommentsOfContentResponse response =
-                    commentsOfContent(id).start(start).limit(contentLimit).expand("content.body.view").execute();
-            final List<Comment> comments = response.getComments();
-            comments.forEach(consumer);
-            if (comments.size() < contentLimit) {
-                break;
+        final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
+        Paginator.forEach("Confluence comments of " + id, cursor -> {
+            final GetCommentsOfContentRequest request = commentsOfContent(id).limit(contentLimit).expand("content.body.view");
+            if (cloud) {
+                if (cursor.token() != null) {
+                    request.cursor(cursor.token());
+                }
+            } else {
+                request.start(cursor.offset() == null ? 0 : cursor.offset().intValue());
             }
-        }
+
+            final GetCommentsOfContentResponse response = request.execute();
+            final List<Comment> comments = response.getComments() == null ? List.of() : response.getComments();
+
+            if (cloud) {
+                final String next = response.getNextCursor();
+                return new Paginator.Page<>(comments, next == null ? PageCursor.done() : PageCursor.token(next));
+            }
+
+            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            final boolean last = comments.size() < contentLimit.intValue();
+            return new Paginator.Page<>(comments, last ? PageCursor.done() : PageCursor.offset(offset + comments.size()));
+        }, consumer);
     }
 
 }

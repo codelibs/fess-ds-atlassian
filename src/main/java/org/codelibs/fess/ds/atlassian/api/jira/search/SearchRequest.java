@@ -25,6 +25,7 @@ import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 
 /**
  * Request class for searching JIRA issues using JQL (JIRA Query Language).
@@ -38,6 +39,7 @@ public class SearchRequest extends AtlassianRequest {
     private Boolean validateQuery;
     private String[] fields;
     private String[] expand;
+    private String nextPageToken;
 
     /**
      * Default constructor for SearchRequest.
@@ -113,6 +115,17 @@ public class SearchRequest extends AtlassianRequest {
     }
 
     /**
+     * Sets the continuation token for the next page.
+     *
+     * @param nextPageToken the token
+     * @return this request instance for method chaining
+     */
+    public SearchRequest nextPageToken(final String nextPageToken) {
+        this.nextPageToken = nextPageToken;
+        return this;
+    }
+
+    /**
      * Parses the JSON response into a response object.
      *
      * @param json the JSON response string
@@ -149,7 +162,8 @@ public class SearchRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return apiUrl + "/rest/api/3/search/jql";
+        final String base = apiUrl + endpointStrategy.getJiraApiBase();
+        return endpointStrategy.getDeployment() == Deployment.CLOUD ? base + "/search/jql" : base + "/search";
     }
 
     @Override
@@ -158,7 +172,11 @@ public class SearchRequest extends AtlassianRequest {
         if (jql != null && !jql.isEmpty()) {
             queryParams.put("jql", jql);
         }
-        if (startAt != null) {
+        if (endpointStrategy.getDeployment() == Deployment.CLOUD) {
+            if (nextPageToken != null) {
+                queryParams.put("nextPageToken", nextPageToken);
+            }
+        } else if (startAt != null) {
             queryParams.put("startAt", startAt.toString());
         }
         if (maxResults != null) {
@@ -174,6 +192,12 @@ public class SearchRequest extends AtlassianRequest {
             queryParams.put("expand", String.join(",", expand));
         }
         return queryParams;
+    }
+
+    @Override
+    public String toString() {
+        return "SearchRequest [url=" + getURL() + ", jql=" + jql + ", startAt=" + startAt + ", maxResults=" + maxResults
+                + ", nextPageToken=" + nextPageToken + "]";
     }
 
 }

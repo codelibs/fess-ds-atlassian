@@ -16,7 +16,6 @@
 package org.codelibs.fess.ds.atlassian.api.jira.issue;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,7 +121,10 @@ public class GetCommentsRequest extends AtlassianRequest {
             return new GetCommentsResponse(Collections.emptyList());
         }
         try {
-            return new GetCommentsResponse(mapper.readValue(json, Comments.class).getComments());
+            final Comments comments = mapper.readValue(json, Comments.class);
+            final GetCommentsResponse response = new GetCommentsResponse(comments.getComments());
+            response.total = comments.getTotal();
+            return response;
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: \"" + json + "\"", e);
         }
@@ -130,7 +132,7 @@ public class GetCommentsRequest extends AtlassianRequest {
 
     @Override
     public String getURL() {
-        return apiUrl + "/rest/api/3/issue/" + issueIdOrKey + "/comment";
+        return apiUrl + endpointStrategy.getJiraApiBase() + "/issue/" + issueIdOrKey + "/comment";
     }
 
     @Override
@@ -153,7 +155,6 @@ public class GetCommentsRequest extends AtlassianRequest {
 
     @Override
     public String toString() {
-        return "GetCommentsRequest [issueIdOrKey=" + issueIdOrKey + ", startAt=" + startAt + ", maxResults=" + maxResults + ", orderBy="
-                + orderBy + ", expand=" + Arrays.toString(expand) + "]";
+        return "GetCommentsRequest [url=" + getURL() + ", startAt=" + startAt + ", maxResults=" + maxResults + "]";
     }
 }

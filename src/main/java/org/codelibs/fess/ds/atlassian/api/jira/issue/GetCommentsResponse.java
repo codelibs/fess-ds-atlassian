@@ -27,6 +27,9 @@ public class GetCommentsResponse {
     /** The list of comments returned by the API. */
     protected final List<Comment> comments;
 
+    /** Number of total comments reported by the endpoint. */
+    protected Long total;
+
     /**
      * Constructs a response with the given list of comments.
      *
@@ -43,6 +46,15 @@ public class GetCommentsResponse {
      */
     public List<Comment> getComments() {
         return comments;
+    }
+
+    /**
+     * Returns the total number of comments.
+     *
+     * @return the total, or null when the endpoint did not return one
+     */
+    public Long getTotal() {
+        return total;
     }
 
 }

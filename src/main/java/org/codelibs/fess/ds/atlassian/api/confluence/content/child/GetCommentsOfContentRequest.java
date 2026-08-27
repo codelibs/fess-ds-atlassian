@@ -30,6 +30,8 @@ import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
+import org.codelibs.fess.ds.atlassian.api.confluence.content.GetContentsRequest;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Comment;
 
 /**
@@ -45,6 +47,7 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
     private String location;
     private String depth;
     private String[] expand;
+    private String cursor;
 
     /**
      * Constructs a request to get comments for the specified content ID.
@@ -122,6 +125,17 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
     }
 
     /**
+     * Sets the continuation cursor for the next page.
+     *
+     * @param cursor the cursor
+     * @return this request instance for method chaining
+     */
+    public GetCommentsOfContentRequest cursor(final String cursor) {
+        this.cursor = cursor;
+        return this;
+    }
+
+    /**
      * Executes the request and returns the response.
      *
      * @return the response containing comments
@@ -166,7 +180,11 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
                     }
                 }
             }
-            return new GetCommentsOfContentResponse(comments);
+            final JsonNode linksNode = rootNode.get("_links");
+            final String nextCursor =
+                    linksNode != null && linksNode.hasNonNull("next") ? GetContentsRequest.extractCursor(linksNode.get("next").asText())
+                            : null;
+            return new GetCommentsOfContentResponse(comments, nextCursor);
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: " + json, e);
         }
@@ -184,7 +202,11 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
         String cql = "container=\"" + escapeQuery(id) + "\" AND type=\"comment\"";
         queryParams.put("cql", cql);
 
-        if (start != null) {
+        if (endpointStrategy.getDeployment() == Deployment.CLOUD) {
+            if (cursor != null) {
+                queryParams.put("cursor", cursor);
+            }
+        } else if (start != null) {
             queryParams.put("start", start.toString());
         }
         if (limit != null) {
@@ -204,7 +226,7 @@ public class GetCommentsOfContentRequest extends AtlassianRequest {
     @Override
     public String toString() {
         return "GetCommentsOfContentRequest [id=" + id + ", parentVersion=" + parentVersion + ", start=" + start + ", limit=" + limit
-                + ", location=" + location + ", depth=" + depth + ", expand=" + Arrays.toString(expand) + "]";
+                + ", location=" + location + ", depth=" + depth + ", expand=" + Arrays.toString(expand) + ", cursor=" + cursor + "]";
     }
 
 }

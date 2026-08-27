@@ -16,6 +16,8 @@
 package org.codelibs.fess.ds.atlassian.api.confluence.content;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.fess.ds.atlassian.AtlassianDataStoreException;
 import org.codelibs.fess.ds.atlassian.api.AtlassianRequest;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
 import org.codelibs.fess.ds.atlassian.api.confluence.domain.Content;
 
 /**
@@ -60,6 +63,9 @@ public class GetContentsRequest extends AtlassianRequest {
 
     /** The limit for pagination. */
     private Integer limit;
+
+    /** The continuation cursor for the next page. */
+    private String cursor;
 
     /**
      * Default constructor.
@@ -156,6 +162,17 @@ public class GetContentsRequest extends AtlassianRequest {
     }
 
     /**
+     * Sets the continuation cursor for the next page.
+     *
+     * @param cursor the cursor
+     * @return this request instance for method chaining
+     */
+    public GetContentsRequest cursor(final String cursor) {
+        this.cursor = cursor;
+        return this;
+    }
+
+    /**
      * Executes the request and returns the response.
      *
      * @return the response containing content list
@@ -199,10 +216,36 @@ public class GetContentsRequest extends AtlassianRequest {
                 }
             }
 
-            return new GetContentsResponse(contents);
+            final JsonNode linksNode = rootNode.get("_links");
+            final String nextCursor =
+                    linksNode != null && linksNode.hasNonNull("next") ? extractCursor(linksNode.get("next").asText()) : null;
+            return new GetContentsResponse(contents, nextCursor);
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
         }
+    }
+
+    /**
+     * Extracts the {@code cursor} query parameter from a {@code _links.next} value.
+     *
+     * @param nextLink the raw next link, may be null
+     * @return the cursor, or null when the link has no cursor parameter
+     */
+    public static String extractCursor(final String nextLink) {
+        if (StringUtil.isBlank(nextLink)) {
+            return null;
+        }
+        final int queryStart = nextLink.indexOf('?');
+        if (queryStart < 0) {
+            return null;
+        }
+        for (final String pair : nextLink.substring(queryStart + 1).split("&")) {
+            final int eq = pair.indexOf('=');
+            if (eq > 0 && "cursor".equals(pair.substring(0, eq))) {
+                return URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -241,7 +284,11 @@ public class GetContentsRequest extends AtlassianRequest {
         if (expand != null) {
             queryParams.put("expand", String.join(",", expand));
         }
-        if (start != null) {
+        if (endpointStrategy.getDeployment() == Deployment.CLOUD) {
+            if (cursor != null) {
+                queryParams.put("cursor", cursor);
+            }
+        } else if (start != null) {
             queryParams.put("start", start.toString());
         }
         if (limit != null) {
@@ -252,5 +299,11 @@ public class GetContentsRequest extends AtlassianRequest {
 
     private String escapeQuery(final String value) {
         return value.replace("\"", "\\\"");
+    }
+
+    @Override
+    public String toString() {
+        return "GetContentsRequest [url=" + getURL() + ", cql=" + getQueryParamMap().get("cql") + ", start=" + start + ", limit=" + limit
+                + ", cursor=" + cursor + "]";
     }
 }
