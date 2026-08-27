@@ -15,6 +15,9 @@
  */
 package org.codelibs.fess.ds.atlassian.api.endpoint;
 
+import org.codelibs.core.lang.StringUtil;
+import org.codelibs.fess.ds.atlassian.api.Deployment;
+
 /**
  * Strategy interface for resolving Atlassian API endpoints.
  */
@@ -32,4 +35,45 @@ public interface EndpointStrategy {
      * @return the API URL
      */
     String getApiUrl();
+
+    /**
+     * Returns the deployment type this strategy resolves endpoints for.
+     *
+     * @return the deployment type
+     */
+    Deployment getDeployment();
+
+    /**
+     * Returns the JIRA REST API base path for this deployment.
+     * Cloud uses {@code /rest/api/3}; Data Center only provides {@code /rest/api/2}.
+     *
+     * @return the JIRA API base path, starting with a slash
+     */
+    default String getJiraApiBase() {
+        return getDeployment() == Deployment.CLOUD ? "/rest/api/3" : "/rest/api/2";
+    }
+
+    /**
+     * Builds the browser-facing URL of a Confluence content item.
+     *
+     * @param contentId the content id
+     * @param spaceKey the space key, may be null or blank
+     * @return the view URL
+     */
+    default String getContentViewUrl(final String contentId, final String spaceKey) {
+        if (getDeployment() == Deployment.CLOUD && StringUtil.isNotBlank(spaceKey)) {
+            return getHomeUrl() + "/spaces/" + spaceKey + "/pages/" + contentId;
+        }
+        return getHomeUrl() + "/pages/viewpage.action?pageId=" + contentId;
+    }
+
+    /**
+     * Builds the browser-facing URL of a JIRA issue.
+     *
+     * @param issueKey the issue key
+     * @return the view URL
+     */
+    default String getIssueViewUrl(final String issueKey) {
+        return getHomeUrl() + "/browse/" + issueKey;
+    }
 }

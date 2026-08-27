@@ -19,15 +19,12 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.codelibs.core.lang.StringUtil;
 import org.codelibs.fess.ds.atlassian.api.AtlassianClient;
 import org.codelibs.fess.ds.atlassian.api.AtlassianProduct;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Comment;
 import org.codelibs.fess.ds.atlassian.api.jira.domain.Issue;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.issue.GetCommentsResponse;
-import org.codelibs.fess.ds.atlassian.api.jira.issue.GetIssueRequest;
-import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
@@ -43,12 +40,31 @@ public class JiraClient extends AtlassianClient implements Closeable {
     /** Default maximum number of issues to retrieve per request. */
     protected static final String DEFAULT_ISSUE_MAX_RESULTS = "50";
 
-    // parameters for Jira
-    /** Parameter key for JQL query configuration. */
-    protected static final String JQL_PARAM = "issue.jql";
+    /** Default JQL matching every issue. */
+    protected static final String DEFAULT_JQL = "created is not empty";
 
-    /** Parameter key for issue max results configuration. */
-    protected static final String ISSUE_MAX_RESULTS_PARAM = "issue_max_results";
+    // parameters for Jira
+    /** Parameter key for the JQL query. */
+    protected static final String JQL_PARAM = "jira.jql";
+
+    /**
+     * Deprecated parameter key for the JQL query.
+     *
+     * @deprecated Use {@link #JQL_PARAM} instead. Will be removed in 16.0.
+     */
+    @Deprecated
+    protected static final String DEPRECATED_JQL_PARAM = "issue.jql";
+
+    /** Parameter key for the search page size. */
+    protected static final String ISSUE_MAX_RESULTS_PARAM = "jira.max_results";
+
+    /**
+     * Deprecated parameter key for the search page size.
+     *
+     * @deprecated Use {@link #ISSUE_MAX_RESULTS_PARAM} instead. Will be removed in 16.0.
+     */
+    @Deprecated
+    protected static final String DEPRECATED_ISSUE_MAX_RESULTS_PARAM = "issue_max_results";
 
     /** The JIRA instance home URL. */
     protected final String jiraHome;
@@ -83,28 +99,41 @@ public class JiraClient extends AtlassianClient implements Closeable {
 
     /**
      * Gets the JQL query from parameters.
-     * If the JQL parameter is empty, returns the default query "created is not empty" to match all issues.
      *
      * @param paramMap the parameter map
      * @return the JQL query
      */
-    protected String getJql(final DataStoreParams paramMap) {
-        final String jql = paramMap.getAsString(JQL_PARAM);
-        if (StringUtil.isBlank(jql)) {
-            return "created is not empty"; // All match
-        } else {
-            return jql;
-        }
+    public String getJql(final DataStoreParams paramMap) {
+        return getParamWithDeprecatedAlias(paramMap, JQL_PARAM, DEPRECATED_JQL_PARAM, DEFAULT_JQL);
     }
 
     /**
-     * Gets the issue max results from parameters.
+     * Gets the search page size from parameters.
      *
      * @param paramMap the parameter map
-     * @return the issue max results
+     * @return the page size
      */
-    protected Integer getIssueMaxResults(final DataStoreParams paramMap) {
-        return Integer.parseInt(paramMap.getAsString(ISSUE_MAX_RESULTS_PARAM, DEFAULT_ISSUE_MAX_RESULTS));
+    public Integer getIssueMaxResults(final DataStoreParams paramMap) {
+        return Integer.valueOf(getParamWithDeprecatedAlias(paramMap, ISSUE_MAX_RESULTS_PARAM, DEPRECATED_ISSUE_MAX_RESULTS_PARAM,
+                DEFAULT_ISSUE_MAX_RESULTS));
+    }
+
+    /**
+     * Returns the resolved JQL query.
+     *
+     * @return the JQL query
+     */
+    public String getJql() {
+        return jql;
+    }
+
+    /**
+     * Returns the resolved search page size.
+     *
+     * @return the page size
+     */
+    public Integer getIssueMaxResults() {
+        return issueMaxResults;
     }
 
     /**
@@ -126,32 +155,12 @@ public class JiraClient extends AtlassianClient implements Closeable {
     }
 
     /**
-     * Creates a request to get a specific project.
-     *
-     * @param projectIdOrKey the project ID or key
-     * @return a GetProjectRequest instance
-     */
-    public GetProjectRequest project(final String projectIdOrKey) {
-        return createRequest(new GetProjectRequest(projectIdOrKey));
-    }
-
-    /**
      * Creates a search request for issues.
      *
      * @return a SearchRequest instance
      */
     public SearchRequest search() {
         return createRequest(new SearchRequest());
-    }
-
-    /**
-     * Creates a request to get a specific issue.
-     *
-     * @param issueIdOrKey the issue ID or key
-     * @return a GetIssueRequest instance
-     */
-    public GetIssueRequest issue(final String issueIdOrKey) {
-        return createRequest(new GetIssueRequest(issueIdOrKey));
     }
 
     /**
