@@ -92,6 +92,20 @@ public class AtlassianClientDeploymentTest extends UnitDsTestCase {
         }
     }
 
+    /**
+     * {@code /rest/api/3} does not exist on Data Center, so the projects endpoint must resolve
+     * its API version through the endpoint strategy like every other versioned JIRA request.
+     */
+    @Test
+    public void test_projects_url_follows_deployment() {
+        try (JiraClient cloud = new JiraClient(new DataConfig(), basicParams("https://example.atlassian.net"))) {
+            Assertions.assertEquals("https://example.atlassian.net/rest/api/3/project", cloud.projects().getURL());
+        }
+        try (JiraClient dc = new JiraClient(new DataConfig(), basicParams("https://jira.example.com"))) {
+            Assertions.assertEquals("https://jira.example.com/rest/api/2/project", dc.projects().getURL());
+        }
+    }
+
     @Test
     public void test_missing_home_throws_instead_of_npe() {
         final DataStoreParams params = new DataStoreParams();

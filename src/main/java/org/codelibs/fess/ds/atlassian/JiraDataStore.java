@@ -158,7 +158,7 @@ public class JiraDataStore extends AtlassianDataStore {
 
             logger.info("Crawling URL: {}", url);
 
-            final Map<String, Object> resultMap = new LinkedHashMap<>(paramMap.asMap());
+            final Map<String, Object> resultMap = new LinkedHashMap<>(defaultDataMap);
             final Map<String, Object> issueMap = new HashMap<>();
 
             issueMap.put(ISSUE_SUMMARY, issue.getFields().getSummary());
@@ -234,7 +234,7 @@ public class JiraDataStore extends AtlassianDataStore {
      * @return the issue view URL
      */
     protected String getIssueViewUrl(final Issue issue, final JiraClient client) {
-        return client.getJiraHome() + "/browse/" + issue.getKey();
+        return client.getEndpointStrategy().getIssueViewUrl(issue.getKey());
     }
 
     /**

@@ -214,6 +214,10 @@ public class JiraClient extends AtlassianClient implements Closeable {
             }
 
             final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            if (Paginator.isOffsetIgnored("Jira issues", request.getURL(), offset, response.getStartAt())) {
+                return new Paginator.Page<>(issues, PageCursor.done());
+            }
+
             final Long total = response.getTotal();
             final boolean last = total != null ? offset + issues.size() >= total.longValue() : issues.size() < issueMaxResults.intValue();
             return new Paginator.Page<>(issues, last ? PageCursor.done() : PageCursor.offset(offset + issues.size()));
@@ -227,10 +231,16 @@ public class JiraClient extends AtlassianClient implements Closeable {
      * @param consumer the consumer to process each comment
      */
     public void getComments(final String issueId, final Consumer<Comment> consumer) {
-        Paginator.forEach("Jira comments of " + issueId, cursor -> {
+        final String description = "Jira comments of " + issueId;
+        Paginator.forEach(description, cursor -> {
             final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
-            final GetCommentsResponse response = comments(issueId).startAt(offset).maxResults(issueMaxResults).execute();
+            final GetCommentsRequest request = comments(issueId).startAt(offset).maxResults(issueMaxResults);
+            final GetCommentsResponse response = request.execute();
             final List<Comment> comments = response.getComments() == null ? List.of() : response.getComments();
+
+            if (Paginator.isOffsetIgnored(description, request.getURL(), offset, response.getStartAt())) {
+                return new Paginator.Page<>(comments, PageCursor.done());
+            }
 
             final Long total = response.getTotal();
             final boolean last =

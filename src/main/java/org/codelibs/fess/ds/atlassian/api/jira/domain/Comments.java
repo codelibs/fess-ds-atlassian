@@ -29,6 +29,9 @@ public class Comments {
     /** The total number of comments. */
     protected Long total;
 
+    /** The offset the endpoint actually served, echoed back from the request. */
+    protected Integer startAt;
+
     /** The list of comment objects. */
     protected List<Comment> comments;
 
@@ -45,6 +48,15 @@ public class Comments {
      */
     public Long getTotal() {
         return total;
+    }
+
+    /**
+     * Gets the offset the endpoint reported serving.
+     *
+     * @return the offset, or null when the endpoint did not echo one
+     */
+    public Integer getStartAt() {
+        return startAt;
     }
 
     /**

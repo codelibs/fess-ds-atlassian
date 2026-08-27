@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian.api.jira;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codelibs.fess.ds.atlassian.MockAtlassianServer;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
@@ -183,6 +184,33 @@ public class JiraPaginationTest extends UnitDsTestCase {
     }
 
     /**
+     * When an issue's comment count is an exact multiple of the page size, the reported total is
+     * the only signal that the crawl is done. Without it the client spends an extra HTTP request
+     * per issue and logs a "server is ignoring the paging parameter" warning on a healthy crawl.
+     */
+    @Test
+    public void test_comments_stop_on_reported_total_when_page_is_exactly_full() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/rest/api/2/issue/1/comment", req -> {
+                final String startAt = req.query().getOrDefault("startAt", "0");
+                if ("0".equals(startAt)) {
+                    return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":2,\"comments\":"
+                            + "[{\"id\":\"c1\",\"body\":\"B1\"},{\"id\":\"c2\",\"body\":\"B2\"}]}");
+                }
+                return MockAtlassianServer.json("{\"startAt\":" + startAt + ",\"maxResults\":2,\"total\":2,\"comments\":[]}");
+            });
+
+            final List<String> bodies = new ArrayList<>();
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getComments("1", comment -> bodies.add(String.valueOf(comment.getBody())));
+            }
+
+            Assertions.assertEquals(List.of("B1", "B2"), bodies);
+            Assertions.assertEquals(1, server.getRequests().size(), "the reported total must end the loop without a second request");
+        }
+    }
+
+    /**
      * Regression guard for the 2020 forum report: the server ignores startAt and
      * returns an empty page while still reporting a large total.
      */
@@ -233,6 +261,60 @@ public class JiraPaginationTest extends UnitDsTestCase {
             }
 
             Assertions.assertEquals(List.of("D-1", "D-2", "D-3"), keys, "advancing by page size would skip D-2");
+        }
+    }
+
+    /**
+     * The cursor-stall guard cannot see this: the client derives the next offset from the number
+     * of rows it received, so a server that serves the same full page forever still looks like it
+     * is advancing and never returns an empty page. The offset the endpoint echoes back is the
+     * only evidence that {@code startAt} was ignored.
+     *
+     * <p>The mock gives up after ten calls so that a missing guard fails this assertion instead of
+     * hanging the build.</p>
+     */
+    @Test
+    public void test_datacenter_stops_when_served_offset_ignores_start_at() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/2/search", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":15404,\"issues\":[]}");
+                }
+                // startAt is echoed as 0 no matter which offset was requested.
+                return MockAtlassianServer
+                        .json("{\"startAt\":0,\"maxResults\":2,\"total\":15404,\"issues\":" + issuesJson("D-1", "D-2") + "}");
+            });
+
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getIssues(issue -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
+        }
+    }
+
+    /**
+     * The same stall on the comment endpoint, which has no Cloud/Data Center split and always
+     * pages by offset.
+     */
+    @Test
+    public void test_comments_stop_when_served_offset_ignores_start_at() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/2/issue/1/comment", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":999,\"comments\":[]}");
+                }
+                return MockAtlassianServer.json("{\"startAt\":0,\"maxResults\":2,\"total\":999,\"comments\":"
+                        + "[{\"id\":\"c1\",\"body\":\"B1\"},{\"id\":\"c2\",\"body\":\"B2\"}]}");
+            });
+
+            try (JiraClient client = new JiraClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getComments("1", comment -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
         }
     }
 

@@ -15,8 +15,6 @@
  */
 package org.codelibs.fess.ds.atlassian.api.jira;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -31,33 +29,10 @@ import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.project.GetProjectsResponse;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchRequest;
 import org.codelibs.fess.ds.atlassian.api.jira.search.SearchResponse;
-import org.codelibs.fess.entity.DataStoreParams;
-import org.codelibs.fess.opensearch.config.exentity.DataConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class JiraClientTest extends AtlassianClientTest {
-
-    protected void doProductionTest() {
-
-        final DataStoreParams paramMap = new DataStoreParams();
-        paramMap.put(AUTH_TYPE_PARAM, "oauth");
-        paramMap.put(CONSUMER_KEY_PARAM, "");
-        paramMap.put(PRIVATE_KEY_PARAM, "");
-        paramMap.put(SECRET_PARAM, "");
-        paramMap.put(ACCESS_TOKEN_PARAM, "");
-        final JiraClient jiraClient = new JiraClient(new DataConfig(), paramMap);
-        doGetProjectsTest(jiraClient);
-        doSearchTest(jiraClient);
-        doGetCommentsTest(jiraClient);
-    }
-
-    protected void doGetProjectsTest(final JiraClient jiraClient) {
-        final GetProjectsResponse response = jiraClient.projects().expand("description").execute();
-        for (final Project project : response.getProjects()) {
-            assertTrue("not contains \"name\"", project.getName() != null);
-            assertTrue("not contains \"description\"", project.getDescription() != null);
-        }
-    }
 
     @Test
     public void test_getProjects_parseResponse() {
@@ -70,35 +45,11 @@ public class JiraClientTest extends AtlassianClientTest {
                 "]";
         final GetProjectsResponse response = GetProjectsRequest.parseResponse(json);
         final List<Project> projects = response.getProjects();
+        Assertions.assertEquals(2, projects.size());
         for (int i = 0; i < projects.size(); i++) {
             final Project project = projects.get(i);
-            assertEquals(project.getName(), "Project-" + i);
+            Assertions.assertEquals("Project-" + i, project.getName());
         }
-    }
-
-    protected void doSearchTest(final JiraClient jiraClient) {
-        final SearchResponse response = jiraClient.search().fields("summary", "description", "comment", "updated").execute();
-        response.getIssues().forEach(issue -> {
-            assertTrue(issue.getKey() != null);
-            assertTrue("not contains \"fields\"", issue.getFields() != null);
-            final Fields fields = issue.getFields();
-            assertTrue("not contains \"summary\" in fields", fields.getSummary() != null);
-            assertTrue("not contains \"description\" in fields", fields.getDescription() != null);
-            assertTrue("not contains \"comment\" in fields", fields.getComment() != null);
-            final long commentTotal = fields.getComment().getTotal();
-            final List<Comment> comments = fields.getComment().getComments();
-            assertEquals(comments.size(), commentTotal);
-            for (final Comment comment : comments) {
-                assertTrue("not contains \"body\" in comment", comment.getBody() != null);
-            }
-            assertTrue("not contains \"updated\" in fields", fields.getUpdated() != null);
-            final String updated = fields.getUpdated();
-            try {
-                new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse(updated);
-            } catch (final ParseException e) {
-                assertTrue("failed to parse \"updated\": " + updated, false);
-            }
-        });
     }
 
     @Test
@@ -132,6 +83,7 @@ public class JiraClientTest extends AtlassianClientTest {
                 "}";
         final SearchResponse response = SearchRequest.parseResponse(json);
         final List<Issue> issues = response.getIssues();
+        Assertions.assertEquals(2, issues.size());
         for (int i = 0; i < issues.size(); i++) {
             final Issue issue = issues.get(i);
             assertTrue(issue.getKey().startsWith("Key-"));
@@ -139,21 +91,10 @@ public class JiraClientTest extends AtlassianClientTest {
             assertTrue(fields.getSummary().startsWith("Summary-"));
             final long totalComments = fields.getComment().getTotal();
             final List<Comment> comments = fields.getComment().getComments();
-            assertEquals((long) comments.size(), totalComments);
+            Assertions.assertEquals(totalComments, (long) comments.size());
             for (int j = 0; j < comments.size(); j++) {
                 final Comment comment = comments.get(j);
-                assertEquals(comment.getBody(), "Comment-" + i + "-" + j);
-            }
-        }
-    }
-
-    protected void doGetCommentsTest(final JiraClient jiraClient) {
-        final List<Issue> issues = jiraClient.search().execute().getIssues();
-        if (!issues.isEmpty()) {
-            final String id = (String) issues.get(0).getId();
-            final GetCommentsResponse response = jiraClient.comments(id).execute();
-            for (final Comment comment : response.getComments()) {
-                assertTrue("not contains \"body\"", comment.getBody() != null);
+                Assertions.assertEquals("Comment-" + i + "-" + j, comment.getBody());
             }
         }
     }
@@ -161,7 +102,7 @@ public class JiraClientTest extends AtlassianClientTest {
     @Test
     public void test_getComments_parseResponse() {
         final String json = "{" + //
-                "  \"total\": 1," + //
+                "  \"total\": 2," + //
                 "  \"comments\": [" + //
                 "    { \"body\": \"Comment-0\" }," + //
                 "    { \"body\": \"Comment-1\" }" + //
@@ -169,9 +110,13 @@ public class JiraClientTest extends AtlassianClientTest {
                 "}";
         final GetCommentsResponse response = GetCommentsRequest.parseResponse(json);
         final List<Comment> comments = response.getComments();
+        Assertions.assertEquals(2, comments.size());
+        // The reported total is what lets an exactly-full page end the crawl without a
+        // pointless extra request, so the parser must carry it onto the response.
+        Assertions.assertEquals(Long.valueOf(2L), response.getTotal());
         for (int i = 0; i < comments.size(); i++) {
             final Comment comment = comments.get(i);
-            assertEquals(comment.getBody(), "Comment-" + i);
+            Assertions.assertEquals("Comment-" + i, comment.getBody());
         }
     }
 

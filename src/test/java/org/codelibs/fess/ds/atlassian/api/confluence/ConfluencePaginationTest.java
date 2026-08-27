@@ -17,6 +17,7 @@ package org.codelibs.fess.ds.atlassian.api.confluence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.codelibs.fess.ds.atlassian.MockAtlassianServer;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
@@ -52,6 +53,23 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
                     .append(titles[i])
                     .append("\",\"space\":{\"key\":\"SP\"},\"body\":{\"view\":{\"value\":\"body\"}},")
                     .append("\"version\":{\"when\":\"2026-08-01T00:00:00.000Z\"}}}");
+        }
+        return buf.append(']').toString();
+    }
+
+    private static String commentsJson(final String... titles) {
+        final StringBuilder buf = new StringBuilder("[");
+        for (int i = 0; i < titles.length; i++) {
+            if (i > 0) {
+                buf.append(',');
+            }
+            buf.append("{\"content\":{\"id\":\"")
+                    .append(i)
+                    .append("\",\"title\":\"")
+                    .append(titles[i])
+                    .append("\",\"body\":{\"view\":{\"value\":\"<p>")
+                    .append(titles[i])
+                    .append("</p>\"}}}}");
         }
         return buf.append(']').toString();
     }
@@ -103,6 +121,38 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
         }
     }
 
+    /**
+     * getContentComments duplicates the cursor logic of getContents verbatim, but the only place
+     * comments run end to end returns an empty {@code _links} object, so the follow-the-cursor
+     * branch had no coverage at all.
+     */
+    @Test
+    public void test_cloud_comments_follow_links_next_cursor() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/wiki/rest/api/search", req -> {
+                final String cursor = req.query().get("cursor");
+                if (cursor == null) {
+                    return MockAtlassianServer.json("{\"results\":" + commentsJson("C1", "C2")
+                            + ",\"_links\":{\"next\":\"/rest/api/search?cql=container%3D%22123%22&cursor=CUR2&limit=2\"}}");
+                }
+                if ("CUR2".equals(cursor)) {
+                    return MockAtlassianServer.json("{\"results\":" + commentsJson("C3") + ",\"_links\":{}}");
+                }
+                return MockAtlassianServer.status(400, "{\"message\":\"bad cursor\"}");
+            });
+
+            final List<String> titles = new ArrayList<>();
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "cloud"))) {
+                client.getContentComments("123", comment -> titles.add(comment.getTitle()));
+            }
+
+            Assertions.assertEquals(List.of("C1", "C2", "C3"), titles);
+            Assertions.assertEquals(2, server.getRequests().size());
+            Assertions.assertNull(server.getRequests().get(0).query().get("start"),
+                    "start was removed from /rest/api/search in 2020 and must not be sent");
+        }
+    }
+
     @Test
     public void test_datacenter_uses_start_offset() throws Exception {
         try (MockAtlassianServer server = new MockAtlassianServer().start()) {
@@ -124,6 +174,58 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
         }
     }
 
+    /**
+     * getContents terminates only on a short page, so a Data Center instance (or a proxy in front
+     * of it) that ignores {@code start} and replies with the same full page would loop forever:
+     * the next offset is derived from the row count, so the cursor always looks like it advanced
+     * and the page is never empty. The echoed {@code start} is the only evidence available.
+     *
+     * <p>The mock gives up after ten calls so that a missing guard fails this assertion instead of
+     * hanging the build.</p>
+     */
+    @Test
+    public void test_datacenter_stops_when_served_offset_ignores_start() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/search", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":0,\"results\":[]}");
+                }
+                // start is echoed as 0 no matter which offset was requested.
+                return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":2,\"results\":" + resultsJson("D1", "D2") + "}");
+            });
+
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getContents(content -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
+        }
+    }
+
+    /**
+     * The same stall on the comment endpoint, whose offset branch is a verbatim copy of the one in
+     * getContents.
+     */
+    @Test
+    public void test_datacenter_comments_stop_when_served_offset_ignores_start() throws Exception {
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            final AtomicInteger calls = new AtomicInteger();
+            server.on("/rest/api/search", req -> {
+                if (calls.incrementAndGet() > 10) {
+                    return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":0,\"results\":[]}");
+                }
+                return MockAtlassianServer.json("{\"start\":0,\"limit\":2,\"size\":2,\"results\":" + commentsJson("C1", "C2") + "}");
+            });
+
+            try (ConfluenceClient client = new ConfluenceClient(new DataConfig(), params(server.getBaseUrl(), "datacenter"))) {
+                client.getContentComments("123", comment -> {});
+            }
+
+            Assertions.assertEquals(2, server.getRequests().size(), "a server that serves offset 0 for every request must end the loop");
+        }
+    }
+
     @Test
     public void test_extract_cursor_from_next_link() {
         Assertions.assertEquals("CUR2",
@@ -132,5 +234,17 @@ public class ConfluencePaginationTest extends UnitDsTestCase {
         Assertions.assertNull(GetContentsRequest.extractCursor("/rest/api/search?limit=2"));
         Assertions.assertNull(GetContentsRequest.extractCursor(null));
         Assertions.assertNull(GetContentsRequest.extractCursor(""));
+    }
+
+    /**
+     * Real Confluence Cloud cursors are opaque base64-ish strings containing {@code :} and
+     * {@code =}, so {@code _links.next} carries them percent-encoded. Returning the raw encoded
+     * form would re-encode it on the follow-up request and yield a 400 or an empty page on the
+     * second page of every space.
+     */
+    @Test
+    public void test_extract_cursor_percent_decodes_the_value() {
+        Assertions.assertEquals("raw:Y29udGVudA==",
+                GetContentsRequest.extractCursor("/rest/api/search?cql=type%3Dpage&cursor=raw%3AY29udGVudA%3D%3D&limit=25"));
     }
 }

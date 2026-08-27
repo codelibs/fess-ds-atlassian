@@ -30,6 +30,9 @@ public class GetContentsResponse {
     /** The cursor for the next page, or null when this is the last page. */
     protected final String nextCursor;
 
+    /** The offset the endpoint actually served, echoed back from the request. */
+    protected final Integer start;
+
     /**
      * Constructs a response with the given content list and no continuation cursor.
      *
@@ -46,8 +49,20 @@ public class GetContentsResponse {
      * @param nextCursor the cursor for the next page, may be null
      */
     public GetContentsResponse(final List<Content> contents, final String nextCursor) {
+        this(contents, nextCursor, null);
+    }
+
+    /**
+     * Constructs a response with the given content list, continuation cursor and served offset.
+     *
+     * @param contents the list of content items
+     * @param nextCursor the cursor for the next page, may be null
+     * @param start the offset the endpoint echoed back, may be null
+     */
+    public GetContentsResponse(final List<Content> contents, final String nextCursor, final Integer start) {
         this.contents = contents;
         this.nextCursor = nextCursor;
+        this.start = start;
     }
 
     /**
@@ -66,6 +81,15 @@ public class GetContentsResponse {
      */
     public String getNextCursor() {
         return nextCursor;
+    }
+
+    /**
+     * Gets the offset the endpoint reported serving.
+     *
+     * @return the offset, or null when the endpoint did not echo one
+     */
+    public Integer getStart() {
+        return start;
     }
 
 }

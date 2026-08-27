@@ -124,6 +124,7 @@ public class GetCommentsRequest extends AtlassianRequest {
             final Comments comments = mapper.readValue(json, Comments.class);
             final GetCommentsResponse response = new GetCommentsResponse(comments.getComments());
             response.total = comments.getTotal();
+            response.startAt = comments.getStartAt();
             return response;
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse comments from: \"" + json + "\"", e);

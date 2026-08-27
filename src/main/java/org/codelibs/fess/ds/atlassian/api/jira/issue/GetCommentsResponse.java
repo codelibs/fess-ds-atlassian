@@ -30,6 +30,9 @@ public class GetCommentsResponse {
     /** Number of total comments reported by the endpoint. */
     protected Long total;
 
+    /** The offset the endpoint actually served, echoed back from the request. */
+    protected Integer startAt;
+
     /**
      * Constructs a response with the given list of comments.
      *
@@ -55,6 +58,15 @@ public class GetCommentsResponse {
      */
     public Long getTotal() {
         return total;
+    }
+
+    /**
+     * Returns the offset the endpoint reported serving.
+     *
+     * @return the offset, or null when the endpoint did not echo one
+     */
+    public Integer getStartAt() {
+        return startAt;
     }
 
 }

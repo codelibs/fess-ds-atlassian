@@ -187,38 +187,10 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
             }
 
             final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
-            final boolean last = contents.size() < contentLimit.intValue();
-            return new Paginator.Page<>(contents, last ? PageCursor.done() : PageCursor.offset(offset + contents.size()));
-        }, consumer);
-    }
-
-    /**
-     * Retrieves all blog content using pagination and passes them to the consumer.
-     *
-     * @param consumer the consumer to process each blog content item
-     */
-    public void getBlogContents(final Consumer<Content> consumer) {
-        final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
-        Paginator.forEach("Confluence blog contents", cursor -> {
-            final GetContentsRequest request =
-                    contents().type("blogpost").limit(contentLimit).expand("content.space", "content.version", "content.body.view");
-            if (cloud) {
-                if (cursor.token() != null) {
-                    request.cursor(cursor.token());
-                }
-            } else {
-                request.start(cursor.offset() == null ? 0 : cursor.offset().intValue());
+            if (Paginator.isOffsetIgnored("Confluence contents", request.getURL(), offset, response.getStart())) {
+                return new Paginator.Page<>(contents, PageCursor.done());
             }
 
-            final GetContentsResponse response = request.execute();
-            final List<Content> contents = response.getContents() == null ? List.of() : response.getContents();
-
-            if (cloud) {
-                final String next = response.getNextCursor();
-                return new Paginator.Page<>(contents, next == null ? PageCursor.done() : PageCursor.token(next));
-            }
-
-            final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
             final boolean last = contents.size() < contentLimit.intValue();
             return new Paginator.Page<>(contents, last ? PageCursor.done() : PageCursor.offset(offset + contents.size()));
         }, consumer);
@@ -232,7 +204,8 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
      */
     public void getContentComments(final String id, final Consumer<Comment> consumer) {
         final boolean cloud = getEndpointStrategy().getDeployment() == Deployment.CLOUD;
-        Paginator.forEach("Confluence comments of " + id, cursor -> {
+        final String description = "Confluence comments of " + id;
+        Paginator.forEach(description, cursor -> {
             final GetCommentsOfContentRequest request = commentsOfContent(id).limit(contentLimit).expand("content.body.view");
             if (cloud) {
                 if (cursor.token() != null) {
@@ -251,6 +224,10 @@ public class ConfluenceClient extends AtlassianClient implements Closeable {
             }
 
             final int offset = cursor.offset() == null ? 0 : cursor.offset().intValue();
+            if (Paginator.isOffsetIgnored(description, request.getURL(), offset, response.getStart())) {
+                return new Paginator.Page<>(comments, PageCursor.done());
+            }
+
             final boolean last = comments.size() < contentLimit.intValue();
             return new Paginator.Page<>(comments, last ? PageCursor.done() : PageCursor.offset(offset + comments.size()));
         }, consumer);

@@ -96,9 +96,13 @@ public class MockAtlassianServer implements Closeable {
 
             final byte[] payload = response.body() == null ? new byte[0] : response.body().getBytes(StandardCharsets.UTF_8);
             response.headers().forEach((k, v) -> exchange.getResponseHeaders().add(k, v));
-            exchange.sendResponseHeaders(response.status(), payload.length);
+            // HttpExchange reads a length of 0 as "unknown length, use chunked encoding";
+            // -1 is the value that means "no response body".
+            exchange.sendResponseHeaders(response.status(), payload.length == 0 ? -1 : payload.length);
             try (OutputStream out = exchange.getResponseBody()) {
-                out.write(payload);
+                if (payload.length > 0) {
+                    out.write(payload);
+                }
             }
         });
         server.start();

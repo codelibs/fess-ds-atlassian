@@ -219,7 +219,7 @@ public class GetContentsRequest extends AtlassianRequest {
             final JsonNode linksNode = rootNode.get("_links");
             final String nextCursor =
                     linksNode != null && linksNode.hasNonNull("next") ? extractCursor(linksNode.get("next").asText()) : null;
-            return new GetContentsResponse(contents, nextCursor);
+            return new GetContentsResponse(contents, nextCursor, extractStart(rootNode));
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to parse contents from: " + json, e);
         }
@@ -246,6 +246,20 @@ public class GetContentsRequest extends AtlassianRequest {
             }
         }
         return null;
+    }
+
+    /**
+     * Extracts the {@code start} offset the endpoint reports having served.
+     *
+     * <p>Comparing it against the offset that was requested is the only way to notice a server
+     * that ignores {@code start} and keeps replying with the same full page.</p>
+     *
+     * @param rootNode the parsed response body
+     * @return the served offset, or null when the response does not report one
+     */
+    public static Integer extractStart(final JsonNode rootNode) {
+        final JsonNode startNode = rootNode == null ? null : rootNode.get("start");
+        return startNode != null && startNode.isNumber() ? Integer.valueOf(startNode.asInt()) : null;
     }
 
     @Override
