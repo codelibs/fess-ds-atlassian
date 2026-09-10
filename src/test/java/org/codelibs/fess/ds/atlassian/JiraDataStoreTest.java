@@ -31,7 +31,7 @@ import org.codelibs.fess.opensearch.config.exentity.CrawlingConfig;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.opensearch.config.exentity.FailureUrl;
 import org.codelibs.fess.script.ScriptEngineFactory;
-import org.codelibs.fess.script.groovy.GroovyEngine;
+import org.codelibs.fess.script.javascript.JavaScriptEngine;
 import org.codelibs.fess.util.ComponentUtil;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
 import org.junit.jupiter.api.Assertions;
@@ -109,13 +109,14 @@ public class JiraDataStoreTest extends UnitDsTestCase {
             }
         }, UrlFilter.class.getCanonicalName());
 
-        // convertValue() evaluates script templates like "issue.summary" through the default
-        // (groovy) script engine.
+        // convertValue() evaluates script templates like "issue.summary" through the script engine named
+        // by script_type. Groovy now lives in the fess-script-groovy plugin and is not on the test
+        // classpath, so the tests ask for the JavaScript engine that ships in fess core.
         final ScriptEngineFactory scriptEngineFactory = new ScriptEngineFactory();
         ComponentUtil.register(scriptEngineFactory, "scriptEngineFactory");
-        final GroovyEngine groovyEngine = new GroovyEngine();
-        groovyEngine.init();
-        groovyEngine.register();
+        final JavaScriptEngine javaScriptEngine = new JavaScriptEngine();
+        javaScriptEngine.init();
+        javaScriptEngine.register();
     }
 
     @Override
@@ -132,6 +133,7 @@ public class JiraDataStoreTest extends UnitDsTestCase {
             server.on("/rest/api/3/issue/1/comment", req -> MockAtlassianServer.json("{\"comments\":[]}"));
 
             final DataStoreParams paramMap = new DataStoreParams();
+            paramMap.put("script_type", "javascript");
             paramMap.put("home", server.getBaseUrl());
             paramMap.put("deployment", "cloud");
             paramMap.put("auth_type", "basic");
@@ -167,7 +169,6 @@ public class JiraDataStoreTest extends UnitDsTestCase {
 
             new JiraDataStore().storeData(new DataConfig(), callback, paramMap, scriptMap, new HashMap<>());
 
-            Assertions.assertEquals(1, stored.size());
             // What makes this test discriminate is the short-circuit at the top of
             // AbstractDataStore#convertValue, which runs before the script engine is ever
             // consulted:
@@ -178,15 +179,22 @@ public class JiraDataStoreTest extends UnitDsTestCase {
             //
             // Before the fix the script's result map was seeded from paramMap, so the template
             // string "basic.password" was a literal key in that map and convertValue handed back
-            // the raw credential without Groovy being invoked at all. The fix removes the
-            // credentials from that map, so the template now falls through to Groovy, which
-            // evaluates it as a property access on an unbound "basic" variable and fails; the
-            // engine turns that into null and processIssue writes only non-null script results.
-            // The key is therefore absent from the stored document entirely rather than present
-            // with a null value - assert that directly rather than the ambiguous get() == null.
-            Assertions.assertFalse(stored.get(0).containsKey("leaked"), "credentials must not be reachable from the script");
-            for (final Object value : stored.get(0).values()) {
-                Assertions.assertNotEquals("s3cr3t", value, "the password must not appear anywhere in the document");
+            // the raw credential without any engine being invoked at all - storing one document
+            // whose "leaked" field was the password in clear text. The fix removes the credentials
+            // from that map, so the template reaches the engine, which cannot resolve the unbound
+            // "basic" variable.
+            //
+            // An engine that cannot evaluate a template now raises ScriptEngineException instead
+            // of returning null - the bundled JavaScript engine and fess-script-groovy both made
+            // that change so that a script which does not even compile stops being recorded as a
+            // success. processIssue therefore discards the whole document rather than writing it
+            // without the failed field, which is why nothing is stored at all here.
+            Assertions.assertTrue(stored.isEmpty(), "a credential-bearing template must not produce a document");
+            for (final Map<String, Object> document : stored) {
+                Assertions.assertFalse(document.containsKey("leaked"), "credentials must not be reachable from the script");
+                for (final Object value : document.values()) {
+                    Assertions.assertNotEquals("s3cr3t", value, "the password must not appear anywhere in the document");
+                }
             }
         }
     }
