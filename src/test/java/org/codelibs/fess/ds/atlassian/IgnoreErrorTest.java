@@ -29,7 +29,7 @@ import org.codelibs.fess.opensearch.config.exentity.CrawlingConfig;
 import org.codelibs.fess.opensearch.config.exentity.DataConfig;
 import org.codelibs.fess.opensearch.config.exentity.FailureUrl;
 import org.codelibs.fess.script.ScriptEngineFactory;
-import org.codelibs.fess.script.groovy.GroovyEngine;
+import org.codelibs.fess.script.javascript.JavaScriptEngine;
 import org.codelibs.fess.util.ComponentUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -103,13 +103,14 @@ public class IgnoreErrorTest extends UnitDsTestCase {
             }
         }, UrlFilter.class.getCanonicalName());
 
-        // convertValue() evaluates script templates like "issue.summary" through the default
-        // (groovy) script engine.
+        // convertValue() evaluates script templates like "issue.summary" through the script engine named
+        // by script_type. Groovy now lives in the fess-script-groovy plugin and is not on the test
+        // classpath, so the tests ask for the JavaScript engine that ships in fess core.
         final ScriptEngineFactory scriptEngineFactory = new ScriptEngineFactory();
         ComponentUtil.register(scriptEngineFactory, "scriptEngineFactory");
-        final GroovyEngine groovyEngine = new GroovyEngine();
-        groovyEngine.init();
-        groovyEngine.register();
+        final JavaScriptEngine javaScriptEngine = new JavaScriptEngine();
+        javaScriptEngine.init();
+        javaScriptEngine.register();
     }
 
     private static IndexUpdateCallback throwingCallback() {
@@ -144,6 +145,7 @@ public class IgnoreErrorTest extends UnitDsTestCase {
         p.put("basic.username", "user");
         p.put("basic.password", "pass");
         p.put("ignore_error", ignoreError);
+        p.put("script_type", "javascript");
         return p;
     }
 

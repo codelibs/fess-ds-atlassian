@@ -37,8 +37,6 @@ import org.codelibs.fess.ds.atlassian.api.util.UrlUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.minidev.json.JSONObject;
-
 /**
  * Abstract base class for Atlassian API requests providing common HTTP functionality.
  */
@@ -335,7 +333,7 @@ public abstract class AtlassianRequest {
 
         final Map<String, Object> bodyMap = getBodyMap();
         if (bodyMap != null) {
-            final String source = new JSONObject(bodyMap).toJSONString();
+            final String source = mapper.writeValueAsString(bodyMap);
             request.body(source);
         }
 
