@@ -16,7 +16,10 @@
 package org.codelibs.fess.ds.atlassian.api.authentication;
 
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.codelibs.fess.ds.atlassian.MockAtlassianServer;
 import org.codelibs.fess.ds.atlassian.UnitDsTestCase;
@@ -58,6 +61,47 @@ public class ClientCredentialsTest extends UnitDsTestCase {
             // JSON, not form encoding -- same as the sibling test above.
             Assertions.assertTrue(server.getRequests().get(0).body().contains("\"grant_type\":\"refresh_token\""),
                     "body was: " + server.getRequests().get(0).body());
+        }
+    }
+
+    @Test
+    public void test_token_request_body_is_not_logged() throws Exception {
+        final Logger curlLogger = Logger.getLogger("org.codelibs.curl.CurlRequest");
+        final Level oldLevel = curlLogger.getLevel();
+        final StringBuilder logged = new StringBuilder();
+        final Handler handler = new Handler() {
+            @Override
+            public void publish(final LogRecord record) {
+                logged.append(new java.util.logging.SimpleFormatter().formatMessage(record)).append('\n');
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        handler.setLevel(Level.ALL);
+        curlLogger.setLevel(Level.ALL);
+        curlLogger.addHandler(handler);
+        try (MockAtlassianServer server = new MockAtlassianServer().start()) {
+            server.on("/oauth/token", req -> MockAtlassianServer
+                    .json("{\"access_token\":\"fresh-token\",\"refresh_token\":\"next-refresh\",\"expires_in\":3600}"));
+
+            final OAuth2Authentication auth =
+                    new OAuth2Authentication("old-token", "old-refresh-secret", "client-id", "client-secret-value",
+                            server.getBaseUrl() + "/oauth/token", OAuth2Authentication.GRANT_AUTHORIZATION_CODE, result -> {});
+            auth.refreshAccessToken();
+
+            // The control: curl4j did log this request, so an empty match below is not a silent logger.
+            Assertions.assertTrue(logged.toString().contains(">>>"), "the request was not logged at all: " + logged);
+            Assertions.assertFalse(logged.toString().contains("client-secret-value"), "the client secret was logged");
+            Assertions.assertFalse(logged.toString().contains("old-refresh-secret"), "the refresh token was logged");
+        } finally {
+            curlLogger.removeHandler(handler);
+            curlLogger.setLevel(oldLevel);
         }
     }
 }
