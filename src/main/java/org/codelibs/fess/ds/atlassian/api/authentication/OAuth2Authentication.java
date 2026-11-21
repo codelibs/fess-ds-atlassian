@@ -15,8 +15,10 @@
  */
 package org.codelibs.fess.ds.atlassian.api.authentication;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -188,7 +190,8 @@ public class OAuth2Authentication extends Authentication {
         final ObjectMapper mapper = new ObjectMapper();
         try {
             final String jsonBody = mapper.writeValueAsString(params);
-            request.body(jsonBody);
+            // Sent as a stream: curl4j writes a String body to its FINE log in clear, and this body carries the client secret and the refresh token.
+            request.body(new ByteArrayInputStream(jsonBody.getBytes(StandardCharsets.UTF_8)));
         } catch (final IOException e) {
             throw new AtlassianDataStoreException("Failed to create JSON body for refresh token request.", e);
         }
